@@ -1,13 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import PurchaseOrderForm, { PurchaseOrderFormValues } from "@/finance/purchaseOrder/PurchaseOrderForm";
-import { useVendorStore } from "@/financeStore/useVendorStore";
-import { useItemStore } from "@/financeStore/useItemStore";
-import { useBussinessStore } from "@/financeStore/useBussinessStore";
-// You will need to implement usePurchaseOrderStore
-import { usePurchaseOrderStore } from "@/financeStore/usePurchaseOrderStore";
+import PurchaseOrderForm, {
+  PurchaseOrderFormValues,
+} from "@/components/finance/purchaseOrder/PurchaseOrderForm";
+import { useGetVendors } from "@/hooks/useVendorQueries";
+import { useGetItems } from "@/hooks/useItemQueries";
+import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+import { useCreatePurchaseOrder } from "@/hooks/usePurchaseOrderQueries";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  transformFormToCreatePayload,
+  validatePurchaseOrderForm,
+} from "@/utils/purchaseOrderUtils";
 
 const generatePurchaseOrderNo = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -16,12 +22,14 @@ const generatePurchaseOrderNo = () => {
 };
 
 export default function CreatePurchaseOrderPage() {
-  const { vendors } = useVendorStore();
-  const { items } = useItemStore();
+  const { data: vendorsData } = useGetVendors();
+  const { data: itemsData } = useGetItems();
   const { details } = useBussinessStore();
-  const createPurchaseOrder = usePurchaseOrderStore((state) => state.createPurchaseOrder);
+  const { mutate: createPurchaseOrder, isPending } = useCreatePurchaseOrder();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+
+  const vendors = vendorsData?.result?.vendors || [];
+  const items = itemsData?.result?.items || [];
   const businessStoreDetails = details;
 
   if (!businessStoreDetails) {
@@ -41,6 +49,7 @@ export default function CreatePurchaseOrderPage() {
     supplierInvoiceNo: "",
     orderDate: new Date().toISOString().slice(0, 10),
     dueDate: "",
+    deliveryDate: "",
     vendorId: "",
     vendorDetails: {
       name: "",
@@ -50,6 +59,12 @@ export default function CreatePurchaseOrderPage() {
       email: "",
     },
     businessDetails: mappedBusinessDetails,
+    deliveryAddress: "",
+    paymentTerms: "Net 30",
+    status: "Draft",
+    priority: "Medium",
+    referenceNumber: "",
+    currency: "INR",
     items: [
       {
         name: "",
@@ -75,12 +90,38 @@ export default function CreatePurchaseOrderPage() {
   };
 
   const handleCreate = async (values: PurchaseOrderFormValues) => {
-    setLoading(true);
     try {
-      await createPurchaseOrder(values);
-      router.push("/dashboard/purchase-order");
-    } finally {
-      setLoading(false);
+      // Validate form data
+      const validation = validatePurchaseOrderForm(values);
+      if (!validation.isValid) {
+        toast.error(validation.errors[0]);
+        return;
+      }
+
+      // Transform form values to API payload
+      const apiPayload = transformFormToCreatePayload(values);
+
+      // Call API to create purchase order
+      createPurchaseOrder(apiPayload, {
+        onSuccess: () => {
+          toast.success("Purchase order created successfully!");
+          router.push("/finance/purchase-orders");
+        },
+        onError: (error: any) => {
+          const errorMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "An error occurred while creating the purchase order";
+          toast.error(errorMessage);
+        },
+      });
+    } catch (error) {
+      console.error("Error creating purchase order:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred while creating the purchase order";
+      toast.error(errorMessage);
     }
   };
 
@@ -91,7 +132,7 @@ export default function CreatePurchaseOrderPage() {
       mode="create"
       mockVendors={vendors}
       mockProducts={items}
-      loading={loading}
+      loading={isPending}
     />
   );
-} 
+}

@@ -176,7 +176,7 @@ const itemApi = {
           if (value !== undefined && value !== null) searchParams.append(key, String(value));
         });
       }
-      const response = await axiosInstance.get(`/api/v1/finance/inventory/item/getAllItems?${searchParams.toString()}`);
+      const response = await axiosInstance.get(`/api/v1/finance/inventory/item/?${searchParams.toString()}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) throw error;

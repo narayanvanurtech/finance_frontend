@@ -21,6 +21,9 @@ export type DebitNoteFormValues = {
   debitNoteDate: string;
   linkedInvoice: string;
   reason: string;
+  purchaseId: string;
+  originalBillNumber: string;
+  debitType: string;
   vendorId: string;
   vendorDetails: any;
   businessDetails: any;
@@ -31,6 +34,9 @@ export type DebitNoteFormValues = {
   roundOff: boolean;
   showHSN: boolean;
   showUnit: boolean;
+  taxType: "inclusive" | "exclusive";
+  taxConfiguration: "IGST" | "SGST_CGST";
+  cessList: { name: string; showInInvoice: boolean }[];
   terms: string;
   notes: string;
   attachments: File[];
@@ -73,6 +79,11 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
     initialValues.linkedInvoice || ""
   );
   const [reason, setReason] = useState(initialValues.reason || "");
+  const [purchaseId, setPurchaseId] = useState(initialValues.purchaseId || "");
+  const [originalBillNumber, setOriginalBillNumber] = useState(
+    initialValues.originalBillNumber || ""
+  );
+  const [debitType, setDebitType] = useState(initialValues.debitType || "");
   // Other state
   const [vendorId, setVendorId] = useState(initialValues.vendorId);
   const [showAddVendor, setShowAddVendor] = useState(false);
@@ -88,6 +99,15 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const [roundOff, setRoundOff] = useState(initialValues.roundOff);
   const [showHSN, setShowHSN] = useState(initialValues.showHSN);
   const [showUnit, setShowUnit] = useState(initialValues.showUnit);
+  const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
+    initialValues.taxType || "exclusive"
+  );
+  const [taxConfiguration, setTaxConfiguration] = useState<
+    "IGST" | "SGST_CGST"
+  >(initialValues.taxConfiguration || "IGST");
+  const [cessList, setCessList] = useState<
+    { name: string; showInInvoice: boolean }[]
+  >(initialValues.cessList || []);
   const [terms, setTerms] = useState(initialValues.terms);
   const [notes, setNotes] = useState(initialValues.notes);
   const [attachments, setAttachments] = useState<File[]>(
@@ -106,12 +126,43 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
     setItems((prev: any) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
-      // Recalculate amount
+
+      // Recalculate amount with proper tax calculation
       const item = updated[idx];
-      let amount =
-        (Number(item.qty) || 0) * (Number(item.rate) || 0) -
-        (Number(item.discount) || 0);
-      updated[idx].amount = amount;
+      const qty = Number(item.qty) || 0;
+      const rate = Number(item.rate) || 0;
+      const baseAmount = qty * rate;
+
+      // Apply discount
+      let discount = 0;
+      if (item.discountType === "percentage") {
+        discount = (baseAmount * (Number(item.discount) || 0)) / 100;
+      } else {
+        discount = Number(item.discount) || 0;
+      }
+
+      const taxableAmount = baseAmount - discount;
+
+      // Calculate tax if exclusive
+      let taxAmount = 0;
+      if (taxType === "exclusive") {
+        if (taxConfiguration === "IGST") {
+          taxAmount = (taxableAmount * (Number(item.igst) || 0)) / 100;
+        } else if (taxConfiguration === "SGST_CGST") {
+          const sgstAmount = (taxableAmount * (Number(item.sgst) || 0)) / 100;
+          const cgstAmount = (taxableAmount * (Number(item.cgst) || 0)) / 100;
+          taxAmount = sgstAmount + cgstAmount;
+        }
+
+        // Add cess if any
+        cessList.forEach((cess) => {
+          if (cess.showInInvoice) {
+            taxAmount += (taxableAmount * (Number(item[cess.name]) || 0)) / 100;
+          }
+        });
+      }
+
+      updated[idx].amount = taxableAmount + taxAmount;
       return updated;
     });
   };
@@ -124,9 +175,14 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
         qty: 1,
         rate: 0,
         discount: 0,
+        discountType: "flat",
         amount: 0,
         hsn: "",
         unit: "pcs",
+        igst: 0,
+        sgst: 0,
+        cgst: 0,
+        reason: "",
       },
     ]);
   };
@@ -150,17 +206,57 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       });
     }
   };
-  // Summary calculations (simple version)
-  const subtotal = items.reduce(
-    (sum: number, item: any) => sum + Number(item.qty) * Number(item.rate),
-    0
-  );
-  let discount = 0;
-  if (discountType === "flat") discount = discountValue;
-  else if (discountType === "percent")
-    discount = (subtotal * discountValue) / 100;
-  const taxable = subtotal - discount;
-  let total = taxable + Number(shipping || 0);
+  // Summary calculations with proper tax calculation
+  const subtotal = items.reduce((sum: number, item: any) => {
+    const qty = Number(item.qty) || 0;
+    const rate = Number(item.rate) || 0;
+    return sum + qty * rate;
+  }, 0);
+
+  // Apply global discount
+  let globalDiscount = 0;
+  if (discountType === "flat") {
+    globalDiscount = discountValue;
+  } else if (discountType === "percentage") {
+    globalDiscount = (subtotal * discountValue) / 100;
+  }
+
+  const taxableAmount = subtotal - globalDiscount;
+
+  // Calculate total tax from items
+  let totalTax = 0;
+  if (taxType === "exclusive") {
+    items.forEach((item: any) => {
+      const qty = Number(item.qty) || 0;
+      const rate = Number(item.rate) || 0;
+      const baseAmount = qty * rate;
+
+      let itemDiscount = 0;
+      if (item.discountType === "percentage") {
+        itemDiscount = (baseAmount * (Number(item.discount) || 0)) / 100;
+      } else {
+        itemDiscount = Number(item.discount) || 0;
+      }
+
+      const itemTaxable = baseAmount - itemDiscount;
+
+      if (taxConfiguration === "IGST") {
+        totalTax += (itemTaxable * (Number(item.igst) || 0)) / 100;
+      } else if (taxConfiguration === "SGST_CGST") {
+        totalTax += (itemTaxable * (Number(item.sgst) || 0)) / 100;
+        totalTax += (itemTaxable * (Number(item.cgst) || 0)) / 100;
+      }
+
+      // Add cess
+      cessList.forEach((cess) => {
+        if (cess.showInInvoice) {
+          totalTax += (itemTaxable * (Number(item[cess.name]) || 0)) / 100;
+        }
+      });
+    });
+  }
+
+  let total = taxableAmount + totalTax + Number(shipping || 0);
   if (roundOff) total = Math.round(total);
   const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -173,12 +269,26 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       newErrors.debitNoteNo = "Debit Note No is required";
     if (!debitNoteDate) newErrors.debitNoteDate = "Debit Note Date is required";
     if (!reason) newErrors.reason = "Reason is required";
+    if (!purchaseId.trim()) newErrors.purchaseId = "Purchase ID is required";
+    if (!originalBillNumber.trim())
+      newErrors.originalBillNumber = "Original Bill Number is required";
+    if (!debitType) newErrors.debitType = "Debit Type is required";
     if (
       !items ||
       items.length === 0 ||
       items.every((item: any) => !item.name.trim())
     )
       newErrors.items = "At least one item is required";
+
+    // Validate item reasons
+    items.forEach((item: any, index: number) => {
+      if (!item.reason || !item.reason.trim()) {
+        newErrors[`itemReason${index}`] = `Item ${
+          index + 1
+        } reason is required`;
+      }
+    });
+
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     onSubmit({
@@ -186,6 +296,9 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       debitNoteDate,
       linkedInvoice,
       reason,
+      purchaseId,
+      originalBillNumber,
+      debitType,
       vendorId,
       vendorDetails: { ...vendorDetails },
       businessDetails: businessDetails,
@@ -196,6 +309,9 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       roundOff,
       showHSN,
       showUnit,
+      taxType,
+      taxConfiguration,
+      cessList,
       terms,
       notes,
       attachments,
@@ -205,97 +321,261 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
-      <HeaderBar
-        debitNoteNo={debitNoteNo}
-        setDebitNoteNo={setDebitNoteNo}
-        debitNoteDate={debitNoteDate}
-        setDebitNoteDate={setDebitNoteDate}
-        linkedInvoice={linkedInvoice}
-        setLinkedInvoice={setLinkedInvoice}
-        reason={reason}
-        setReason={setReason}
-        invoices={invoices}
-        reasons={reasons}
-      />
-      {/* Error messages for header fields */}
-      <div className="mb-2">
-        {errors.debitNoteNo && (
-          <div className="text-red-500 text-xs">{errors.debitNoteNo}</div>
-        )}
-        {errors.debitNoteDate && (
-          <div className="text-red-500 text-xs">{errors.debitNoteDate}</div>
-        )}
-        {errors.reason && (
-          <div className="text-red-500 text-xs">{errors.reason}</div>
+    <div className="max-w-7xl mx-auto py-6 px-3 md:px-8 bg-gradient-to-br from-gray-50 via-blue-50/20 to-white min-h-screen">
+      {/* Header Section */}
+      <div className="mb-6">
+        <HeaderBar
+          debitNoteNo={debitNoteNo}
+          setDebitNoteNo={setDebitNoteNo}
+          debitNoteDate={debitNoteDate}
+          setDebitNoteDate={setDebitNoteDate}
+          linkedInvoice={linkedInvoice}
+          setLinkedInvoice={setLinkedInvoice}
+          reason={reason}
+          setReason={setReason}
+          purchaseId={purchaseId}
+          setPurchaseId={setPurchaseId}
+          originalBillNumber={originalBillNumber}
+          setOriginalBillNumber={setOriginalBillNumber}
+          debitType={debitType}
+          setDebitType={setDebitType}
+          invoices={invoices}
+          reasons={reasons}
+        />
+        {/* Error messages for header fields */}
+        {(errors.debitNoteNo ||
+          errors.debitNoteDate ||
+          errors.reason ||
+          errors.purchaseId ||
+          errors.originalBillNumber ||
+          errors.debitType) && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
+            {errors.debitNoteNo && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.debitNoteNo}</span>
+              </div>
+            )}
+            {errors.debitNoteDate && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.debitNoteDate}</span>
+              </div>
+            )}
+            {errors.reason && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.reason}</span>
+              </div>
+            )}
+            {errors.purchaseId && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.purchaseId}</span>
+              </div>
+            )}
+            {errors.originalBillNumber && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.originalBillNumber}</span>
+              </div>
+            )}
+            {errors.debitType && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.debitType}</span>
+              </div>
+            )}
+          </div>
         )}
       </div>
-      {/* Flex row for business and vendor details */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="md:w-1/2">
+
+      {/* Business and Vendor Details Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Business Details */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
+            Business Details
+          </h3>
           <YourDetailsSection businessDetails={businessDetails} hideSelector />
         </div>
-        <div className="md:w-1/2">
-          <SelectVendorSection
-            vendorId={vendorId}
-            onVendorSelect={handleVendorSelect}
-            showAddVendor={showAddVendor}
-            setShowAddVendor={setShowAddVendor}
-            vendorDetails={vendorDetails}
-            setVendorDetails={setVendorDetails}
-            handleAddVendor={handleAddVendor}
-            mockVendors={vendors}
-          />
-        </div>
+
+        <SelectVendorSection
+          vendorId={vendorId}
+          onVendorSelect={handleVendorSelect}
+          showAddVendor={showAddVendor}
+          setShowAddVendor={setShowAddVendor}
+          vendorDetails={vendorDetails}
+          setVendorDetails={setVendorDetails}
+          handleAddVendor={handleAddVendor}
+          mockVendors={vendors}
+        />
       </div>
-      <ItemTable
-        items={items}
-        setItems={setItems}
-        handleItemChange={handleItemChange}
-        handleAddItem={handleAddItem}
-        handleRemoveItem={handleRemoveItem}
-        showHSN={showHSN}
-        setShowHSN={setShowHSN}
-        showUnit={showUnit}
-        setShowUnit={setShowUnit}
-        onAddNewItemClick={onAddNewItemClick}
-        openBulkModal={openBulkModal}
-        taxType={"inclusive" as "inclusive" | "exclusive"}
-        taxConfiguration={"IGST" as "IGST" | "SGST_CGST"}
-        setTaxConfiguration={() => {}}
-        cessList={[]}
-        setTaxType={() => {}}
-        setCessList={() => {}}
-        mockProducts={products}
-      />
-      {/* Error message for items */}
-      {errors.items && (
-        <div className="text-red-500 text-xs mb-2">{errors.items}</div>
-      )}
-      <SummaryCard
-        subtotal={subtotal}
-        discountType={discountType as "flat" | "percentage"}
-        discountValue={discountValue}
-        setDiscountType={setDiscountType}
-        setDiscountValue={setDiscountValue}
-        tax={0}
-        shipping={shipping}
-        setShipping={setShipping}
-        roundOff={roundOff}
-        setRoundOff={setRoundOff}
-        total={total}
-      />
-      <AdditionalInputs
-        terms={terms}
-        setTerms={setTerms}
-        notes={notes}
-        setNotes={setNotes}
-        attachments={attachments}
-        handleAttachment={handleAttachment}
-        showSignature={showSignature}
-        setShowSignature={setShowSignature}
-      />
-      <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
+
+      {/* Items Section */}
+      <div className="mb-6">
+        <ItemTable
+          items={items}
+          setItems={setItems}
+          handleItemChange={handleItemChange}
+          handleAddItem={handleAddItem}
+          handleRemoveItem={handleRemoveItem}
+          showHSN={showHSN}
+          setShowHSN={setShowHSN}
+          showUnit={showUnit}
+          setShowUnit={setShowUnit}
+          onAddNewItemClick={onAddNewItemClick}
+          openBulkModal={openBulkModal}
+          taxType={taxType}
+          taxConfiguration={taxConfiguration}
+          setTaxConfiguration={setTaxConfiguration}
+          cessList={cessList}
+          setTaxType={setTaxType}
+          setCessList={setCessList}
+          mockProducts={products}
+          businessState={businessDetails?.state}
+          clientState={vendorDetails?.state}
+        />
+        {/* Error message for items */}
+        {(errors.items ||
+          Object.keys(errors).some((key) => key.startsWith("itemReason"))) && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
+            {errors.items && (
+              <div className="flex items-center gap-2 text-red-600 text-sm">
+                <svg
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <span>{errors.items}</span>
+              </div>
+            )}
+            {Object.keys(errors)
+              .filter((key) => key.startsWith("itemReason"))
+              .map((key) => (
+                <div
+                  key={key}
+                  className="flex items-center gap-2 text-red-600 text-sm"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>{errors[key]}</span>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+
+      {/* Summary Section */}
+      <div className="mb-6">
+        <SummaryCard
+          subtotal={subtotal}
+          discountType={discountType as "flat" | "percentage"}
+          discountValue={discountValue}
+          setDiscountType={setDiscountType}
+          setDiscountValue={setDiscountValue}
+          tax={totalTax}
+          shipping={shipping}
+          setShipping={setShipping}
+          roundOff={roundOff}
+          setRoundOff={setRoundOff}
+          total={total}
+        />
+      </div>
+
+      {/* Additional Inputs Section */}
+      <div className="mb-6">
+        <AdditionalInputs
+          terms={terms}
+          setTerms={setTerms}
+          notes={notes}
+          setNotes={setNotes}
+          attachments={attachments}
+          handleAttachment={handleAttachment}
+          showSignature={showSignature}
+          setShowSignature={setShowSignature}
+        />
+      </div>
+
+      {/* Action Bar */}
+      <div className="sticky bottom-0 bg-white/80 backdrop-blur-sm border-t border-gray-200 shadow-lg -mx-3 md:-mx-8 px-3 md:px-8 py-4 mt-8">
+        <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
+      </div>
       <AddVendorModal
         open={showAddVendor}
         onOpenChange={setShowAddVendor}
@@ -315,9 +595,14 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
               qty: 1,
               rate: item.sellingPrice,
               discount: 0,
+              discountType: "flat",
               amount: item.sellingPrice,
               hsn: "",
               unit: "pcs",
+              igst: 0,
+              sgst: 0,
+              cgst: 0,
+              reason: "",
             },
           ]);
           setShowAddItemModal(false);
@@ -335,9 +620,14 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
               qty: item.unit,
               rate: 0,
               discount: 0,
+              discountType: "flat",
               amount: 0,
               hsn: "",
               unit: "pcs",
+              igst: 0,
+              sgst: 0,
+              cgst: 0,
+              reason: "",
             })),
           ]);
           setShowAddItemBulkModal(false);

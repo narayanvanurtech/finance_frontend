@@ -1,32 +1,37 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useVendorStore } from "@/stores/financeStore/useVendorStore";
 import { useRouter, useParams } from "next/navigation";
-import VendorForm, { VendorFormValues } from "@/components/finance/vendor/VendorForm";
+import VendorForm, {
+  VendorFormValues,
+} from "@/components/finance/vendor/VendorForm";
+import { useGetVendorById, useUpdateVendor } from "@/hooks/useVendorQueries";
+import { UpdateVendorPayload } from "@/api/finance/vendorApi";
 
 export default function EditVendorPage() {
   const { id } = useParams();
   const vendorId = id as string;
-  const { selectedVendor, loading, error, getVendorById, updateVendor, clearError } = useVendorStore();
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [showToast, setShowToast] = useState(false);
+
   const [formError, setFormError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (vendorId) {
-      clearError();
-      getVendorById(vendorId).finally(() => setIsLoading(false));
-    }
-  }, [vendorId, getVendorById, clearError]);
+  // Fetch vendor data using React Query
+  const {
+    data: vendorResponse,
+    isLoading,
+    isError,
+    error: fetchError,
+  } = useGetVendorById(vendorId);
 
-  if (isLoading || loading) {
+  // Update vendor mutation
+  const { mutate: updateVendor, isPending: isUpdating } = useUpdateVendor();
+
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-pulse space-y-4 w-full max-w-5xl mx-auto p-10">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
           <div className="space-y-4">
             <div className="h-32 bg-gray-200 rounded"></div>
@@ -38,12 +43,13 @@ export default function EditVendorPage() {
     );
   }
 
-  if (error || !selectedVendor) {
+  // Error state
+  if (isError || !vendorResponse?.result) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="text-gray-500 text-xl mb-4">
-            {error || "Vendor not found."}
+            {fetchError?.message || "Vendor not found."}
           </div>
           <button
             onClick={() => router.push("/finance/vendors")}
@@ -56,7 +62,7 @@ export default function EditVendorPage() {
     );
   }
 
-  const vendor = selectedVendor;
+  const vendor = vendorResponse.result;
 
   const initialValues: VendorFormValues = {
     name: vendor.name || "",
@@ -78,27 +84,30 @@ export default function EditVendorPage() {
     contact: vendor.contact || "",
     phone: vendor.phone || "",
     showPhone: vendor.showPhone || false,
-    address: vendor.address ? 
-      `${vendor.address.streetAddress || ""}, ${vendor.address.city || ""}, ${vendor.address.state || ""}, ${vendor.address.country || ""}`.replace(/^[, ]+|[, ]+$/g, '') 
+    address: vendor.address
+      ? `${vendor.address.streetAddress || ""}, ${vendor.address.city || ""}, ${
+          vendor.address.state || ""
+        }, ${vendor.address.country || ""}`.replace(/^[, ]+|[, ]+$/g, "")
       : "",
     customFields: [],
-    bankAccounts: vendor.bankAccounts?.map(account => ({
-      id: Math.random().toString(36),
-      bankName: account.bankName,
-      accountNumber: account.accountNumber,
-      ifsc: account.ifsc,
-      branch: account.branch,
-      accountType: account.accountType
-    })) || [],
+    bankAccounts:
+      vendor.bankAccounts?.map((account) => ({
+        id: Math.random().toString(36),
+        bankName: account.bankName,
+        accountNumber: account.accountNumber,
+        ifsc: account.ifsc,
+        branch: account.branch,
+        accountType: account.accountType,
+      })) || [],
     attachments: vendor.attachments || [],
   };
 
   const handleSubmit = async (values: VendorFormValues) => {
-    setSubmitting(true);
     setFormError(null);
+
     try {
       // Transform the form values to match the API payload structure
-      const vendorPayload = {
+      const vendorPayload: UpdateVendorPayload = {
         name: values.name,
         displayName: values.displayName,
         vendorType: values.vendorType,
@@ -111,7 +120,11 @@ export default function EditVendorPage() {
         gstin: values.gstin,
         gstType: values.gstType,
         panNumber: values.panNumber,
-        taxTreatment: values.taxTreatment as "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas",
+        taxTreatment: values.taxTreatment as
+          | "Registered Business"
+          | "Unregistered Business"
+          | "Consumer"
+          | "Overseas",
         address: {
           country: values.country,
           state: values.state,
@@ -119,33 +132,43 @@ export default function EditVendorPage() {
           postalCode: values.postalCode,
           streetAddress: values.streetAddress,
         },
-        bankAccounts: values.bankAccounts?.map(account => ({
+        bankAccounts: values.bankAccounts?.map((account) => ({
           bankName: account.bankName,
           accountNumber: account.accountNumber,
           ifsc: account.ifsc,
           branch: account.branch,
-          accountType: account.accountType as "Savings" | "Current" | "Other"
+          accountType: account.accountType as "Savings" | "Current" | "Other",
         })),
-        attachments: values.attachments
+        attachments: values.attachments,
       };
 
-      await updateVendor(vendor._id, vendorPayload);
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-        setSubmitting(false);
-        router.push("/finance/vendors");
-      }, 1200);
+      updateVendor(
+        { vendorId: vendor._id, data: vendorPayload },
+        {
+          onSuccess: () => {
+            router.push("/finance/vendors");
+          },
+          onError: (error: any) => {
+            console.error("Error updating vendor:", error);
+            setFormError(
+              error?.response?.data?.message ||
+                error.message ||
+                "Failed to update vendor. Please try again."
+            );
+          },
+        }
+      );
     } catch (error: any) {
-      console.error('Error updating vendor:', error);
-      setFormError(error.message || 'Failed to update vendor. Please try again.');
-      setSubmitting(false);
+      console.error("Error updating vendor:", error);
+      setFormError(
+        error.message || "Failed to update vendor. Please try again."
+      );
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-5xl bg-white p-10">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-5xl bg-white rounded-lg shadow-lg p-10">
         <div className="flex items-center mb-6">
           <Button
             type="button"
@@ -157,27 +180,24 @@ export default function EditVendorPage() {
             <ArrowLeft className="w-5 h-5 mr-1" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-center tracking-tight flex-1">Edit Vendor</h1>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex-1">
+            Edit Vendor
+          </h1>
         </div>
+
         {formError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-red-800 text-sm font-medium">
-              {formError}
-            </div>
+            <div className="text-red-800 text-sm font-medium">{formError}</div>
           </div>
         )}
+
         <VendorForm
           initialValues={initialValues}
           onSubmit={handleSubmit}
-          submitLabel={submitting ? "Updating..." : "Update"}
-          loading={submitting}
-          onCancel={() => router.back()}
+          submitLabel={isUpdating ? "Updating..." : "Update Vendor"}
+          loading={isUpdating}
+          onCancel={() => router.push("/finance/vendors")}
         />
-        {showToast && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 text-base font-medium transition-all">
-            Vendor updated successfully!
-          </div>
-        )}
       </div>
     </div>
   );

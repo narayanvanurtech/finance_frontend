@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ExpenseForm, { ExpenseFormValues } from "@/finance/expenses/ExpenseForm";
 import { useVendorStore } from "@/financeStore/useVendorStore";
 import { useItemStore } from "@/financeStore/useItemStore";
 import { useBussinessStore } from "@/financeStore/useBussinessStore";
-import { useExpenseStore } from "@/financeStore/useExpenseStore";
+import {
+  useCreatePurchase,
+  useAddAttachment,
+} from "@/hooks/usePurchaseExpenseQueries";
 import { useRouter } from "next/navigation";
 
 const generateExpenseNo = () => {
@@ -15,13 +18,18 @@ const generateExpenseNo = () => {
 };
 
 export default function CreateExpensePage() {
-  const { vendors } = useVendorStore();
+  const { vendors, fetchVendors } = useVendorStore();
   const { items } = useItemStore();
   const { details } = useBussinessStore();
-  const createExpense = useExpenseStore((state) => state.createExpense);
+  const { mutate: createPurchase, isPending } = useCreatePurchase();
+  const { mutate: addAttachment, isPending: isUploadingAttachment } =
+    useAddAttachment();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const businessStoreDetails = details;
+
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
 
   if (!businessStoreDetails) {
     return <div>Loading business details...</div>;
@@ -76,13 +84,57 @@ export default function CreateExpensePage() {
   };
 
   const handleCreate = async (values: ExpenseFormValues) => {
-    setLoading(true);
-    try {
-      await createExpense(values);
-      router.push("/finance/expenses");
-    } finally {
-      setLoading(false);
-    }
+    // Transform ExpenseFormValues to CreatePurchasePayload
+    const purchaseData = {
+      vendorId: values.vendorId,
+      billDate: values.purchaseDate,
+      taxType: "inclusive" as const,
+      discountType: values.discountType as "flat" | "percentage",
+      discountValue: values.discountValue,
+      shipping: values.shipping,
+      roundOff: values.roundOff,
+      showHSN: values.showHSN,
+      showUnit: values.showUnit,
+      showSignature: values.showSignature,
+      purchaseType: "goods" as const,
+      priority: "medium" as const,
+      items: values.items.map((item) => ({
+        name: item.name,
+        hsn: item.hsn,
+        unit: item.unit,
+        quantity: item.qty,
+        rate: item.rate,
+        discount: item.discount,
+        discountType: "flat" as const,
+      })),
+      terms: values.terms,
+      notes: values.notes,
+    };
+
+    createPurchase(purchaseData, {
+      onSuccess: (response) => {
+        const newPurchaseId = response.data._id;
+
+        // Upload attachments if any
+        if (values.attachments && values.attachments.length > 0) {
+          values.attachments.forEach((file) => {
+            addAttachment(
+              { purchaseId: newPurchaseId, data: { file } },
+              {
+                onSuccess: () => {
+                  console.log(`Attachment ${file.name} uploaded successfully`);
+                },
+                onError: (error) => {
+                  console.error(`Failed to upload ${file.name}:`, error);
+                },
+              }
+            );
+          });
+        }
+
+        router.push("/finance/expenses");
+      },
+    });
   };
 
   return (
@@ -92,7 +144,7 @@ export default function CreateExpensePage() {
       mode="create"
       mockVendors={vendors}
       mockProducts={items}
-      loading={loading}
+      loading={isPending || isUploadingAttachment}
     />
   );
 }

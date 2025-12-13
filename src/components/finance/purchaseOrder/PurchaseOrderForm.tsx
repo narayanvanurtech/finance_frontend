@@ -10,16 +10,22 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import AddVendorModal from "@/components/finance/AddVendorModal";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import type { Vendor } from "@/api/finance/vendorApi";
-import { useVendorStore } from "@/stores/financeStore/useVendorStore";
 
 export type PurchaseOrderFormValues = {
   purchaseOrderNo: string;
   supplierInvoiceNo: string;
   orderDate: string;
   dueDate: string;
+  deliveryDate: string;
   vendorId: string;
   vendorDetails: any;
   businessDetails: any;
+  deliveryAddress: string;
+  paymentTerms: string;
+  status: string;
+  priority: string;
+  referenceNumber: string;
+  currency: string;
   items: any[];
   discountType: string;
   discountValue: number;
@@ -50,12 +56,11 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   onSuccess,
   loading,
   mockVendors,
-  mockProducts,
+  
 }) => {
-  const products = mockProducts || [];
-  const vendors = useVendorStore((state) => state.vendors);
-  // Use vendors from store if available, otherwise fallback to mockVendors
-  const availableVendors = vendors.length > 0 ? vendors : mockVendors;
+  
+  // Use vendors passed as props
+  const availableVendors = mockVendors;
   // Header state
   const [purchaseOrderNo, setPurchaseOrderNo] = useState(
     initialValues.purchaseOrderNo || ""
@@ -65,6 +70,13 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   );
   const [orderDate, setOrderDate] = useState(initialValues.orderDate || "");
   const [dueDate, setDueDate] = useState(initialValues.dueDate || "");
+  const [deliveryDate, setDeliveryDate] = useState(initialValues.deliveryDate || "");
+  const [paymentTerms, setPaymentTerms] = useState(initialValues.paymentTerms || "Net 30");
+  const [status, setStatus] = useState(initialValues.status || "Draft");
+  const [priority, setPriority] = useState(initialValues.priority || "Medium");
+  const [referenceNumber, setReferenceNumber] = useState(initialValues.referenceNumber || "");
+  const [deliveryAddress, setDeliveryAddress] = useState(initialValues.deliveryAddress || "");
+  const [currency, setCurrency] = useState(initialValues.currency || "INR");
   // Vendor state
   const [vendorId, setVendorId] = useState(initialValues.vendorId);
   const [showAddVendor, setShowAddVendor] = useState(false);
@@ -135,6 +147,23 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   };
   const onAddNewItemClick = () => setShowAddItemModal(true);
   const openBulkModal = () => setShowAddItemBulkModal(true);
+
+  // Helper function to format address object to string
+  const formatAddress = (address: any): string => {
+    if (!address) return "";
+    if (typeof address === "string") return address;
+
+    const parts = [
+      address.streetAddress,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country,
+    ].filter(Boolean);
+
+    return parts.join(", ");
+  };
+
   // Vendor selection handler
   const handleVendorSelect = (value: string) => {
     setVendorId(value);
@@ -146,7 +175,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       setVendorDetails({
         name: found.name,
         gstin: found.gstin || "",
-        address: found.address || "",
+        address: formatAddress(found.address),
         contact: found.phone || found.contact || "",
         email: found.email || "",
       });
@@ -174,7 +203,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
     if (!purchaseOrderNo.trim())
       newErrors.purchaseOrderNo = "Purchase Order No is required";
     if (!orderDate) newErrors.orderDate = "Order Date is required";
-    if (!vendorId) newErrors.vendorId = "Vendor is required";
+    // if (!vendorId) newErrors.vendorId = "Vendor is required";
     if (
       !items ||
       items.length === 0 ||
@@ -188,9 +217,16 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       supplierInvoiceNo,
       orderDate,
       dueDate,
+      deliveryDate,
       vendorId,
       vendorDetails: { ...vendorDetails },
       businessDetails: businessDetails,
+      deliveryAddress,
+      paymentTerms,
+      status,
+      priority,
+      referenceNumber,
+      currency,
       items,
       discountType,
       discountValue,
@@ -217,6 +253,18 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         setOrderDate={setOrderDate}
         dueDate={dueDate}
         setDueDate={setDueDate}
+        deliveryDate={deliveryDate}
+        setDeliveryDate={setDeliveryDate}
+        paymentTerms={paymentTerms}
+        setPaymentTerms={setPaymentTerms}
+        status={status}
+        setStatus={setStatus}
+        priority={priority}
+        setPriority={setPriority}
+        referenceNumber={referenceNumber}
+        setReferenceNumber={setReferenceNumber}
+        currency={currency}
+        setCurrency={setCurrency}
       />
       {/* Error messages for header fields */}
       <div className="mb-2">
@@ -231,20 +279,41 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         )}
       </div>
       {/* Flex row for billed to (business) and billed by (vendor) details */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="md:w-1/2">
-          <YourDetailsSection businessDetails={businessDetails} hideSelector />
-        </div>
-        <div className="md:w-1/2">
-          <SelectVendorSection
-            vendorId={vendorId}
-            onVendorSelect={handleVendorSelect}
-            showAddVendor={showAddVendor}
-            setShowAddVendor={setShowAddVendor}
-            vendorDetails={vendorDetails}
-            setVendorDetails={setVendorDetails}
-            handleAddVendor={() => setShowAddVendor(true)}
-            mockVendors={availableVendors}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Business Details */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
+                  Business Details
+                </h3>
+                <YourDetailsSection businessDetails={businessDetails} hideSelector />
+              </div>
+      
+              {/* Vendor Details */}
+      
+              <SelectVendorSection
+                vendorId={vendorId}
+                onVendorSelect={handleVendorSelect}
+                showAddVendor={showAddVendor}
+                setShowAddVendor={setShowAddVendor}
+                vendorDetails={vendorDetails}
+                setVendorDetails={setVendorDetails}
+                handleAddVendor={() => setShowAddVendor(true)}
+                mockVendors={mockVendors}
+              />
+            </div>
+
+      {/* Delivery Address Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
+          Delivery Address
+        </h3>
+        <div>
+          <label className="block text-sm font-medium mb-2">Delivery Location</label>
+          <textarea
+            className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
+            value={deliveryAddress}
+            onChange={(e) => setDeliveryAddress(e.target.value)}
+            placeholder="Enter complete delivery address with pincode"
           />
         </div>
       </div>
@@ -266,7 +335,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         setCessList={() => {}}
         taxConfiguration={"IGST"}
         setTaxConfiguration={() => {}}
-        mockProducts={products}
+       
       />
       {/* Error message for items */}
       {errors.items && (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -41,11 +41,24 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
   mockVendors,
 }) => {
   const [vendorSearch, setVendorSearch] = useState("");
-  const filteredVendors = mockVendors.filter((v) =>
-    v.name.toLowerCase().includes(vendorSearch.toLowerCase())
-  );
+
+  // Clear search when vendor is selected
+  useEffect(() => {
+    if (vendorId && vendorId !== "new") {
+      setVendorSearch("");
+    }
+  }, [vendorId]);
+
+  // Filter vendors and ensure selected vendor is always included
+  const filteredVendors = mockVendors.filter((v) => {
+    const matchesSearch = v.name
+      .toLowerCase()
+      .includes(vendorSearch.toLowerCase());
+    const isSelected = v._id.toString() === vendorId;
+    return matchesSearch || isSelected;
+  });
   return (
-    <Card className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+    <Card className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 h-full flex flex-col">
       <h2 className="text-lg font-semibold mb-4 border-b pb-2">
         Vendor Details
       </h2>
@@ -88,7 +101,7 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
       </div>
       {/* Remove old inline add vendor UI, modal will be used instead */}
       {vendorId && vendorId !== "new" && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
           <div>
             <div className="text-xs text-gray-500">Vendor Name</div>
             <div className="font-medium text-base">{vendorDetails.name}</div>

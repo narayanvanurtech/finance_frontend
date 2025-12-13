@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useVendorStore } from "@/stores/financeStore/useVendorStore";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,23 @@ import ConfirmationDialog from "@/components/sales-crm/ConfirmationDialog";
 import AddVendorModal from "@/components/finance/AddVendorModal";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import type { Vendor, CreateVendorPayload } from "@/api/finance/vendorApi";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Edit,
+  Trash2,
+  MoreHorizontal,
+  Search,
+  Plus,
+  Download,
+  Filter,
+} from "lucide-react";
 
 export default function VendorsPage() {
   const router = useRouter();
@@ -43,44 +60,54 @@ export default function VendorsPage() {
     message: "",
   });
 
-  // Filtering state
-  const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  // Filtering and search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [vendorTypeFilter, setVendorTypeFilter] = useState("all");
+  const [industryFilter, setIndustryFilter] = useState("all");
 
-  useEffect(() => {
-    // Apply filters whenever vendors or activeFilters change
-    let filtered = vendors;
-    Object.entries(activeFilters).forEach(([key, value]) => {
-      if (value) {
-        filtered = filtered.filter((vendor) => {
-          if (key === "industry" || key === "vendorType" || key === "taxTreatment") {
-            return (vendor as any)[key] === value;
-          }
-          return true;
-        });
-      }
-    });
-    setFilteredVendors(filtered);
-  }, [vendors, activeFilters]);
+  // Debounced fetch function
+  const fetchVendorsWithFilters = useCallback(() => {
+    if (!user?.companyId) return;
 
-  const handleFilterChange = (filters: Record<string, string>) => {
-    setActiveFilters(filters);
-  };
+    const filters: any = {};
 
-  useEffect(() => {
-    if (user?.companyId) {
-      fetchVendors();
+    // Add search term if present
+    if (searchTerm.trim()) {
+      filters.search = searchTerm.trim();
     }
-  }, [user?.companyId, fetchVendors]);
 
-  // Handlers
-  const handleViewVendor = (vendor: Vendor) => {
-    router.push(`/finance/vendors/view/${vendor._id}`);
-  };
+    // Add vendor type filter if selected
+    if (vendorTypeFilter !== "all") {
+      filters.vendorType = vendorTypeFilter;
+    }
+
+    // Add industry filter if selected
+    if (industryFilter !== "all") {
+      filters.industry = industryFilter;
+    }
+
+    // Fetch with filters
+    fetchVendors(filters);
+  }, [
+    user?.companyId,
+    searchTerm,
+    vendorTypeFilter,
+    industryFilter,
+    fetchVendors,
+  ]);
+
+  // Fetch vendors with debouncing for search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchVendorsWithFilters();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [fetchVendorsWithFilters]);
 
   const handleEditVendor = (vendor: Vendor) => {
-    setEditingVendor(vendor);
-    setAddVendorModalOpen(true);
+    // Navigate to edit page instead of opening modal
+    router.push(`/finance/vendors/edit/${vendor._id}`);
   };
 
   const handleDeleteVendor = (vendor: Vendor) => {
@@ -130,6 +157,40 @@ export default function VendorsPage() {
     fetchVendors();
   };
 
+  // Custom render for action buttons
+  const renderVendorActions = (vendor: Vendor) => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500"
+            aria-label="Vendor actions"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+          <DropdownMenuItem onClick={() => handleEditVendor(vendor)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            className="text-red-600"
+            onClick={() => handleDeleteVendor(vendor)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   // Define table columns
   const columns = [
     {
@@ -164,8 +225,10 @@ export default function VendorsPage() {
       header: "Address",
       render: (vendor: Vendor) => (
         <div className="text-sm text-[var(--color-muted-foreground)]">
-          {vendor?.address ? 
-            `${vendor.address.city || ""}, ${vendor.address.state || ""}, ${vendor.address.country || ""}`.replace(/^[, ]+|[, ]+$/g, '') || "-"
+          {vendor?.address
+            ? `${vendor.address.city || ""}, ${vendor.address.state || ""}, ${
+                vendor.address.country || ""
+              }`.replace(/^[, ]+|[, ]+$/g, "") || "-"
             : "-"}
         </div>
       ),
@@ -187,42 +250,6 @@ export default function VendorsPage() {
           {vendor?.email || "-"}
         </div>
       ),
-    },
-  ];
-
-  // Define filters
-  const filters = [
-    {
-      key: "vendorType",
-      label: "Vendor Type",
-      options: [
-        { value: "", label: "All Types" },
-        { value: "Company", label: "Company" },
-        { value: "Individual", label: "Individual" },
-      ],
-    },
-    {
-      key: "industry",
-      label: "Industry",
-      options: [
-        { value: "", label: "All Industries" },
-        { value: "IT", label: "IT" },
-        { value: "Finance", label: "Finance" },
-        { value: "Manufacturing", label: "Manufacturing" },
-        { value: "Retail", label: "Retail" },
-        { value: "Healthcare", label: "Healthcare" },
-      ],
-    },
-    {
-      key: "taxTreatment",
-      label: "Tax Treatment",
-      options: [
-        { value: "", label: "All Treatments" },
-        { value: "Registered Business", label: "Registered Business" },
-        { value: "Unregistered Business", label: "Unregistered Business" },
-        { value: "Consumer", label: "Consumer" },
-        { value: "Overseas", label: "Overseas" },
-      ],
     },
   ];
 
@@ -253,28 +280,92 @@ export default function VendorsPage() {
 
   return (
     <>
-      <DataTable
-        data={filteredVendors}
-        columns={columns}
-        loading={isLoading}
-        error={error}
-        title="Vendor Management"
-        subtitle="Manage your vendor database and relationships"
-        createButtonText="Create Vendor"
-        selectedItems={selectedVendorIds}
-        onSelectionChange={setSelectedVendorIds}
-        getItemId={(vendor) => vendor._id}
-        onCreateClick={handleCreateVendor}
-        onEditClick={handleEditVendor}
-        onViewClick={handleViewVendor}
-        onDeleteClick={handleDeleteVendor}
-        onBulkDelete={handleBulkDelete}
-        onRefresh={handleRefresh}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        bulkActions={bulkActions}
-        emptyStateMessage="No vendors found. Click 'Create Vendor' to add your first vendor."
-      />
+      {/* Header Section */}
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Page Title and Actions */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Vendor Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage your vendor database and relationships
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="px-4 py-2 rounded-lg transition border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 shadow-sm flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            <button
+              onClick={handleCreateVendor}
+              className="px-4 py-2 rounded-lg transition bg-blue-600 text-white hover:bg-blue-700 shadow-sm flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Vendor
+            </button>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                placeholder="Search vendors by name, email, GSTIN, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+              />
+            </div>
+            <select
+              value={vendorTypeFilter}
+              onChange={(e) => setVendorTypeFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-[160px]"
+            >
+              <option value="all">All Types</option>
+              <option value="Company">Company</option>
+              <option value="Individual">Individual</option>
+            </select>
+            <select
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-[180px]"
+            >
+              <option value="all">All Industries</option>
+              <option value="IT">IT</option>
+              <option value="Finance">Finance</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Retail">Retail</option>
+              <option value="Healthcare">Healthcare</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <DataTable
+          data={vendors}
+          columns={columns}
+          loading={isLoading}
+          error={error}
+          title=""
+          subtitle=""
+          createButtonText=""
+          selectedItems={selectedVendorIds}
+          onSelectionChange={setSelectedVendorIds}
+          getItemId={(vendor) => vendor?._id}
+          onCreateClick={() => {}}
+          onRowClick={(vendor) =>
+            router.push(`/finance/vendors/edit/${vendor._id}`)
+          }
+          renderCustomActions={renderVendorActions}
+          onBulkDelete={handleBulkDelete}
+          bulkActions={bulkActions}
+          emptyStateMessage="No vendors found. Click 'Create Vendor' to add your first vendor."
+        />
+      </div>
 
       <AddVendorModal
         open={addVendorModalOpen}

@@ -1,378 +1,272 @@
-import axios from 'axios';
-import axiosInstance from '../../utils/axios';
+import axiosInstance from "../../utils/axios";
 
-interface Company {
-  _id: string;
-  companyName: string;
-}
+// -----------------------------------------------------
+//                    INTERFACES
+// -----------------------------------------------------
 
-interface Vendor {
-  _id: string;
+export interface Cess {
   name: string;
-  email?: string;
-  phone?: string;
-  gstin?: string;
-  address?: any;
+  rate: number;
+  showInInvoice?: boolean;
 }
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-}
-
-interface Item {
+export interface PurchaseOrderItem {
   itemId?: string;
   name: string;
+  description?: string;
   hsn?: string;
-  unit: string;
+  unit?: string;
   quantity: number;
   rate: number;
   discount?: number;
   discountType?: "flat" | "percentage";
-  taxType?: "cgst_sgst" | "igst" | "nil";
+  taxType?: "igst" | "cgst_sgst";
   taxRate?: number;
-  cess?: Array<{
-    name: string;
-    rate: number;
-  }>;
-  deliveredQuantity?: number;
-  remainingQuantity?: number;
+  amount?: number;
+  taxAmount?: number;
+  igstAmount?: number;
+  sgstAmount?: number;
+  cgstAmount?: number;
+  cess?: Cess[];
 }
 
-interface Attachment {
-  url: string;
-  uploadedAt: Date;
+export interface VendorDetails {
+  name: string;
+  gstin?: string;
+  address?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
 }
 
-interface PurchaseOrder {
-  _id: string;
-  companyId: Company;
+export interface BusinessDetails {
+  name: string;
+  gstin?: string;
+  address?: string;
+  contact?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface CreatePurchaseOrderPayload {
+  vendorId: string;
   purchaseOrderNumber: string;
-  vendorId: Vendor;
   purchaseOrderDate: string;
   expectedDeliveryDate?: string;
-  status: "draft" | "sent" | "acknowledged" | "partial_delivery" | "complete" | "cancelled";
-  priority: "low" | "medium" | "high";
-  approvalStatus: "pending" | "approved" | "rejected" | "revision_required";
-  approvedBy?: User;
-  approvedAt?: Date;
-  rejectionReason?: string;
-  vendorAcknowledgedAt?: Date;
-  vendorComments?: string;
+  status?: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
+  priority?: "low" | "medium" | "high";
   taxType: "inclusive" | "exclusive";
   discountType: "flat" | "percentage";
   discountValue?: number;
   shipping?: number;
-  roundOff: boolean;
-  items: Item[];
-  terms?: string;
-  notes?: string;
-  attachments?: Attachment[];
-  createdBy: User;
-  vendorSnapshot: any;
-  linkedPurchaseIds?: string[];
-  isDeleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface CreatePurchaseOrderPayload {
-  vendorId: string;
-  purchaseOrderDate: string;
-  expectedDeliveryDate?: string;
-  status?: "draft" | "sent";
-  priority?: "low" | "medium" | "high";
-  taxType?: "inclusive" | "exclusive";
-  discountType?: "flat" | "percentage";
-  discountValue?: number;
-  shipping?: number;
   roundOff?: boolean;
-  items: Item[];
+  items: PurchaseOrderItem[];
   terms?: string;
   notes?: string;
 }
 
-interface UpdatePurchaseOrderPayload {
+export interface UpdatePurchaseOrderPayload {
   vendorId?: string;
+  purchaseOrderNumber?: string;
   purchaseOrderDate?: string;
   expectedDeliveryDate?: string;
-  status?: "draft" | "sent" | "acknowledged" | "partial_delivery" | "complete" | "cancelled";
+  status?: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
   priority?: "low" | "medium" | "high";
   taxType?: "inclusive" | "exclusive";
   discountType?: "flat" | "percentage";
   discountValue?: number;
   shipping?: number;
   roundOff?: boolean;
-  items?: Item[];
+  items?: PurchaseOrderItem[];
   terms?: string;
   notes?: string;
+  vendorDetails?: VendorDetails;
+  businessDetails?: BusinessDetails;
 }
 
-interface GetPurchaseOrdersFilters {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  status?: string;
-  priority?: string;
-  vendorId?: string;
-  startDate?: string;
-  endDate?: string;
-  search?: string;
+export interface UpdateApprovalStatusPayload {
+  approvalStatus: "approved" | "rejected";
 }
 
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalPurchaseOrders: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+export interface VendorAcknowledgmentPayload {
+  vendorComments: string;
 }
 
-interface GetPurchaseOrdersResponse {
+export interface PurchaseOrder {
+  _id: string;
+  companyId: any;
+  purchaseOrderNumber: string;
+  purchaseOrderDate: string;
+  expectedDeliveryDate?: string;
+  vendorId: any;
+  vendorDetails?: VendorDetails;
+  vendorSnapshot?: VendorDetails;
+  businessDetails?: BusinessDetails;
+  deliveryAddress?: string;
+  paymentTerms?: string;
+  referenceNumber?: string;
+  currency?: string;
+  status: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
+  priority?: "low" | "medium" | "high";
+  approvalStatus?: "pending" | "approved" | "rejected";
+  items: PurchaseOrderItem[];
+  taxType: "inclusive" | "exclusive";
+  discountType: "flat" | "percentage";
+  discountValue: number;
+  shipping: number;
+  roundOff: boolean;
+  terms?: string;
+  notes?: string;
+  attachments?: string[];
+  subtotal?: number;
+  totalTax?: number;
+  totalCess?: number;
+  grandTotal?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PurchaseOrderResponse {
   success: boolean;
-  statusCode: number;
-  message: string;
-  result: {
-    purchaseOrders: PurchaseOrder[];
-    pagination: PaginationInfo;
-  };
-}
-
-interface SinglePurchaseOrderResponse {
-  success: boolean;
-  statusCode: number;
   message: string;
   result: PurchaseOrder;
 }
 
-interface DeleteResponse {
+export interface PurchaseOrdersResponse {
   success: boolean;
-  statusCode: number;
-  message: string;
-}
-
-interface BulkDeleteResponse {
-  success: boolean;
-  statusCode: number;
   message: string;
   result: {
-    deletedCount: number;
-    skippedCount: number;
+    purchaseOrders: PurchaseOrder[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      itemsPerPage: number;
+    };
   };
 }
 
-interface UpdateApprovalStatusPayload {
-  approvalStatus: "pending" | "approved" | "rejected" | "revision_required";
-  rejectionReason?: string;
-}
+// -----------------------------------------------------
+//                    API FUNCTIONS
+// -----------------------------------------------------
 
-interface AcknowledgeByVendorPayload {
-  vendorComments?: string;
-}
-
-interface AddAttachmentPayload {
-  url: string;
-}
-
-interface PurchaseOrderStatsResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  result: {
-    totalPOs: number;
-    draftPOs: number;
-    sentPOs: number;
-    acknowledgedPOs: number;
-    completePOs: number;
-    totalValue: number;
-    avgOrderValue: number;
-  };
-}
-
-const purchaseOrderApi = {
-  // Create a new purchase order
-  createPurchaseOrder: async (purchaseOrderData: CreatePurchaseOrderPayload): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.post('/api/v1/finance/purchases/purchase-orders/createPurchaseOrder', purchaseOrderData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error creating purchase order');
-    }
-  },
-
-  // Get all purchase orders with optional filters and pagination
-  getAllPurchaseOrders: async (filters: GetPurchaseOrdersFilters = {}): Promise<GetPurchaseOrdersResponse> => {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
-      if (filters.sortBy) params.append('sortBy', filters.sortBy);
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.priority) params.append('priority', filters.priority);
-      if (filters.vendorId) params.append('vendorId', filters.vendorId);
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
-      if (filters.search) params.append('search', filters.search);
-
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/purchase-orders/getAllPurchaseOrders?${params.toString()}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error fetching purchase orders');
-    }
-  },
-
-  // Get purchase order by ID
-  getPurchaseOrderById: async (purchaseOrderId: string): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/purchase-orders/purchaseOrderDetails/${purchaseOrderId}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error fetching purchase order');
-    }
-  },
-
-  // Update an existing purchase order
-  updatePurchaseOrder: async (purchaseOrderId: string, purchaseOrderData: UpdatePurchaseOrderPayload): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.put(`/api/v1/finance/purchases/purchase-orders/updatePurchaseOrderDetails/${purchaseOrderId}`, purchaseOrderData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error updating purchase order');
-    }
-  },
-
-  // Delete a purchase order
-  deletePurchaseOrder: async (purchaseOrderId: string): Promise<DeleteResponse> => {
-    try {
-      const response = await axiosInstance.delete(`/api/v1/finance/purchases/purchase-orders/deletePurchaseOrder/${purchaseOrderId}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error deleting purchase order');
-    }
-  },
-
-  // Bulk delete purchase orders
-  bulkDeletePurchaseOrders: async (purchaseOrderIds: string[]): Promise<BulkDeleteResponse> => {
-    try {
-      const response = await axiosInstance.delete('/api/v1/finance/purchases/purchase-orders/bulkDeletePurchaseOrders', {
-        data: { purchaseOrderIds }
-      });
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error deleting purchase orders');
-    }
-  },
-
-  // Update approval status
-  updateApprovalStatus: async (purchaseOrderId: string, approvalData: UpdateApprovalStatusPayload): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.patch(`/api/v1/finance/purchases/purchase-orders/updateApprovalStatus/${purchaseOrderId}`, approvalData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error updating approval status');
-    }
-  },
-
-  // Acknowledge by vendor
-  acknowledgeByVendor: async (purchaseOrderId: string, acknowledgmentData: AcknowledgeByVendorPayload): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.patch(`/api/v1/finance/purchases/purchase-orders/acknowledgeByVendor/${purchaseOrderId}`, acknowledgmentData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error acknowledging purchase order');
-    }
-  },
-
-  // Add attachment
-  addAttachment: async (purchaseOrderId: string, attachmentData: AddAttachmentPayload): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.post(`/api/v1/finance/purchases/purchase-orders/addAttachment/${purchaseOrderId}`, attachmentData);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error adding attachment');
-    }
-  },
-
-  // Remove attachment
-  removeAttachment: async (purchaseOrderId: string, attachmentIndex: number): Promise<SinglePurchaseOrderResponse> => {
-    try {
-      const response = await axiosInstance.delete(`/api/v1/finance/purchases/purchase-orders/removeAttachment/${purchaseOrderId}/${attachmentIndex}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error removing attachment');
-    }
-  },
-
-  // Get purchase order statistics
-  getPurchaseOrderStats: async (startDate?: string, endDate?: string): Promise<PurchaseOrderStatsResponse> => {
-    try {
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/purchase-orders/stats?${params.toString()}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error fetching purchase order statistics');
-    }
-  },
+export const createPurchaseOrder = async (
+  data: CreatePurchaseOrderPayload
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.post(
+    "/api/v1/finance/purchases/purchase-orders/createPurchaseOrder",
+    data
+  );
+  return res.data;
 };
 
-export default purchaseOrderApi;
-export type {
-  PurchaseOrder,
-  CreatePurchaseOrderPayload,
-  UpdatePurchaseOrderPayload,
-  GetPurchaseOrdersFilters,
-  GetPurchaseOrdersResponse,
-  SinglePurchaseOrderResponse,
-  DeleteResponse,
-  BulkDeleteResponse,
-  UpdateApprovalStatusPayload,
-  AcknowledgeByVendorPayload,
-  AddAttachmentPayload,
-  PurchaseOrderStatsResponse,
-  PaginationInfo,
-  Company,
-  Vendor,
-  User,
-  Item,
-  Attachment
+export const getAllPurchaseOrders = async (
+  params?: any
+): Promise<PurchaseOrdersResponse> => {
+  console.log("🔍 getAllPurchaseOrders called with params:", params);
+  console.log("🔍 Search parameter:", params?.search);
+  const res = await axiosInstance.get(
+    "/api/v1/finance/purchases/purchase-orders/getAllPurchaseOrders",
+    { params }
+  );
+  console.log("✅ getAllPurchaseOrders response:", res.data);
+  console.log("✅ Total results:", res.data?.result?.purchaseOrders?.length);
+  return res.data;
+};
+
+export const getPurchaseOrderById = async (
+  id: string
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.get(
+    `/api/v1/finance/purchases/purchase-orders/purchaseOrderDetails/${id}`
+  );
+  return res.data;
+};
+
+export const updatePurchaseOrderDetails = async (
+  id: string,
+  data: UpdatePurchaseOrderPayload
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.put(
+    `/api/v1/finance/purchases/purchase-orders/updatePurchaseOrderDetails/${id}`,
+    data
+  );
+  return res.data;
+};
+
+export const deletePurchaseOrder = async (id: string) => {
+  const res = await axiosInstance.delete(
+    `/api/v1/finance/purchases/purchase-orders/deletePurchaseOrder/${id}`
+  );
+  return res.data;
+};
+
+// APPROVAL STATUS
+export const updateApprovalStatus = async (
+  id: string,
+  data: UpdateApprovalStatusPayload
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.patch(
+    `/api/v1/finance/purchases/purchase-orders/updateApprovalStatus/${id}`,
+    data
+  );
+  return res.data;
+};
+
+// VENDOR ACKNOWLEDGEMENT
+export const acknowledgeByVendor = async (
+  id: string,
+  data: VendorAcknowledgmentPayload
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.patch(
+    `/api/v1/finance/purchases/purchase-orders/acknowledgeByVendor/${id}`,
+    data
+  );
+  return res.data;
+};
+
+export const getPurchaseOrderStats = async () => {
+  const res = await axiosInstance.get(
+    "/api/v1/finance/purchases/purchase-orders/stats/"
+  );
+  return res.data;
+};
+
+// SEARCH PO
+export const searchPurchaseOrders = async (query: any) => {
+  // Ensure search term is present
+  if (!query.search || query.search.trim().length === 0) {
+    throw new Error("Search term is required");
+  }
+
+  const res = await axiosInstance.get(
+    "/api/v1/finance/purchases/purchase-orders/searchPurchaseOrders",
+    { params: { search: query.search.trim(), ...query } }
+  );
+  return res.data;
+};
+
+// BULK DELETE PO
+export const bulkDeletePurchaseOrders = async (ids: string[]) => {
+  const res = await axiosInstance.delete(
+    "/api/v1/finance/purchases/purchase-orders/bulkDeletePurchaseOrders",
+    {
+      data: { purchaseOrderIds: ids }, // ✅ backend expects this
+    }
+  );
+  return res.data;
+};
+
+// EXPORT DEFAULT
+export default {
+  createPurchaseOrder,
+  getAllPurchaseOrders,
+  getPurchaseOrderById,
+  updatePurchaseOrderDetails,
+  deletePurchaseOrder,
+  updateApprovalStatus,
+  acknowledgeByVendor,
+  getPurchaseOrderStats,
+  searchPurchaseOrders,
+  bulkDeletePurchaseOrders,
 };

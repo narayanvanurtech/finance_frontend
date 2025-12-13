@@ -77,7 +77,9 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     initialValues.vendorDetails
   );
   // Business state
-  const [businessDetails, setBusinessDetails] = useState(initialValues.businessDetails);
+  const [businessDetails, setBusinessDetails] = useState(
+    initialValues.businessDetails
+  );
   // Items and other states
   const [items, setItems] = useState(initialValues.items);
   const [discountType, setDiscountType] = useState<"flat" | "percentage">(
@@ -101,6 +103,21 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Shipping details state
+  const [showShippingDetails, setShowShippingDetails] = useState(false);
+  const [shippingFrom, setShippingFrom] = useState({
+    name: "",
+    address: "",
+    contact: "",
+    email: "",
+  });
+  const [shippingTo, setShippingTo] = useState({
+    name: "",
+    address: "",
+    contact: "",
+    email: "",
+  });
 
   // Tax configuration states
   const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
@@ -132,21 +149,30 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     setItems((prev: any) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
+
+      // If qty is changed, also update quantity field (for consistency)
+      if (field === "qty") {
+        updated[idx].quantity = value;
+      }
+      if (field === "quantity") {
+        updated[idx].qty = value;
+      }
+
       // Recalculate amount
       const item = updated[idx];
       const qty = Number(item.quantity || item.qty) || 0;
       const rate = Number(item.rate) || 0;
       const discount = Number(item.discount) || 0;
-      
+
       let subtotal = qty * rate;
-      
+
       // Apply discount
       if (item.discountType === "percentage") {
-        subtotal = subtotal - (subtotal * discount / 100);
+        subtotal = subtotal - (subtotal * discount) / 100;
       } else {
         subtotal = subtotal - discount;
       }
-      
+
       // Calculate tax if exclusive
       let taxAmount = 0;
       if (taxType === "exclusive") {
@@ -157,7 +183,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           const cgstAmount = (subtotal * (Number(item.cgst) || 0)) / 100;
           taxAmount = sgstAmount + cgstAmount;
         }
-        
+
         // Add cess if any
         cessList.forEach((cess) => {
           if (cess.showInInvoice && item[cess.name]) {
@@ -165,7 +191,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           }
         });
       }
-      
+
       updated[idx].amount = subtotal + taxAmount;
       return updated;
     });
@@ -195,12 +221,39 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   };
   const onAddNewItemClick = () => setShowAddItemModal(true);
   const openBulkModal = () => setShowAddItemBulkModal(true);
+
+  // Helper function to format address object to string
+  const formatAddress = (address: any): string => {
+    if (!address) return "";
+    if (typeof address === "string") return address;
+
+    const parts = [
+      address.streetAddress,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country,
+    ].filter(Boolean);
+
+    const formatted = parts.join(", ");
+    console.log("Address parts:", parts);
+    console.log("Formatted result:", formatted);
+    return formatted;
+  };
+
   // Vendor selection handler
   const handleVendorSelect = (value: string) => {
     setVendorId(value);
     if (value === "new") return;
-    const found = mockVendors.find((v: any) => String(v.id) === value);
-    if (!found) return;
+    const found = mockVendors.find((v: any) => String(v._id || v.id) === value);
+    if (!found) {
+      console.log("Vendor not found for value:", value);
+      return;
+    }
+
+    console.log("Found vendor:", found);
+    console.log("Vendor address:", found.address);
+    console.log("Formatted address:", formatAddress(found.address));
 
     const vendorState =
       (found.address as any)?.state || (found as any).state || "";
@@ -208,12 +261,19 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
     // Update vendor details
     setVendorDetails({
-      name: found.name,
-      gstin: found.gstin,
-      state: vendorState,
-      address: found.address,
-      contact: found.contact,
-      email: found.email,
+      name: found.name || "",
+      gstin: found.gstin || "",
+      address: formatAddress(found.address),
+      contact: found.phone || found.contact || "",
+      email: found.email || "",
+    });
+
+    console.log("Vendor details set:", {
+      name: found.name || "",
+      gstin: found.gstin || "",
+      address: formatAddress(found.address),
+      contact: found.phone || found.contact || "",
+      email: found.email || "",
     });
 
     // Auto-switch tax configuration based on state
@@ -221,7 +281,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     if (businessState && vendorState) {
       if (businessState === vendorState) {
         setTaxConfiguration("SGST_CGST");
-        
+
         // Update items with SGST/CGST if they have IGST
         setItems((prev: any) =>
           prev.map((item: any) => {
@@ -239,7 +299,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         );
       } else {
         setTaxConfiguration("IGST");
-        
+
         // Update items with IGST if they have SGST/CGST
         setItems((prev: any) =>
           prev.map((item: any) => {
@@ -260,7 +320,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   };
   // Summary calculations (simple version)
   const subtotal = items.reduce(
-    (sum: number, item: any) => sum + (Number(item.quantity || item.qty) || 0) * (Number(item.rate) || 0),
+    (sum: number, item: any) =>
+      sum + (Number(item.quantity || item.qty) || 0) * (Number(item.rate) || 0),
     0
   );
   let discount = 0;
@@ -374,6 +435,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
             />
           </div>
@@ -441,24 +503,186 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           <div className="text-red-500 text-xs">{errors.vendorId}</div>
         )}
       </div>
-      {/* Flex row for billed to (business) and billed by (vendor) details */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="md:w-1/2">
+
+      {/* Business & Vendor Details */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Business Details */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
+            Business Details
+          </h3>
           <YourDetailsSection businessDetails={businessDetails} hideSelector />
         </div>
-        <div className="md:w-1/2">
-          <SelectVendorSection
-            vendorId={vendorId}
-            onVendorSelect={handleVendorSelect}
-            showAddVendor={showAddVendor}
-            setShowAddVendor={setShowAddVendor}
-            vendorDetails={vendorDetails}
-            setVendorDetails={setVendorDetails}
-            handleAddVendor={() => setShowAddVendor(true)}
-            mockVendors={mockVendors}
-          />
-        </div>
+
+        {/* Vendor Details */}
+
+        <SelectVendorSection
+          vendorId={vendorId}
+          onVendorSelect={handleVendorSelect}
+          showAddVendor={showAddVendor}
+          setShowAddVendor={setShowAddVendor}
+          vendorDetails={vendorDetails}
+          setVendorDetails={setVendorDetails}
+          handleAddVendor={() => setShowAddVendor(true)}
+          mockVendors={mockVendors}
+        />
       </div>
+
+      {/* Shipping Details Section - Compact Design */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="showShippingDetails"
+            checked={showShippingDetails}
+            onChange={(e) => setShowShippingDetails(e.target.checked)}
+            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          />
+          <label
+            htmlFor="showShippingDetails"
+            className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+          >
+            Add Shipping Details
+          </label>
+        </div>
+
+        {showShippingDetails && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-3 pt-3 border-t border-gray-200">
+            {/* Shipping FROM */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-gray-800 uppercase tracking-wide mb-2">
+                Ship From
+              </h3>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={shippingFrom.name}
+                  onChange={(e) =>
+                    setShippingFrom({ ...shippingFrom, name: e.target.value })
+                  }
+                  placeholder="Company/Person Name"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Address
+                </label>
+                <textarea
+                  value={shippingFrom.address}
+                  onChange={(e) =>
+                    setShippingFrom({
+                      ...shippingFrom,
+                      address: e.target.value,
+                    })
+                  }
+                  placeholder="Complete shipping address"
+                  rows={2}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Contact
+                </label>
+                <input
+                  type="text"
+                  value={shippingFrom.contact}
+                  onChange={(e) =>
+                    setShippingFrom({
+                      ...shippingFrom,
+                      contact: e.target.value,
+                    })
+                  }
+                  placeholder="Phone number"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={shippingFrom.email}
+                  onChange={(e) =>
+                    setShippingFrom({ ...shippingFrom, email: e.target.value })
+                  }
+                  placeholder="email@example.com"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Shipping TO */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-gray-800 uppercase tracking-wide mb-2">
+                Ship To
+              </h3>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={shippingTo.name}
+                  onChange={(e) =>
+                    setShippingTo({ ...shippingTo, name: e.target.value })
+                  }
+                  placeholder="Company/Person Name"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Address
+                </label>
+                <textarea
+                  value={shippingTo.address}
+                  onChange={(e) =>
+                    setShippingTo({ ...shippingTo, address: e.target.value })
+                  }
+                  placeholder="Complete shipping address"
+                  rows={2}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Contact
+                </label>
+                <input
+                  type="text"
+                  value={shippingTo.contact}
+                  onChange={(e) =>
+                    setShippingTo({ ...shippingTo, contact: e.target.value })
+                  }
+                  placeholder="Phone number"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={shippingTo.email}
+                  onChange={(e) =>
+                    setShippingTo({ ...shippingTo, email: e.target.value })
+                  }
+                  placeholder="email@example.com"
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <ItemTable
         items={items}
         setItems={setItems}

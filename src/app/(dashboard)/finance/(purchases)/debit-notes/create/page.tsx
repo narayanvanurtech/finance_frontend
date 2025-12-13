@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import DebitNotesForm, { DebitNoteFormValues, Invoice } from "@/finance/debitNotes/DebitNotesForm";
-import { useVendorStore } from "@/financeStore/useVendorStore";
-import { useItemStore } from "@/financeStore/useItemStore";
-import { useBussinessStore } from "@/financeStore/useBussinessStore";
-import { useDebitNotesStore } from "@/financeStore/useDebitNotesStore";
+import DebitNotesForm, {
+  DebitNoteFormValues,
+  Invoice,
+} from "@/finance/debitNotes/DebitNotesForm";
+import { useGetVendors } from "@/hooks/useVendorQueries";
+import { useGetItems } from "@/hooks/useItemQueries";
+import { useCreateDebitNote } from "@/hooks/useDebitNotesQueries";
 import { useRouter } from "next/navigation";
+import { CreateDebitNotePayload } from "@/api/finance/debitNotesApi";
 
 const generateDebitNoteNo = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -15,23 +18,24 @@ const generateDebitNoteNo = () => {
 };
 
 export default function CreateDebitNotePage() {
-  const { vendors } = useVendorStore();
-  const { items } = useItemStore();
-  const { details } = useBussinessStore();
-  const createDebitNote = useDebitNotesStore((state) => state.createDebitNote);
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const businessStoreDetails = details;
 
-  if (!businessStoreDetails) {
-    return <div>Loading business details...</div>;
-  }
+  // Fetch data using React Query
+  const { data: vendorsData, isLoading: vendorsLoading } = useGetVendors();
+  const { data: itemsData, isLoading: itemsLoading } = useGetItems();
+  const createDebitNoteMutation = useCreateDebitNote();
 
+  // Extract data from React Query responses
+  const vendors = vendorsData?.result?.vendors || [];
+  const items = itemsData?.result?.items || [];
+
+  // For now, using placeholder business details
+  // You can add a separate query for business details if needed
   const mappedBusinessDetails = {
-    name: businessStoreDetails.businessName,
-    gstin: businessStoreDetails.gstNumber || "",
-    address: businessStoreDetails.website || "",
-    contact: businessStoreDetails.phone,
+    name: "Your Business Name",
+    gstin: "",
+    address: "",
+    contact: "",
     email: "",
   };
 
@@ -40,6 +44,9 @@ export default function CreateDebitNotePage() {
     debitNoteDate: new Date().toISOString().slice(0, 10),
     linkedInvoice: "",
     reason: "",
+    purchaseId: "",
+    originalBillNumber: "",
+    debitType: "",
     vendorId: "",
     vendorDetails: {
       name: "",
@@ -56,9 +63,14 @@ export default function CreateDebitNotePage() {
         qty: 1,
         rate: 0,
         discount: 0,
+        discountType: "flat",
         amount: 0,
         hsn: "",
         unit: "pcs",
+        igst: 0,
+        sgst: 0,
+        cgst: 0,
+        reason: "",
       },
     ],
     discountType: "flat",
@@ -67,25 +79,80 @@ export default function CreateDebitNotePage() {
     roundOff: false,
     showHSN: false,
     showUnit: false,
+    taxType: "exclusive",
+    taxConfiguration: "IGST",
+    cessList: [],
     terms: "",
     notes: "",
     attachments: [],
     showSignature: false,
   };
 
-  // TODO: Replace with real invoices and reasons
+  // Map invoices from store to dropdown format
+  // TODO: Add invoice query hook when available
   const invoices: Invoice[] = [];
-  const reasons: string[] = [];
+
+  // Common reasons for debit notes
+  const reasons: string[] = [
+    "Goods returned due to defect",
+    "Goods returned due to quality issues",
+    "Wrong goods delivered",
+    "Price difference adjustment",
+    "Quantity short received",
+    "Damaged goods received",
+    "Late delivery penalty",
+    "Service not as per agreement",
+    "Incorrect billing adjustment",
+    "Other",
+  ];
 
   const handleCreate = async (values: DebitNoteFormValues) => {
-    setLoading(true);
     try {
-      await createDebitNote(values);
-      router.push("/dashboard/debit-notes");
-    } finally {
-      setLoading(false);
+      // Transform form values to API payload
+      const payload: CreateDebitNotePayload = {
+        vendorId: values.vendorId,
+        purchaseId: values.purchaseId,
+        debitNoteDate: values.debitNoteDate,
+        originalBillNumber: values.originalBillNumber,
+        originalBillDate: values.debitNoteDate, // You may need to adjust this
+        debitType: values.debitType as "quality_issue" | "price_difference" | "excess_billing" | "return" | "other",
+        reason: values.reason,
+        taxType: values.taxType as "inclusive" | "exclusive",
+        discountType: values.discountType as "flat" | "percentage",
+        discountValue: values.discountValue,
+        shipping: values.shipping,
+        roundOff: values.roundOff,
+        showHSN: values.showHSN,
+        showUnit: values.showUnit,
+        showSignature: values.showSignature,
+        items: values.items.map((item) => ({
+          name: item.name,
+          description: item.description,
+          hsn: item.hsn,
+          unit: item.unit,
+          quantity: item.qty,
+          rate: item.rate,
+          discount: item.discount,
+          discountType: item.discountType,
+          taxType: values.taxConfiguration === "IGST" ? "igst" : "cgst_sgst",
+          taxRate: item.igst || item.cgst + item.sgst,
+          reason: item.reason,
+        })),
+        terms: values.terms,
+        notes: values.notes,
+      };
+
+      await createDebitNoteMutation.mutateAsync(payload);
+      router.push("/user/finance/debit-notes");
+    } catch (error) {
+      console.error("Error creating debit note:", error);
     }
   };
+
+  // Show loading state if data is being fetched
+  if (vendorsLoading || itemsLoading) {
+    return <div className="p-8 text-center">Loading...</div>;
+  }
 
   return (
     <DebitNotesForm
@@ -96,7 +163,7 @@ export default function CreateDebitNotePage() {
       mockProducts={items}
       invoices={invoices}
       reasons={reasons}
-      loading={loading}
+      loading={createDebitNoteMutation.isPending}
     />
   );
 }

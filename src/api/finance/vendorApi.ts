@@ -1,5 +1,5 @@
-import axios from 'axios';
-import axiosInstance from '../../utils/axios';
+import axios from "axios";
+import axiosInstance from "../../utils/axios";
 
 interface Company {
   _id: string;
@@ -7,6 +7,7 @@ interface Company {
 }
 
 interface BankAccount {
+  accountHolderName?: string;
   bankName: string;
   accountNumber: string;
   ifsc: string;
@@ -42,7 +43,11 @@ interface Vendor {
   gstin?: string;
   gstType?: string;
   panNumber?: string;
-  taxTreatment?: "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas";
+  taxTreatment?:
+    | "Registered Business"
+    | "Unregistered Business"
+    | "Consumer"
+    | "Overseas";
   address?: Address;
   vendorNo?: string;
   bankAccounts?: BankAccount[];
@@ -65,7 +70,11 @@ interface CreateVendorPayload {
   gstin?: string;
   gstType?: string;
   panNumber?: string;
-  taxTreatment?: "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas";
+  taxTreatment?:
+    | "Registered Business"
+    | "Unregistered Business"
+    | "Consumer"
+    | "Overseas";
   address?: Address;
   bankAccounts?: BankAccount[];
   attachments?: Attachment[];
@@ -84,7 +93,11 @@ interface UpdateVendorPayload {
   gstin?: string;
   gstType?: string;
   panNumber?: string;
-  taxTreatment?: "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas";
+  taxTreatment?:
+    | "Registered Business"
+    | "Unregistered Business"
+    | "Consumer"
+    | "Overseas";
   address?: Address;
   bankAccounts?: BankAccount[];
   attachments?: Attachment[];
@@ -95,12 +108,15 @@ interface GetVendorsFilters {
   limit?: number;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  search?: string; // Global search across multiple fields
   name?: string;
   email?: string;
   vendorType?: string;
   industry?: string;
   taxTreatment?: string;
   vendorNo?: string;
+  phone?: string;
+  gstin?: string;
 }
 
 interface PaginationInfo {
@@ -143,120 +159,144 @@ interface BulkDeleteResponse {
   };
 }
 
-interface SearchVendorsResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  result: Vendor[];
-}
-
 const vendorApi = {
   // Create a new vendor
-  createVendor: async (vendorData: CreateVendorPayload): Promise<SingleVendorResponse> => {
+  createVendor: async (
+    vendorData: CreateVendorPayload
+  ): Promise<SingleVendorResponse> => {
     try {
-      const response = await axiosInstance.post('/api/v1/finance/purchases/vendor/createVendor', vendorData);
+      const response = await axiosInstance.post(
+        "/api/v1/finance/purchases/vendor/createVendor",
+        vendorData
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error creating vendor');
+      throw new Error("Error creating vendor");
     }
   },
 
   // Get all vendors with optional filters and pagination
-  getAllVendors: async (filters: GetVendorsFilters = {}): Promise<GetVendorsResponse> => {
+  getAllVendors: async (
+    filters: GetVendorsFilters = {}
+  ): Promise<GetVendorsResponse> => {
     try {
       const params = new URLSearchParams();
-      
-      if (filters.page) params.append('page', filters.page.toString());
-      if (filters.limit) params.append('limit', filters.limit.toString());
-      if (filters.sortBy) params.append('sortBy', filters.sortBy);
-      if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
-      if (filters.name) params.append('name', filters.name);
-      if (filters.email) params.append('email', filters.email);
-      if (filters.vendorType) params.append('vendorType', filters.vendorType);
-      if (filters.industry) params.append('industry', filters.industry);
-      if (filters.taxTreatment) params.append('taxTreatment', filters.taxTreatment);
-      if (filters.vendorNo) params.append('vendorNo', filters.vendorNo);
 
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/vendor/getAllVendors?${params.toString()}`);
+      if (filters.page) params.append("page", filters.page.toString());
+      if (filters.limit) params.append("limit", filters.limit.toString());
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters.sortOrder) params.append("sortOrder", filters.sortOrder);
+      if (filters.search) params.append("search", filters.search);
+      if (filters.name) params.append("name", filters.name);
+      if (filters.email) params.append("email", filters.email);
+      if (filters.phone) params.append("phone", filters.phone);
+      if (filters.gstin) params.append("gstin", filters.gstin);
+      if (filters.vendorType) params.append("vendorType", filters.vendorType);
+      if (filters.industry) params.append("industry", filters.industry);
+      if (filters.taxTreatment)
+        params.append("taxTreatment", filters.taxTreatment);
+      if (filters.vendorNo) params.append("vendorNo", filters.vendorNo);
+
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/vendor/getAllVendors?${params.toString()}`
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error fetching vendors');
+      throw new Error("Error fetching vendors");
     }
   },
 
   // Get vendor by ID
   getVendorById: async (vendorId: string): Promise<SingleVendorResponse> => {
     try {
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/vendor/vendorDetails/${vendorId}`);
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/vendor/vendorDetails/${vendorId}`
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error fetching vendor');
+      throw new Error("Error fetching vendor");
+    }
+  },
+
+  // Search vendors by term (searches across name, email, phone, GSTIN)
+  searchVendors: async (searchTerm: string): Promise<GetVendorsResponse> => {
+    try {
+      const params = new URLSearchParams();
+      params.append("search", searchTerm);
+      params.append("limit", "50"); // Limit search results
+
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/vendor/getAllVendors?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error searching vendors");
     }
   },
 
   // Update an existing vendor
-  updateVendor: async (vendorId: string, vendorData: UpdateVendorPayload): Promise<SingleVendorResponse> => {
+  updateVendor: async (
+    vendorId: string,
+    vendorData: UpdateVendorPayload
+  ): Promise<SingleVendorResponse> => {
     try {
-      const response = await axiosInstance.put(`/api/v1/finance/purchases/vendor/updateVendorDetails/${vendorId}`, vendorData);
+      const response = await axiosInstance.put(
+        `/api/v1/finance/purchases/vendor/updateVendorDetails/${vendorId}`,
+        vendorData
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Unexpected error while updating vendor');
+      throw new Error("Unexpected error while updating vendor");
     }
   },
 
   // Delete a vendor (soft delete)
   deleteVendor: async (vendorId: string): Promise<DeleteResponse> => {
     try {
-      const response = await axiosInstance.delete(`/api/v1/finance/purchases/vendor/deleteVendor/${vendorId}`);
+      const response = await axiosInstance.delete(
+        `/api/v1/finance/purchases/vendor/deleteVendor/${vendorId}`
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error deleting vendor');
+      throw new Error("Error deleting vendor");
     }
   },
 
   // Bulk delete vendors (soft delete)
-  bulkDeleteVendors: async (vendorIds: string[]): Promise<BulkDeleteResponse> => {
+  bulkDeleteVendors: async (
+    vendorIds: string[]
+  ): Promise<BulkDeleteResponse> => {
     try {
-      const response = await axiosInstance.delete('/api/v1/finance/purchases/vendor/bulkDeleteVendors', {
-        data: { vendorIds }
-      });
+      const response = await axiosInstance.delete(
+        "/api/v1/finance/purchases/vendor/bulkDeleteVendors",
+        {
+          data: { vendorIds },
+        }
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error deleting vendors');
-    }
-  },
-
-  // Search vendors
-  searchVendors: async (searchTerm: string): Promise<SearchVendorsResponse> => {
-    try {
-      const params = new URLSearchParams();
-      params.append('q', searchTerm);
-
-      const response = await axiosInstance.get(`/api/v1/finance/purchases/vendor/searchVendors?${params.toString()}`);
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
-      throw new Error('Error searching vendors');
+      throw new Error("Error deleting vendors");
     }
   },
 };
@@ -271,10 +311,9 @@ export type {
   SingleVendorResponse,
   DeleteResponse,
   BulkDeleteResponse,
-  SearchVendorsResponse,
   PaginationInfo,
   Company,
   BankAccount,
   Attachment,
-  Address
+  Address,
 };

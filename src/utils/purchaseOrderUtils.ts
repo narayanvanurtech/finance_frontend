@@ -1,10 +1,16 @@
-import type { PurchaseOrder, CreatePurchaseOrderPayload, UpdatePurchaseOrderPayload } from '@/api/finance/purchaseOrderApi';
-import type { PurchaseOrderFormValues } from '@/components/finance/purchaseOrder/PurchaseOrderForm';
+import type {
+  PurchaseOrder,
+  CreatePurchaseOrderPayload,
+  UpdatePurchaseOrderPayload,
+} from "@/api/finance/purchaseOrderApi";
+import type { PurchaseOrderFormValues } from "@/components/finance/purchaseOrder/PurchaseOrderForm";
 
 /**
  * Validate purchase order form values
  */
-export const validatePurchaseOrderForm = (formValues: PurchaseOrderFormValues): { isValid: boolean; errors: string[] } => {
+export const validatePurchaseOrderForm = (
+  formValues: PurchaseOrderFormValues
+): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
   if (!formValues.purchaseOrderNo?.trim()) {
@@ -13,44 +19,54 @@ export const validatePurchaseOrderForm = (formValues: PurchaseOrderFormValues): 
   if (!formValues.orderDate) {
     errors.push("Order Date is required");
   }
-  if (!formValues.vendorId) {
-    errors.push("Vendor is required");
-  }
+  // if (!formValues.vendorId) {
+  //   errors.push("Vendor is required");
+  // }
   if (!formValues.items || formValues.items.length === 0) {
     errors.push("At least one item is required");
   } else {
-    const hasValidItem = formValues.items.some(item => item.name?.trim() && item.qty > 0 && item.rate >= 0);
+    const hasValidItem = formValues.items.some(
+      (item) => item.name?.trim() && item.qty > 0 && item.rate >= 0
+    );
     if (!hasValidItem) {
-      errors.push("At least one item must have a name, quantity > 0, and rate >= 0");
+      errors.push(
+        "At least one item must have a name, quantity > 0, and rate >= 0"
+      );
     }
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 };
 
 /**
  * Transform form values to API create payload
  */
-export const transformFormToCreatePayload = (formValues: PurchaseOrderFormValues): CreatePurchaseOrderPayload => {
+export const transformFormToCreatePayload = (
+  formValues: PurchaseOrderFormValues
+): CreatePurchaseOrderPayload => {
   // Validation
-  if (!formValues.vendorId) {
-    throw new Error("Vendor is required");
-  }
+  // if (!formValues.vendorId) {
+  //   throw new Error("Vendor is required");
+  // }
   if (!formValues.orderDate) {
     throw new Error("Order date is required");
   }
   // Filter valid items first
-  const validItems = formValues.items?.filter(item => item.name?.trim() && (item.qty > 0 || item.quantity > 0)) || [];
-  
+  const validItems =
+    formValues.items?.filter(
+      (item) => item.name?.trim() && (item.qty > 0 || item.quantity > 0)
+    ) || [];
+
   if (validItems.length === 0) {
     throw new Error("At least one valid item is required");
   }
 
   return {
     vendorId: formValues.vendorId,
+    purchaseOrderNumber: formValues.purchaseOrderNo,
     purchaseOrderDate: formValues.orderDate,
     expectedDeliveryDate: formValues.dueDate || undefined,
     status: "draft", // Default status
@@ -61,98 +77,133 @@ export const transformFormToCreatePayload = (formValues: PurchaseOrderFormValues
     shipping: formValues.shipping,
     roundOff: formValues.roundOff,
     items: formValues.items
-      .filter(item => item.name?.trim() && (item.qty > 0 || item.quantity > 0)) // Only include items with name and quantity
-      .map(item => ({
-        itemId: item.itemId,
-        name: item.name.trim(),
-        hsn: item.hsn || "",
-        unit: item.unit || "pcs",
-        quantity: item.qty || item.quantity, // Handle both qty and quantity fields
-        rate: item.rate || 0,
-        discount: item.discount || 0,
-        discountType: (item.discountType as "flat" | "percentage") || "flat",
-        taxType: (item.taxType as "cgst_sgst" | "igst" | "nil") || "cgst_sgst",
-        taxRate: item.taxRate || 0,
-        cess: item.cess || []
-      })),
+      .filter(
+        (item) => item.name?.trim() && (item.qty > 0 || item.quantity > 0)
+      )
+      .map((item) => {
+        const taxType =
+          item.taxType === "nil" || !item.taxType ? "cgst_sgst" : item.taxType;
+        return {
+          itemId: item.itemId,
+          name: item.name.trim(),
+          hsn: item.hsn || "",
+          unit: item.unit || "pcs",
+          quantity: item.qty || item.quantity,
+          rate: item.rate || 0,
+          discount: item.discount || 0,
+          discountType: (item.discountType as "flat" | "percentage") || "flat",
+          taxType: taxType as "cgst_sgst" | "igst",
+          taxRate: item.taxRate || 0,
+          cess: item.cess || [],
+        };
+      }),
     terms: formValues.terms,
-    notes: formValues.notes
+    notes: formValues.notes,
   };
 };
 
 /**
  * Transform form values to API update payload
  */
-export const transformFormToUpdatePayload = (formValues: Partial<PurchaseOrderFormValues>): UpdatePurchaseOrderPayload => {
+export const transformFormToUpdatePayload = (
+  formValues: Partial<PurchaseOrderFormValues>
+): UpdatePurchaseOrderPayload => {
   const payload: UpdatePurchaseOrderPayload = {};
-  
+
   if (formValues.vendorId) payload.vendorId = formValues.vendorId;
   if (formValues.orderDate) payload.purchaseOrderDate = formValues.orderDate;
   if (formValues.dueDate) payload.expectedDeliveryDate = formValues.dueDate;
-  if (formValues.discountType) payload.discountType = formValues.discountType as "flat" | "percentage";
-  if (formValues.discountValue !== undefined) payload.discountValue = formValues.discountValue;
+  if (formValues.discountType)
+    payload.discountType = formValues.discountType as "flat" | "percentage";
+  if (formValues.discountValue !== undefined)
+    payload.discountValue = formValues.discountValue;
   if (formValues.shipping !== undefined) payload.shipping = formValues.shipping;
   if (formValues.roundOff !== undefined) payload.roundOff = formValues.roundOff;
   if (formValues.terms) payload.terms = formValues.terms;
   if (formValues.notes) payload.notes = formValues.notes;
-  
-  if (formValues.items) {
-    payload.items = formValues.items.map(item => ({
-      itemId: item.itemId,
-      name: item.name,
-      hsn: item.hsn,
-      unit: item.unit,
-      quantity: item.quantity,
-      rate: item.rate,
-      discount: item.discount,
-      discountType: item.discountType as "flat" | "percentage",
-      taxType: item.taxType as "cgst_sgst" | "igst" | "nil",
-      taxRate: item.taxRate,
-      cess: item.cess
-    }));
+
+  if (formValues.items && formValues.items.length > 0) {
+    payload.items = formValues.items
+      .filter((item) => item.name?.trim() && (item.qty || item.quantity) > 0)
+      .map((item) => {
+        const taxType =
+          item.taxType === "nil" || !item.taxType ? "cgst_sgst" : item.taxType;
+        return {
+          itemId: item.itemId,
+          name: item.name?.trim() || "",
+          hsn: item.hsn || "",
+          unit: item.unit || "pcs",
+          quantity: item.qty || item.quantity || 0,
+          rate: item.rate || 0,
+          discount: item.discount || 0,
+          discountType: (item.discountType as "flat" | "percentage") || "flat",
+          taxType: taxType as "cgst_sgst" | "igst",
+          taxRate: item.taxRate || 0,
+          cess: item.cess || [],
+        };
+      });
   }
-  
+
   return payload;
 };
 
 /**
  * Transform API purchase order to form values
  */
-export const transformApiToFormValues = (apiPO: PurchaseOrder): PurchaseOrderFormValues => {
+export const transformApiToFormValues = (
+  apiPO: PurchaseOrder
+): Partial<PurchaseOrderFormValues> => {
+  const vendorId =
+    typeof apiPO.vendorId === "string" ? apiPO.vendorId : apiPO.vendorId._id;
+
+  const vendorDetails =
+    apiPO.vendorDetails ||
+    (typeof apiPO.vendorId !== "string"
+      ? {
+          name: (apiPO.vendorId as any).name || "",
+          gstin: (apiPO.vendorId as any).gstin || "",
+          address: (apiPO.vendorId as any).address
+            ? JSON.stringify((apiPO.vendorId as any).address)
+            : "",
+          contact: apiPO.vendorId.phone || "",
+          email: apiPO.vendorId.email || "",
+        }
+      : undefined);
+
+  const companyName =
+    typeof apiPO.companyId === "string"
+      ? ""
+      : apiPO.companyId.companyName || "";
+
   return {
     purchaseOrderNo: apiPO.purchaseOrderNumber,
     supplierInvoiceNo: "", // Not available in API response
-    orderDate: new Date(apiPO.purchaseOrderDate).toISOString().split('T')[0],
-    dueDate: apiPO.expectedDeliveryDate ? new Date(apiPO.expectedDeliveryDate).toISOString().split('T')[0] : "",
-    vendorId: apiPO.vendorId._id,
-    vendorDetails: {
-      name: apiPO.vendorId.name,
-      gstin: apiPO.vendorId.gstin || "",
-      address: apiPO.vendorId.address ? JSON.stringify(apiPO.vendorId.address) : "",
-      contact: apiPO.vendorId.phone || "",
-      email: apiPO.vendorId.email || "",
-    },
-    businessDetails: {
-      name: apiPO.companyId.companyName,
+    orderDate: new Date(apiPO.purchaseOrderDate).toISOString().split("T")[0],
+    dueDate: apiPO.expectedDeliveryDate
+      ? new Date(apiPO.expectedDeliveryDate).toISOString().split("T")[0]
+      : "",
+    vendorId: vendorId,
+    vendorDetails: vendorDetails,
+    businessDetails: apiPO.businessDetails || {
+      name: companyName,
       gstin: "",
       address: "",
       contact: "",
       email: "",
     },
-    items: apiPO.items.map(item => ({
+    items: apiPO.items.map((item) => ({
       itemId: item.itemId,
       name: item.name,
       hsn: item.hsn || "",
       unit: item.unit,
       quantity: item.quantity,
+      qty: item.quantity,
       rate: item.rate,
       discount: item.discount || 0,
       discountType: item.discountType || "flat",
       taxType: item.taxType || "cgst_sgst",
       taxRate: item.taxRate || 0,
       cess: item.cess || [],
-      deliveredQuantity: item.deliveredQuantity || 0,
-      remainingQuantity: item.remainingQuantity || item.quantity,
     })),
     discountType: apiPO.discountType,
     discountValue: apiPO.discountValue || 0,
@@ -187,21 +238,26 @@ export const calculatePurchaseOrderTotals = (
 ) => {
   const subtotal = items.reduce((sum, item) => {
     const itemTotal = item.quantity * item.rate;
-    const itemDiscount = item.discountType === "percentage" 
-      ? (itemTotal * (item.discount || 0)) / 100 
-      : (item.discount || 0);
+    const itemDiscount =
+      item.discountType === "percentage"
+        ? (itemTotal * (item.discount || 0)) / 100
+        : item.discount || 0;
     const itemAfterDiscount = itemTotal - itemDiscount;
-    
+
     const taxAmount = (itemAfterDiscount * (item.taxRate || 0)) / 100;
-    const cessAmount = (item.cess || []).reduce((cessSum: number, cess: any) => 
-      cessSum + (itemAfterDiscount * cess.rate) / 100, 0);
-    
+    const cessAmount = (item.cess || []).reduce(
+      (cessSum: number, cess: any) =>
+        cessSum + (itemAfterDiscount * cess.rate) / 100,
+      0
+    );
+
     return sum + itemAfterDiscount + taxAmount + cessAmount;
   }, 0);
 
-  const orderDiscount = discountType === "percentage" 
-    ? (subtotal * discountValue) / 100 
-    : discountValue;
+  const orderDiscount =
+    discountType === "percentage"
+      ? (subtotal * discountValue) / 100
+      : discountValue;
 
   const totalBeforeShipping = subtotal - orderDiscount;
   const total = totalBeforeShipping + shipping;
@@ -219,9 +275,12 @@ export const calculatePurchaseOrderTotals = (
 /**
  * Format currency for display
  */
-export const formatCurrency = (amount: number, currency: string = "INR"): string => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
+export const formatCurrency = (
+  amount: number,
+  currency: string = "INR"
+): string => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
@@ -231,10 +290,10 @@ export const formatCurrency = (amount: number, currency: string = "INR"): string
  * Format date for display
  */
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-IN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
+  return new Date(dateString).toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 };
 
@@ -250,7 +309,7 @@ export const getStatusColor = (status: string): string => {
     complete: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
   };
-  
+
   return statusColors[status] || "bg-gray-100 text-gray-800";
 };
 
@@ -263,6 +322,6 @@ export const getPriorityColor = (priority: string): string => {
     medium: "bg-yellow-100 text-yellow-800",
     high: "bg-red-100 text-red-800",
   };
-  
+
   return priorityColors[priority] || "bg-gray-100 text-gray-800";
 };

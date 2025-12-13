@@ -169,7 +169,7 @@ export const useVendorStore = create<VendorStore>((set, get) => ({
     try {
       const response = await vendorApi.searchVendors(searchTerm);
       set({
-        searchResults: response.result,
+        searchResults: response.result.vendors,
         loading: false,
       });
     } catch (error: any) {

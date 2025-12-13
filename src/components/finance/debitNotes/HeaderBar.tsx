@@ -14,6 +14,12 @@ type HeaderBarProps = {
   setLinkedInvoice: (val: string) => void;
   reason: string;
   setReason: (val: string) => void;
+  purchaseId: string;
+  setPurchaseId: (val: string) => void;
+  originalBillNumber: string;
+  setOriginalBillNumber: (val: string) => void;
+  debitType: string;
+  setDebitType: (val: string) => void;
   invoices: Invoice[];
   reasons: string[];
 };
@@ -27,9 +33,22 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   setLinkedInvoice,
   reason,
   setReason,
+  purchaseId,
+  setPurchaseId,
+  originalBillNumber,
+  setOriginalBillNumber,
+  debitType,
+  setDebitType,
   invoices,
   reasons,
 }) => {
+  const debitTypes = [
+    { value: "quality_issue", label: "Quality Issue" },
+    { value: "price_difference", label: "Price Difference" },
+    { value: "excess_billing", label: "Excess Billing" },
+    { value: "return", label: "Return" },
+    { value: "other", label: "Other" },
+  ];
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div>
@@ -83,6 +102,48 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           <option value="">Select reason</option>
           {reasons.map(r => (
             <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Purchase ID <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          className="w-full border rounded px-3 py-2"
+          value={purchaseId}
+          onChange={e => setPurchaseId(e.target.value)}
+          placeholder="Enter Purchase ID"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Original Bill Number <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          className="w-full border rounded px-3 py-2"
+          value={originalBillNumber}
+          onChange={e => setOriginalBillNumber(e.target.value)}
+          placeholder="Enter Original Bill Number"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Debit Type <span className="text-red-500">*</span>
+        </label>
+        <select
+          className="w-full border rounded px-3 py-2"
+          value={debitType}
+          onChange={e => setDebitType(e.target.value)}
+          required
+        >
+          <option value="">Select Debit Type</option>
+          {debitTypes.map(type => (
+            <option key={type.value} value={type.value}>{type.label}</option>
           ))}
         </select>
       </div>
