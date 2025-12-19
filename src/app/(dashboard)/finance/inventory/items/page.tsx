@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { useCategoryStore } from "@/stores/financeStore/useCategoryStore";
 import { useSubcategoryStore } from "@/stores/financeStore/useSubcategoryStore";
-import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
+
+import {
+  useItems,
+  useDeleteItem,
+  useBulkDeleteItems,
+} from "@/hooks/useItemQueries";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -41,25 +46,12 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Item } from "@/api/finance/itemApi";
+import ConfirmationDialog from "@/components/sales-crm/ConfirmationDialog";
 
 function AllItemsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
-
-  // Store hooks
-  const {
-    items,
-    loading,
-    error,
-    pagination,
-    getAllItems,
-    deleteItem,
-    bulkDeleteItems,
-    clearError,
-    setFilters,
-    setSorting,
-  } = useItemStore();
 
   const { categories, fetchCategories } = useCategoryStore();
   const { subcategories, fetchSubcategories } = useSubcategoryStore();
@@ -81,94 +73,90 @@ function AllItemsContent() {
   const [sortOrder, setSortOrderLocal] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  // Bulk delete confirmation
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
-  // Fetch data on component mount
-  useEffect(() => {
-    if (user?.companyId) {
-      fetchCategories();
-      fetchSubcategories();
-      loadItems();
+  // Build filters object
+  const filters = useMemo(() => {
+    const f: any = {};
+
+    // Handle category filtering
+    if (categoryId) {
+      f.categoryId = categoryId;
+    } else if (filterCategory !== "all") {
+      const category = categories.find((cat) => cat.name === filterCategory);
+      if (category) f.categoryId = category._id;
     }
-  }, [user?.companyId]);
 
-  // Load items when filters or sorting change
-  useEffect(() => {
-    if (user?.companyId) {
-      // Debounce search to avoid excessive API calls
-      const timeoutId = setTimeout(
-        () => {
-          loadItems();
-        },
-        searchTerm ? 500 : 0
-      ); // 500ms delay for search, immediate for other filters
-
-      return () => clearTimeout(timeoutId);
+    // Handle subcategory filtering
+    if (subcategoryId) {
+      f.subcategoryId = subcategoryId;
+    } else if (filterSubcategory !== "all") {
+      const subcategory = subcategories.find(
+        (sub) => sub.name === filterSubcategory
+      );
+      if (subcategory) f.subcategoryId = subcategory._id;
     }
+
+    // Handle item type filtering
+    if (filterType !== "all") {
+      f.type = filterType;
+    }
+
+    // Handle stock status filtering
+    if (filterStockStatus === "lowStock") {
+      f.lowStock = "true";
+    } else if (filterStockStatus === "outOfStock") {
+      f.outOfStock = "true";
+    }
+
+    // Handle search
+    if (searchTerm.trim()) {
+      f.search = searchTerm.trim();
+    }
+
+    return f;
   }, [
-    currentPage,
-    pageSize,
-    sortBy,
-    sortOrder,
+    categoryId,
     filterCategory,
+    subcategoryId,
     filterSubcategory,
     filterType,
     filterStockStatus,
     searchTerm,
-    user?.companyId,
     categories,
     subcategories,
   ]);
 
-  const loadItems = async () => {
-    try {
-      const filters: any = {};
+  // React Query hooks
+  const { data, isLoading, error, refetch } = useItems(user?.companyId || "", {
+    page: currentPage,
+    limit: pageSize,
+    sortBy,
+    sortOrder,
+    filters,
+  });
 
-      // Handle category filtering
-      if (categoryId) {
-        filters.categoryId = categoryId;
-      } else if (filterCategory !== "all") {
-        const category = categories.find((cat) => cat.name === filterCategory);
-        if (category) filters.categoryId = category._id;
-      }
+  const deleteItemMutation = useDeleteItem(user?.companyId || "");
+  const bulkDeleteMutation = useBulkDeleteItems(user?.companyId || "");
 
-      // Handle subcategory filtering
-      if (subcategoryId) {
-        filters.subcategoryId = subcategoryId;
-      } else if (filterSubcategory !== "all") {
-        const subcategory = subcategories.find(
-          (sub) => sub.name === filterSubcategory
-        );
-        if (subcategory) filters.subcategoryId = subcategory._id;
-      }
+  const items = data?.result?.items || [];
+  const pagination = data?.result?.pagination;
+  const loading = isLoading;
 
-      // Handle item type filtering
-      if (filterType !== "all") {
-        filters.type = filterType;
-      }
-
-      // Handle stock status filtering
-      if (filterStockStatus === "lowStock") {
-        filters.lowStock = "true";
-      } else if (filterStockStatus === "outOfStock") {
-        filters.outOfStock = "true";
-      }
-
-      // Handle search - use search parameter for general search
-      if (searchTerm.trim()) {
-        filters.search = searchTerm.trim();
-      }
-
-      await getAllItems({
-        page: currentPage,
-        limit: pageSize,
-        sortBy,
-        sortOrder,
-        filters,
-      });
-    } catch (error) {
-      console.error("Failed to load items:", error);
+  // Fetch categories and subcategories on mount
+  useEffect(() => {
+    if (user?.companyId) {
+      fetchCategories();
+      fetchSubcategories();
     }
-  };
+  }, [user?.companyId, fetchCategories, fetchSubcategories]);
 
   // Get filter context info
   const filterCategoryName = categoryId
@@ -208,23 +196,56 @@ function AllItemsContent() {
     if (selectedItems.length === 0) return;
 
     try {
-      await bulkDeleteItems(selectedItems);
+      await bulkDeleteMutation.mutateAsync(selectedItems);
       setSelectedItems([]);
       toast.success(`Successfully deleted ${selectedItems.length} item(s)`);
-      loadItems(); // Refresh the list
-    } catch (error) {
-      toast.error("Failed to delete items");
+      refetch();
+      setShowBulkDeleteModal(false);
+    } catch (error: any) {
+      toast.error("Failed to delete items", {
+        description: error?.response?.data?.message || error?.message || "",
+      });
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
+  const promptBulkDelete = () => {
+    if (selectedItems.length === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleBulkDeleteCancel = () => {
+    setShowBulkDeleteModal(false);
+  };
+
+  // Open confirmation dialog for an item
+  const promptDeleteItem = (itemId: string) => {
+    const item = items.find((i) => i._id === itemId);
+    setItemToDelete({ id: itemId, name: item?.name || "Item" });
+    setShowDeleteModal(true);
+  };
+
+  // Confirmed delete handler
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+
     try {
-      await deleteItem(itemId);
-      toast.success("Item deleted successfully");
-      loadItems(); // Refresh the list
-    } catch (error) {
-      toast.error("Failed to delete item");
+      await deleteItemMutation.mutateAsync(itemToDelete.id);
+      toast.success("Item deleted successfully", {
+        description: `Item "${itemToDelete.name}" has been deleted.`,
+      });
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      refetch();
+    } catch (err: any) {
+      toast.error("Failed to delete item", {
+        description: err?.response?.data?.message || err?.message || "",
+      });
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
   };
 
   const handleBulkInvoice = () => {
@@ -244,7 +265,6 @@ function AllItemsContent() {
       newSortBy === sortBy && sortOrder === "desc" ? "asc" : "desc";
     setSortByLocal(newSortBy);
     setSortOrderLocal(newSortOrder);
-    setSorting(newSortBy, newSortOrder);
     setCurrentPage(1);
   };
 
@@ -393,7 +413,7 @@ function AllItemsContent() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={() => loadItems()}
+                onClick={() => refetch()}
                 disabled={loading}
                 className="flex items-center gap-2"
               >
@@ -809,7 +829,7 @@ function AllItemsContent() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={handleBulkDelete}
+                        onClick={promptBulkDelete}
                         className="flex items-center gap-2 text-red-600 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -922,14 +942,16 @@ function AllItemsContent() {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-600" />
-              <p className="text-red-800">{error}</p>
+              <p className="text-red-800">
+                {error instanceof Error ? error.message : "An error occurred"}
+              </p>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearError}
+                onClick={() => refetch()}
                 className="ml-auto text-red-600"
               >
-                Dismiss
+                Retry
               </Button>
             </div>
           </div>
@@ -943,7 +965,7 @@ function AllItemsContent() {
             onSelectItem={handleSelectItem}
             onSelectAll={handleSelectAll}
             allSelected={allSelected}
-            onDeleteItem={handleDeleteItem}
+            onDeleteItem={promptDeleteItem}
             loading={loading}
             getNoResultsMessage={getNoResultsMessage}
           />
@@ -952,47 +974,171 @@ function AllItemsContent() {
             items={items}
             selectedItems={selectedItems}
             onSelectItem={handleSelectItem}
-            onDeleteItem={handleDeleteItem}
+            onDeleteItem={promptDeleteItem}
             loading={loading}
             getNoResultsMessage={getNoResultsMessage}
           />
         )}
 
         {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {(currentPage - 1) * pageSize + 1} to{" "}
-              {Math.min(currentPage * pageSize, pagination.totalItems)} of{" "}
-              {pagination.totalItems} items
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!pagination.hasPrevPage || loading}
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              >
-                Previous
-              </Button>
-              <span className="px-3 py-1 text-sm">
-                Page {currentPage} of {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!pagination.hasNextPage || loading}
-                onClick={() =>
-                  setCurrentPage((prev) =>
-                    Math.min(pagination.totalPages, prev + 1)
-                  )
-                }
-              >
-                Next
-              </Button>
+        {!loading && pagination && pagination.totalPages > 0 && (
+          <div className="bg-[var(--color-card)] rounded-lg shadow-sm border border-[var(--color-border)] p-4 mt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Items per page selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-[var(--color-muted-foreground)]">
+                  Items per page:
+                </label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-1 border border-[var(--color-border)] rounded bg-[var(--color-card)] text-[var(--color-foreground)]"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              {/* Pagination info */}
+              <div className="text-sm text-[var(--color-muted-foreground)]">
+                Showing{" "}
+                {pagination.totalItems === 0
+                  ? 0
+                  : (currentPage - 1) * pageSize + 1}{" "}
+                to {Math.min(currentPage * pageSize, pagination.totalItems)} of{" "}
+                {pagination.totalItems} items
+              </div>
+
+              {/* Page navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-[var(--color-border)] rounded bg-[var(--color-card)] text-[var(--color-foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-muted)]/60"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from(
+                    { length: pagination.totalPages },
+                    (_, i) => i + 1
+                  ).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === pagination.totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 py-1 border rounded ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-[var(--color-card)] text-[var(--color-foreground)] border-[var(--color-border)] hover:bg-[var(--color-muted)]/60"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span
+                          key={page}
+                          className="px-2 text-[var(--color-muted-foreground)]"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}
+                  className="px-3 py-1 border border-[var(--color-border)] rounded bg-[var(--color-card)] text-[var(--color-foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--color-muted)]/60"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </div>
         )}
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          show={showDeleteModal}
+          title="Delete Item"
+          message={
+            <div>
+              <p>
+                Are you sure you want to delete the item{" "}
+                <strong>"{itemToDelete?.name}"</strong>?
+              </p>
+              <p className="mt-2 text-sm text-gray-600">
+                This action cannot be undone.
+              </p>
+              {(deleteItemMutation as any).error && (
+                <p className="mt-2 text-sm text-red-600">
+                  {((deleteItemMutation as any).error as any)?.message ||
+                    String((deleteItemMutation as any).error)}
+                </p>
+              )}
+            </div>
+          }
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          confirmText={
+            (deleteItemMutation as any).isLoading ? "Deleting..." : "Delete"
+          }
+          cancelText="Cancel"
+          type="danger"
+          disableConfirm={(deleteItemMutation as any).isLoading}
+          disableCancel={(deleteItemMutation as any).isLoading}
+        />
+        {/* Bulk Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          show={showBulkDeleteModal}
+          title="Delete Selected Items"
+          message={
+            <div>
+              <p>
+                Are you sure you want to delete the selected{" "}
+                {selectedItems.length} item{selectedItems.length > 1 ? "s" : ""}
+                ?
+              </p>
+              <p className="mt-2 text-sm text-gray-600">
+                This action cannot be undone.
+              </p>
+              {(bulkDeleteMutation as any).error && (
+                <p className="mt-2 text-sm text-red-600">
+                  {((bulkDeleteMutation as any).error as any)?.message ||
+                    String((bulkDeleteMutation as any).error)}
+                </p>
+              )}
+            </div>
+          }
+          onConfirm={handleBulkDelete}
+          onCancel={handleBulkDeleteCancel}
+          confirmText={
+            (bulkDeleteMutation as any).isLoading ? "Deleting..." : "Delete"
+          }
+          cancelText="Cancel"
+          type="danger"
+          disableConfirm={(bulkDeleteMutation as any).isLoading}
+          disableCancel={(bulkDeleteMutation as any).isLoading}
+        />
       </div>
     </div>
   );
@@ -1022,6 +1168,8 @@ function ItemsTable({
     showAddButton: boolean;
   };
 }) {
+  const router = useRouter();
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   if (loading && items.length === 0) {
     return (
       <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
@@ -1120,13 +1268,17 @@ function ItemsTable({
             items.map((item) => (
               <tr
                 key={item._id}
-                className="hover:bg-[var(--color-muted)]/50 transition-colors"
+                onClick={() =>
+                  router.push(`/finance/inventory/items/edit/${item._id}`)
+                }
+                className="hover:bg-[var(--color-muted)]/50 transition-colors cursor-pointer"
               >
                 <td className="px-4 py-4">
                   <input
                     type="checkbox"
                     checked={selectedItems.includes(item._id)}
                     onChange={() => onSelectItem(item._id)}
+                    onClick={(e) => e.stopPropagation()}
                     className="rounded border-gray-300"
                   />
                 </td>
@@ -1144,9 +1296,13 @@ function ItemsTable({
                       </div>
                     )}
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <Link
+                        href={`/finance/inventory/items/edit/${item._id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium text-gray-900 hover:underline"
+                      >
                         {item.name}
-                      </div>
+                      </Link>
                       <div className="text-sm text-gray-500 truncate max-w-xs">
                         {item.description}
                       </div>
@@ -1192,38 +1348,42 @@ function ItemsTable({
                     {!item.isArchived ? "Active" : "Archived"}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-right">
-                  <Popover>
-                    <PopoverTrigger>
-                      <Button variant="ghost" size="sm" type="button">
+                <td className="px-4 py-4 text-center">
+                  <Popover
+                    open={openPopoverId === item._id}
+                    onOpenChange={(open) =>
+                      setOpenPopoverId(open ? item._id : null)
+                    }
+                  >
+                    <PopoverTrigger asChild>
+                      <button
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-2 rounded hover:bg-gray-200"
+                      >
                         <MoreHorizontal className="w-4 h-4" />
-                      </Button>
+                      </button>
                     </PopoverTrigger>
+
                     <PopoverContent align="end" className="w-40 p-2">
-                      <div className="flex flex-col gap-1">
-                        <Link
-                          href={`/finance/inventory/items/view/${item._id}`}
-                          className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>View</span>
-                        </Link>
-                        <Link
-                          href={`/finance/inventory/items/edit/${item._id}`}
-                          className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 text-sm"
-                        >
-                          <Edit className="w-4 h-4" />
-                          <span>Edit</span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteItem(item._id)}
-                          className="flex items-center gap-2 px-2 py-1 rounded hover:bg-red-100 text-sm text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
+                      <Link
+                        href={`/finance/inventory/items/edit/${item._id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </Link>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteItem(item._id);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-gray-100 rounded w-full"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
                     </PopoverContent>
                   </Popover>
                 </td>
@@ -1294,7 +1454,11 @@ function ItemsGrid({
         items.map((item) => (
           <div
             key={item._id}
-            className={`relative border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg ${
+            onClick={() => {
+              // navigate to edit page on card click
+              window.location.href = `/finance/inventory/items/edit/${item._id}`;
+            }}
+            className={`relative border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg cursor-pointer ${
               selectedItems.includes(item._id)
                 ? "ring-2 ring-blue-500 border-blue-500"
                 : "border-[var(--color-border)]"
@@ -1307,6 +1471,7 @@ function ItemsGrid({
                 type="checkbox"
                 checked={selectedItems.includes(item._id)}
                 onChange={() => onSelectItem(item._id)}
+                onClick={(e) => e.stopPropagation()}
                 className="rounded border-gray-300"
               />
             </div>
@@ -1314,12 +1479,11 @@ function ItemsGrid({
             {/* Actions Popover */}
             <div className="absolute top-3 right-3 z-10">
               <Popover>
-                <PopoverTrigger>
+                <PopoverTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0"
-                    type="button"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
@@ -1328,6 +1492,7 @@ function ItemsGrid({
                   <div className="flex flex-col gap-1">
                     <Link
                       href={`/finance/inventory/items/${item._id}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 text-sm"
                     >
                       <Eye className="w-4 h-4" />
@@ -1335,6 +1500,7 @@ function ItemsGrid({
                     </Link>
                     <Link
                       href={`/finance/inventory/items/${item._id}/edit`}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 text-sm"
                     >
                       <Edit className="w-4 h-4" />
@@ -1342,7 +1508,10 @@ function ItemsGrid({
                     </Link>
                     <button
                       type="button"
-                      onClick={() => onDeleteItem(item._id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteItem(item._id);
+                      }}
                       className="flex items-center gap-2 px-2 py-1 rounded hover:bg-red-100 text-sm text-red-600"
                     >
                       <Trash2 className="w-4 h-4" />

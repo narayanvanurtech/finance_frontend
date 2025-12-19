@@ -32,11 +32,11 @@ export const useSubcategoryStore = create<SubcategoryStore>()((set, get) => ({
   error: null,
 
   // Fetch all subcategories with optional filters
-  fetchSubcategories: async (filters = {}) => {
+  fetchSubcategories: async (filters?: GetSubcategoriesFilters) => {
     set({ loading: true, error: null });
     try {
-      const response = await subcategoryApi.getSubcategories(filters);
-      set({ subcategories: response.result, loading: false });
+      const subcategories = await subcategoryApi.getSubcategories(filters!);
+      set({ subcategories: subcategories, loading: false });
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to fetch subcategories';
       set({ error: errorMessage, loading: false });
@@ -48,10 +48,10 @@ export const useSubcategoryStore = create<SubcategoryStore>()((set, get) => ({
   createSubcategory: async (data) => {
     set({ loading: true, error: null });
     try {
-      const response = await subcategoryApi.createSubcategory(data);
+      const newSubcategory = await subcategoryApi.createSubcategory(data);
       const currentSubcategories = get().subcategories;
       set({ 
-        subcategories: [...currentSubcategories, response.result], 
+        subcategories: [...currentSubcategories, newSubcategory], 
         loading: false 
       });
     } catch (error: any) {
@@ -66,10 +66,10 @@ export const useSubcategoryStore = create<SubcategoryStore>()((set, get) => ({
   updateSubcategory: async (id, data) => {
     set({ loading: true, error: null });
     try {
-      const response = await subcategoryApi.updateSubcategory(id, data);
+      const updatedSubcategory = await subcategoryApi.updateSubcategory(id, data);
       const currentSubcategories = get().subcategories;
       const updatedSubcategories = currentSubcategories.map(sub => 
-        sub._id === id ? response.result : sub
+        sub._id === id ? updatedSubcategory : sub
       );
       set({ subcategories: updatedSubcategories, loading: false });
     } catch (error: any) {
@@ -98,9 +98,9 @@ export const useSubcategoryStore = create<SubcategoryStore>()((set, get) => ({
   fetchSubcategoryById: async (id) => {
     set({ loading: true, error: null });
     try {
-      const response = await subcategoryApi.getSubcategoryById(id);
+      const subcategory = await subcategoryApi.getSubcategoryById(id);
       set({ loading: false });
-      return response.result;
+      return subcategory;
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Failed to fetch subcategory';
       set({ error: errorMessage, loading: false });

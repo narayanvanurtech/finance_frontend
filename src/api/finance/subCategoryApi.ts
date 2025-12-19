@@ -1,5 +1,5 @@
-import axios from 'axios';
-import axiosInstance from '../../utils/axios';
+import axios from "axios";
+import axiosInstance from "../../utils/axios";
 
 interface User {
   _id: string;
@@ -25,6 +25,7 @@ interface Subcategory {
 }
 
 interface CreateSubcategoryPayload {
+  companyId: string;
   name: string;
   description?: string;
   category: string;
@@ -39,16 +40,31 @@ interface UpdateSubcategoryPayload {
 }
 
 interface GetSubcategoriesFilters {
+  companyId: string;
   search?: string;
   isActive?: boolean;
   category?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface PaginationInfo {
+  current: number;
+  total: number;
+  count: number;
+  limit: number;
 }
 
 interface GetSubcategoriesResponse {
   success: boolean;
-  statusCode: number;
+  statusCode?: number;
   message: string;
-  result: Subcategory[];
+  data?: Subcategory[]; // New API format
+  result?: {
+    subcategories: Subcategory[];
+    pagination: PaginationInfo;
+  };
+  pagination?: PaginationInfo;
 }
 
 interface SingleSubcategoryResponse {
@@ -66,73 +82,108 @@ interface DeleteResponse {
 
 const subcategoryApi = {
   // Get all subcategories with optional filters
-  getSubcategories: async (filters: GetSubcategoriesFilters = {}): Promise<GetSubcategoriesResponse> => {
+  getSubcategories: async (
+    filters: GetSubcategoriesFilters
+  ): Promise<Subcategory[]> => {
     try {
       const params = new URLSearchParams();
-      
-      if (filters.search) params.append('search', filters.search);
-      if (typeof filters.isActive === 'boolean') params.append('isActive', filters.isActive.toString());
-      if (filters.category) params.append('category', filters.category);
 
-      const response = await axiosInstance.get(`/api/v1/finance/inventory/subcategory?${params.toString()}`);
-      return response.data;
+      // companyId is required
+      params.append("companyId", filters.companyId);
+
+      if (filters.page) params.append("page", filters.page.toString());
+      if (filters.limit) params.append("limit", filters.limit.toString());
+      if (filters.search) params.append("search", filters.search);
+      if (typeof filters.isActive === "boolean")
+        params.append("isActive", filters.isActive.toString());
+      if (filters.category) params.append("category", filters.category);
+
+      const response = await axiosInstance.get(
+        `/api/v1/finance/inventory/subcategory?${params.toString()}`
+      );
+
+      // Return the subcategories array directly from data property
+      return (
+        response.data?.data ||
+        response.data?.result?.subcategories ||
+        response.data?.result ||
+        []
+      );
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error fetching subcategories');
+      throw new Error("Error fetching subcategories");
     }
   },
 
   // Create a new subcategory
-  createSubcategory: async (subcategoryData: CreateSubcategoryPayload): Promise<SingleSubcategoryResponse> => {
+  createSubcategory: async (
+    subcategoryData: CreateSubcategoryPayload
+  ): Promise<Subcategory> => {
     try {
-      const response = await axiosInstance.post('/api/v1/finance/inventory/subcategory', subcategoryData);
-      return response.data;
+      const response = await axiosInstance.post(
+        "/api/v1/finance/inventory/subcategory",
+        subcategoryData
+      );
+      // Return the subcategory object directly from data property
+      return response.data?.data || response.data?.result || response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error creating subcategory');
+      throw new Error("Error creating subcategory");
     }
   },
 
   // Get subcategory by ID
-  getSubcategoryById: async (subcategoryId: string): Promise<SingleSubcategoryResponse> => {
+  getSubcategoryById: async (subcategoryId: string): Promise<Subcategory> => {
     try {
-      const response = await axiosInstance.get(`/api/v1/finance/inventory/subcategory/${subcategoryId}`);
-      return response.data;
+      const response = await axiosInstance.get(
+        `/api/v1/finance/inventory/subcategory/${subcategoryId}`
+      );
+      // Return the subcategory object directly from data property
+      return response.data?.data || response.data?.result || response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error fetching subcategory');
+      throw new Error("Error fetching subcategory");
     }
   },
 
   // Update an existing subcategory
-  updateSubcategory: async (subcategoryId: string, subcategoryData: UpdateSubcategoryPayload): Promise<SingleSubcategoryResponse> => {
+  updateSubcategory: async (
+    subcategoryId: string,
+    subcategoryData: UpdateSubcategoryPayload
+  ): Promise<Subcategory> => {
     try {
-      const response = await axiosInstance.put(`/api/v1/finance/inventory/subcategory/${subcategoryId}`, subcategoryData);
-      return response.data;
+      const response = await axiosInstance.put(
+        `/api/v1/finance/inventory/subcategory/${subcategoryId}`,
+        subcategoryData
+      );
+      // Return the subcategory object directly from data property
+      return response.data?.data || response.data?.result || response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Unexpected error while updating subcategory');
+      throw new Error("Unexpected error while updating subcategory");
     }
   },
 
   // Delete a subcategory
   deleteSubcategory: async (subcategoryId: string): Promise<DeleteResponse> => {
     try {
-      const response = await axiosInstance.delete(`/api/v1/finance/inventory/subcategory/${subcategoryId}`);
+      const response = await axiosInstance.delete(
+        `/api/v1/finance/inventory/subcategory/${subcategoryId}`
+      );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error('Error deleting subcategory');
+      throw new Error("Error deleting subcategory");
     }
   },
 };
@@ -146,6 +197,7 @@ export type {
   GetSubcategoriesResponse,
   SingleSubcategoryResponse,
   DeleteResponse,
+  PaginationInfo,
   User,
-  Category
+  Category,
 };

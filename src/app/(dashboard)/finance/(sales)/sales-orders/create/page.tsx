@@ -5,7 +5,7 @@ import SalesOrderForm, {
   SalesOrderFormValues,
 } from "@/components/finance/salesOrder/SalesOrderForm";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useSalesOrderStore } from "@/stores/financeStore/useSalesOrderStore";
 import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
@@ -21,7 +21,8 @@ const generateOrderNumber = () => {
 
 export default function CreateSalesOrderPage() {
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+  const { data: itemsData } = useItems("");
+  const items = itemsData?.result?.items || [];
   const {
     createSalesOrder,
     previewOrderNumber,

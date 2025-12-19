@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useGetVendors } from "@/hooks/useVendorQueries";
 import { useGetPurchaseOrders } from "@/hooks/usePurchaseOrderQueries";
+import { useGetVendorPendingPurchases } from "@/hooks/usePaymentMadeQueries";
 
 export type PaymentRecord = {
   paymentMethod: string;
@@ -111,34 +112,66 @@ export default function PaymentsMadeForm({
   const { data: purchaseOrdersResponse, isLoading: purchaseOrdersLoading } =
     useGetPurchaseOrders();
 
-  const vendors = vendorsResponse?.result?.vendors || [];
-  const purchaseOrders = purchaseOrdersResponse?.result?.purchaseOrders || [];
+  // Memoize vendors to prevent infinite re-renders
+  const vendors = React.useMemo(
+    () =>
+      (vendorsResponse?.result?.vendors || []).map((v: any) => ({
+        ...v,
+        name:
+          typeof v.name === "object"
+            ? `${v.name.streetAddress || ""}, ${v.name.city || ""}, ${
+                v.name.state || ""
+              }`.trim()
+            : v.name,
+      })),
+    [vendorsResponse]
+  );
 
-  // Create a map of vendors with their PO counts for debugging
-  const vendorPOCounts = new Map();
-  purchaseOrders.forEach((po: any) => {
-    const poVendorId =
-      po.vendorId?._id ||
-      po.vendorSnapshot?._id ||
-      po.vendorDetails?._id ||
-      po.vendorId;
-    if (poVendorId) {
-      vendorPOCounts.set(poVendorId, (vendorPOCounts.get(poVendorId) || 0) + 1);
+  const purchaseOrders = React.useMemo(
+    () => purchaseOrdersResponse?.result?.purchaseOrders || [],
+    [purchaseOrdersResponse]
+  );
+
+  // Create a map of vendors with their PO counts for debugging (memoized)
+  const vendorPOCounts = React.useMemo(() => {
+    const counts = new Map();
+    purchaseOrders.forEach((po: any) => {
+      const poVendorId =
+        po.vendorId?._id ||
+        po.vendorSnapshot?._id ||
+        po.vendorDetails?._id ||
+        po.vendorId;
+      if (poVendorId) {
+        counts.set(poVendorId, (counts.get(poVendorId) || 0) + 1);
+      }
+    });
+    return counts;
+  }, [purchaseOrders]);
+
+  // Debug log (only run once when data changes)
+  React.useEffect(() => {
+    if (vendors.length > 0) {
+      console.log("📊 Vendors with Purchase Orders:");
+      vendors.forEach((v: any) => {
+        const count = vendorPOCounts.get(v._id) || 0;
+        console.log(`  - ${v.name} (${v._id}): ${count} PO(s)`);
+      });
     }
-  });
-
-  console.log("📊 Vendors with Purchase Orders:");
-  vendors.forEach((v: any) => {
-    const count = vendorPOCounts.get(v._id) || 0;
-    console.log(`  - ${v.name} (${v._id}): ${count} PO(s)`);
-  });
+  }, [vendors, vendorPOCounts]);
 
   // Form state
   const [vendorId, setVendorId] = useState(
     initialValues?.vendorId || defaultInitialValues.vendorId
   );
+
+  // Use the new API for vendor pending purchases - after vendorId is declared
+  const { data: pendingPurchasesResponse, isLoading: pendingPurchasesLoading } =
+    useGetVendorPendingPurchases(vendorId, !!vendorId && vendorId !== "new");
+
   const [vendorDetails, setVendorDetails] = useState<any>({});
-  const [selectedPurchase, setSelectedPurchase] = useState("");
+  const [selectedPurchase, setSelectedPurchase] = useState(
+    initialValues?.selectedPurchases?.[0] || ""
+  );
   const [paymentNo, setPaymentNo] = useState(
     initialValues?.paymentNo || defaultInitialValues.paymentNo
   );
@@ -187,12 +220,29 @@ export default function PaymentsMadeForm({
     if (vendorId && vendorId !== "new") {
       const found = vendors.find((v: any) => v._id === vendorId);
       if (found) {
+        // Helper function to safely convert address object to string
+        const formatAddress = (addr: any) => {
+          if (!addr) return "N/A";
+          if (typeof addr === "string") return addr;
+          if (typeof addr === "object") {
+            const parts = [
+              addr.streetAddress,
+              addr.city,
+              addr.state,
+              addr.postalCode,
+              addr.country,
+            ].filter(Boolean);
+            return parts.length > 0 ? parts.join(", ") : "N/A";
+          }
+          return "N/A";
+        };
+
         setVendorDetails({
           name: found.name,
-          gstin: found.gstin,
-          address: found.address,
-          contact: found.phone,
-          email: found.email,
+          gstin: found.gstin || "N/A",
+          address: formatAddress(found.address),
+          contact: found.phone || "N/A",
+          email: found.email || "N/A",
         });
       }
     } else if (vendorId === "new") {
@@ -200,78 +250,79 @@ export default function PaymentsMadeForm({
     }
   }, [vendorId, vendors]);
 
-  // Filter purchase orders for this vendor
-  const vendorPurchases = purchaseOrders.filter((po: any) => {
-    // Handle different vendorId structures
-    let poVendorId = null;
+  // Filter purchase orders for this vendor (memoized to prevent re-renders)
+  const vendorPurchases = React.useMemo(() => {
+    const filtered = purchaseOrders.filter((po: any) => {
+      // Handle different vendorId structures
+      let poVendorId = null;
 
-    // Try to get vendorId from different possible locations
-    if (typeof po.vendorId === "string") {
-      poVendorId = po.vendorId;
-      console.log("✅ Found vendorId as string:", poVendorId);
-    } else if (po.vendorId?._id) {
-      poVendorId = po.vendorId._id;
-      console.log("✅ Found vendorId._id:", poVendorId);
-    } else if (po.vendorSnapshot?._id) {
-      poVendorId = po.vendorSnapshot._id;
-      console.log("✅ Found vendorSnapshot._id:", poVendorId);
-    } else if (po.vendorDetails?._id) {
-      poVendorId = po.vendorDetails._id;
-      console.log("✅ Found vendorDetails._id:", poVendorId);
-    }
-
-    const matches = poVendorId && String(poVendorId) === String(vendorId);
-    console.log(
-      `Comparing: PO Vendor "${poVendorId}" === Selected "${vendorId}" = ${matches}`
-    );
-
-    return matches;
-  });
-
-  console.log("==================");
-  console.log("🎯 FINAL RESULTS:");
-  console.log("Selected Vendor ID:", vendorId);
-  console.log("Total POs:", purchaseOrders.length);
-  console.log("Matched POs:", vendorPurchases.length);
-  console.log("Matched PO Details:", vendorPurchases);
-  console.log("==================");
-
-  // Handle purchase order selection and auto-fill amount
-  const handlePurchaseSelect = (purchaseId: string) => {
-    console.log("🔍 Purchase Order ID Selected:", purchaseId);
-    setSelectedPurchase(purchaseId);
-
-    if (purchaseId && purchaseId !== "none" && purchaseId !== "loading") {
-      const purchase = vendorPurchases.find((po: any) => po._id === purchaseId);
-
-      console.log("🔍 Found Purchase:", purchase);
-
-      if (purchase) {
-        console.log("🔍 Purchase Items:", purchase.items);
-        console.log("🔍 Purchase Shipping:", purchase.shipping);
-        console.log("🔍 Purchase Grand Total:", purchase.grandTotal);
-
-        // Try to use grandTotal first, if not available calculate from items
-        let total = 0;
-        if (purchase.grandTotal) {
-          total = Number(purchase.grandTotal);
-        } else {
-          total =
-            (purchase.items || []).reduce(
-              (sum: number, item: any) => sum + (Number(item.amount) || 0),
-              0
-            ) + (Number(purchase.shipping) || 0);
-        }
-
-        console.log("💰 Calculated Total:", total);
-        setAmountPaid(total.toString());
-      } else {
-        console.log("❌ Purchase not found in vendorPurchases");
+      // Try to get vendorId from different possible locations
+      if (typeof po.vendorId === "string") {
+        poVendorId = po.vendorId;
+      } else if (po.vendorId?._id) {
+        poVendorId = po.vendorId._id;
+      } else if (po.vendorSnapshot?._id) {
+        poVendorId = po.vendorSnapshot._id;
+      } else if (po.vendorDetails?._id) {
+        poVendorId = po.vendorDetails._id;
       }
-    } else {
-      setAmountPaid("");
-    }
-  };
+
+      const matches = poVendorId && String(poVendorId) === String(vendorId);
+      return matches;
+    });
+
+    // Debug log
+    console.log("==================");
+    console.log("🎯 FINAL RESULTS:");
+    console.log("Selected Vendor ID:", vendorId);
+    console.log("Total POs:", purchaseOrders.length);
+    console.log("Matched POs:", filtered.length);
+    console.log("==================");
+
+    return filtered;
+  }, [purchaseOrders, vendorId]);
+
+  // Handle purchase order selection and auto-fill amount (memoized callback)
+  const handlePurchaseSelect = React.useCallback(
+    (purchaseId: string) => {
+      console.log("🔍 Purchase Order ID Selected:", purchaseId);
+      setSelectedPurchase(purchaseId);
+
+      if (purchaseId && purchaseId !== "none" && purchaseId !== "loading") {
+        const purchase = vendorPurchases.find(
+          (po: any) => po._id === purchaseId
+        );
+
+        console.log("🔍 Found Purchase:", purchase);
+
+        if (purchase) {
+          console.log("🔍 Purchase Items:", purchase.items);
+          console.log("🔍 Purchase Shipping:", purchase.shipping);
+          console.log("🔍 Purchase Grand Total:", purchase.grandTotal);
+
+          // Try to use grandTotal first, if not available calculate from items
+          let total = 0;
+          if (purchase.grandTotal) {
+            total = Number(purchase.grandTotal);
+          } else {
+            total =
+              (purchase.items || []).reduce(
+                (sum: number, item: any) => sum + (Number(item.amount) || 0),
+                0
+              ) + (Number(purchase.shipping) || 0);
+          }
+
+          console.log("💰 Calculated Total:", total);
+          setAmountPaid(total.toString());
+        } else {
+          console.log("❌ Purchase not found in vendorPurchases");
+        }
+      } else {
+        setAmountPaid("");
+      }
+    },
+    [vendorPurchases]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -400,6 +451,77 @@ export default function PaymentsMadeForm({
           </div>
         )}
       </div>
+
+      {/* Vendor Pending Purchases - New Section */}
+      {/* {vendorId && vendorId !== "new" && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="text-yellow-600">⚠️</span>
+            Pending Purchases for this Vendor
+          </h3>
+          {pendingPurchasesLoading ? (
+            <div className="text-sm text-gray-600">
+              Loading pending purchases...
+            </div>
+          ) : pendingPurchasesResponse?.result &&
+            pendingPurchasesResponse.result.length > 0 ? (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {pendingPurchasesResponse.result.map((purchase: any) => (
+                <div
+                  key={purchase._id}
+                  className="bg-white p-3 rounded border border-yellow-300 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        PO #{purchase.purchaseOrderNumber}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Date:{" "}
+                        {new Date(purchase.purchaseDate).toLocaleDateString()}
+                      </p>
+                      {purchase.dueDate && (
+                        <p className="text-xs text-red-600">
+                          Due: {new Date(purchase.dueDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        ₹{purchase.balanceAmount?.toLocaleString("en-IN")}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Total: ₹{purchase.totalAmount?.toLocaleString("en-IN")}
+                      </p>
+                      <p className="text-xs text-green-600">
+                        Paid: ₹{purchase.paidAmount?.toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-green-600 h-1.5 rounded-full"
+                        style={{
+                          width: `${
+                            ((purchase.paidAmount || 0) /
+                              (purchase.totalAmount || 1)) *
+                            100
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">
+              ✅ No pending purchases for this vendor
+            </p>
+          )}
+        </div>
+      )} */}
 
       {/* Payment Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -43,6 +43,14 @@ export type DebitNoteFormValues = {
   showSignature: boolean;
 };
 
+type PurchaseOrder = {
+  _id: string;
+  purchaseOrderNumber: string;
+  purchaseOrderDate: string;
+  vendorId: any;
+  items?: any[];
+};
+
 type DebitNotesFormProps = {
   initialValues: DebitNoteFormValues;
   onSubmit: (values: DebitNoteFormValues) => void;
@@ -53,6 +61,8 @@ type DebitNotesFormProps = {
   reasons: string[];
   mockVendors?: any[];
   mockProducts?: any[];
+  purchaseOrders?: PurchaseOrder[];
+  onVendorChange?: (vendorId: string) => void;
 };
 
 const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
@@ -65,9 +75,21 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   reasons,
   mockVendors,
   mockProducts,
+  purchaseOrders = [],
+  onVendorChange,
 }) => {
   const vendors = mockVendors || [];
   const products = mockProducts || [];
+
+  // Debug: Log vendors and purchase orders
+  React.useEffect(() => {
+    console.log("👥 Vendors loaded:", vendors.length);
+    if (vendors.length > 0) {
+      console.log("📝 First vendor:", vendors[0]);
+    }
+    console.log("📦 Purchase Orders available:", purchaseOrders.length);
+  }, [vendors, purchaseOrders]);
+
   // Header state
   const [debitNoteNo, setDebitNoteNo] = useState(
     initialValues.debitNoteNo || ""
@@ -193,9 +215,17 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const openBulkModal = () => setShowAddItemBulkModal(true);
   const handleAddVendor = () => setShowAddVendor(true);
   const handleVendorSelect = (value: string) => {
+    console.log("🎯 Vendor selected:", value);
     setVendorId(value);
     if (value === "new") return;
-    const found = vendors.find((v: any) => String(v.id) === value);
+
+    // Reset purchase order related fields when vendor changes
+    setPurchaseId("");
+    setOriginalBillNumber("");
+
+    const found = vendors.find((v: any) => String(v._id || v.id) === value);
+    console.log("🔍 Found vendor:", found);
+
     if (found) {
       setVendorDetails({
         name: found.name,
@@ -203,7 +233,41 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
         address: found.address,
         contact: found.contact,
         email: found.email,
+        state: found.state,
       });
+
+      // Trigger purchase order fetch for this vendor
+      if (onVendorChange) {
+        console.log("📞 Calling onVendorChange with:", value);
+        onVendorChange(value);
+      }
+    } else {
+      console.warn("⚠️ Vendor not found for ID:", value);
+    }
+  };
+
+  const handlePurchaseOrderSelect = (purchaseOrder: PurchaseOrder) => {
+    setPurchaseId(purchaseOrder._id);
+    setOriginalBillNumber(purchaseOrder.purchaseOrderNumber);
+
+    // Optionally populate items from purchase order
+    if (purchaseOrder.items && purchaseOrder.items.length > 0) {
+      const mappedItems = purchaseOrder.items.map((item: any) => ({
+        name: item.name || "",
+        description: item.description || "",
+        qty: item.quantity || 1,
+        rate: item.rate || 0,
+        discount: item.discount || 0,
+        discountType: item.discountType || "flat",
+        amount: item.amount || 0,
+        hsn: item.hsn || "",
+        unit: item.unit || "pcs",
+        igst: item.taxType === "igst" ? item.taxRate || 0 : 0,
+        sgst: item.taxType === "cgst_sgst" ? item.taxRate / 2 || 0 : 0,
+        cgst: item.taxType === "cgst_sgst" ? item.taxRate / 2 || 0 : 0,
+        reason: "", // User needs to fill this
+      }));
+      setItems(mappedItems);
     }
   };
   // Summary calculations with proper tax calculation
@@ -280,15 +344,6 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
     )
       newErrors.items = "At least one item is required";
 
-    // Validate item reasons
-    items.forEach((item: any, index: number) => {
-      if (!item.reason || !item.reason.trim()) {
-        newErrors[`itemReason${index}`] = `Item ${
-          index + 1
-        } reason is required`;
-      }
-    });
-
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
     onSubmit({
@@ -341,6 +396,9 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           setDebitType={setDebitType}
           invoices={invoices}
           reasons={reasons}
+          purchaseOrders={purchaseOrders}
+          onPurchaseOrderSelect={handlePurchaseOrderSelect}
+          selectedVendorId={vendorId}
         />
         {/* Error messages for header fields */}
         {(errors.debitNoteNo ||
@@ -497,46 +555,18 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           clientState={vendorDetails?.state}
         />
         {/* Error message for items */}
-        {(errors.items ||
-          Object.keys(errors).some((key) => key.startsWith("itemReason"))) && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
-            {errors.items && (
-              <div className="flex items-center gap-2 text-red-600 text-sm">
-                <svg
-                  className="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>{errors.items}</span>
-              </div>
-            )}
-            {Object.keys(errors)
-              .filter((key) => key.startsWith("itemReason"))
-              .map((key) => (
-                <div
-                  key={key}
-                  className="flex items-center gap-2 text-red-600 text-sm"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>{errors[key]}</span>
-                </div>
-              ))}
+        {errors.items && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 text-red-600 text-sm">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{errors.items}</span>
+            </div>
           </div>
         )}
       </div>
@@ -602,7 +632,6 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
               igst: 0,
               sgst: 0,
               cgst: 0,
-              reason: "",
             },
           ]);
           setShowAddItemModal(false);
@@ -627,7 +656,6 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
               igst: 0,
               sgst: 0,
               cgst: 0,
-              reason: "",
             })),
           ]);
           setShowAddItemBulkModal(false);

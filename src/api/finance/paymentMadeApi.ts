@@ -20,7 +20,8 @@ interface Allocation {
 
 interface PayoutReceipt {
   _id: string;
-  receiptNo: string;
+  receiptNo?: string;
+  receiptNumber?: string;
   vendorId: {
     _id: string;
     name: string;
@@ -31,7 +32,12 @@ interface PayoutReceipt {
   paymentType: "Payment" | "Advance";
   paymentRecords: PaymentRecord[];
   allocations: Allocation[];
-  totalAmount: number;
+  totalAmount?: number;
+  totalGrossAmount?: number;
+  totalAmountPaid?: number;
+  totalTdsDeducted?: number;
+  totalTransactionCharges?: number;
+  totalAllocatedAmount?: number;
   purpose?: string;
   internalNotes?: string;
   createdAt: string;
@@ -69,24 +75,23 @@ interface GetPayoutReceiptsResponse {
   result: {
     receipts: PayoutReceipt[];
     pagination: {
-      total: number;
-      page: number;
-      limit: number;
+      currentPage: string;
       totalPages: number;
+      totalRecords: number;
+      hasNext: boolean;
+      hasPrev: boolean;
     };
   };
 }
 
 interface PayoutReceiptStats {
-  totalPayments: number;
-  totalAmount: number;
+  _id: null;
+  totalReceipts: number;
+  totalAmountPaid: number;
   totalTdsDeducted: number;
   totalTransactionCharges: number;
-  paymentMethodBreakdown: {
-    method: string;
-    count: number;
-    amount: number;
-  }[];
+  advancePayments: number;
+  settlementPayments: number;
 }
 
 interface StatsResponse {
@@ -125,6 +130,38 @@ export interface DeleteResponse {
   result: {
     deletedCount: number;
   };
+}
+
+interface PaymentMethodBreakdown {
+  _id: string | null;
+  paymentMethod: string;
+  totalAmount: number;
+  count: number;
+}
+
+interface PaymentBreakdownResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  result: PaymentMethodBreakdown[];
+}
+
+interface PendingPurchase {
+  _id: string;
+  purchaseOrderNumber: string;
+  purchaseDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  status: string;
+  dueDate?: string;
+}
+
+interface VendorPendingPurchasesResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  result: PendingPurchase[];
 }
 
 // API Functions
@@ -167,9 +204,12 @@ const paymentMadeApi = {
       if (filters.paymentMethod)
         params.append("paymentMethod", filters.paymentMethod);
 
-      const response = await axiosInstance.get(
-        `/api/v1/finance/purchases/payout-receipts?${params.toString()}`
-      );
+      const url = `/api/v1/finance/purchases/payout-receipts?${params.toString()}`;
+      console.log("🌐 API Request URL:", url);
+      console.log("🔍 Filters applied:", filters);
+
+      const response = await axiosInstance.get(url);
+      console.log("✅ API Response:", response.data);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -290,6 +330,48 @@ const paymentMadeApi = {
       throw new Error("Error searching payout receipts");
     }
   },
+
+  // Get payment method breakdown
+  getPaymentBreakdown: async (filters?: {
+    startDate?: string;
+    endDate?: string;
+    vendorId?: string;
+  }): Promise<PaymentBreakdownResponse> => {
+    try {
+      const params = new URLSearchParams();
+
+      if (filters?.startDate) params.append("startDate", filters.startDate);
+      if (filters?.endDate) params.append("endDate", filters.endDate);
+      if (filters?.vendorId) params.append("vendorId", filters.vendorId);
+
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/payout-receipts/payment-breakdown?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching payment breakdown");
+    }
+  },
+
+  // Get vendor's pending purchases
+  getVendorPendingPurchases: async (
+    vendorId: string
+  ): Promise<VendorPendingPurchasesResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/payout-receipts/vendor/${vendorId}/pending-purchases`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching vendor pending purchases");
+    }
+  },
 };
 
 export default paymentMadeApi;
@@ -307,4 +389,8 @@ export type {
   StatsResponse,
   GenerateReceiptNumberResponse,
   GetPayoutReceiptsFilters,
+  PaymentMethodBreakdown,
+  PaymentBreakdownResponse,
+  PendingPurchase,
+  VendorPendingPurchasesResponse,
 };

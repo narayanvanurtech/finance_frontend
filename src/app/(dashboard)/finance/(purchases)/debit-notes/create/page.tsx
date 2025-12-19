@@ -8,6 +8,7 @@ import DebitNotesForm, {
 import { useGetVendors } from "@/hooks/useVendorQueries";
 import { useGetItems } from "@/hooks/useItemQueries";
 import { useCreateDebitNote } from "@/hooks/useDebitNotesQueries";
+import { useGetPurchaseOrders } from "@/hooks/usePurchaseOrderQueries";
 import { useRouter } from "next/navigation";
 import { CreateDebitNotePayload } from "@/api/finance/debitNotesApi";
 
@@ -19,15 +20,37 @@ const generateDebitNoteNo = () => {
 
 export default function CreateDebitNotePage() {
   const router = useRouter();
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
 
   // Fetch data using React Query
   const { data: vendorsData, isLoading: vendorsLoading } = useGetVendors();
   const { data: itemsData, isLoading: itemsLoading } = useGetItems();
+  const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } =
+    useGetPurchaseOrders();
   const createDebitNoteMutation = useCreateDebitNote();
-
+console.log("puchaseOrdersData",purchaseOrdersData);
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];
   const items = itemsData?.result?.items || [];
+  const allPurchaseOrders = purchaseOrdersData?.result?.purchaseOrders || [];
+  
+  // Filter purchase orders by selected vendor
+  const purchaseOrders = selectedVendorId 
+    ? allPurchaseOrders.filter((po: any) => {
+        const vendorIdStr = typeof po.vendorId === 'object' ? po.vendorId._id || po.vendorId.id : po.vendorId;
+        return String(vendorIdStr) === String(selectedVendorId);
+      })
+    : [];
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log("🔍 Selected Vendor ID:", selectedVendorId);
+    console.log("📦 All Purchase Orders:", allPurchaseOrders.length);
+    console.log("📋 Filtered Purchase Orders:", purchaseOrders.length);
+    if (purchaseOrders.length > 0) {
+      console.log("🎯 Sample PO:", purchaseOrders[0]);
+    }
+  }, [selectedVendorId, allPurchaseOrders, purchaseOrders]);
 
   // For now, using placeholder business details
   // You can add a separate query for business details if needed
@@ -115,7 +138,12 @@ export default function CreateDebitNotePage() {
         debitNoteDate: values.debitNoteDate,
         originalBillNumber: values.originalBillNumber,
         originalBillDate: values.debitNoteDate, // You may need to adjust this
-        debitType: values.debitType as "quality_issue" | "price_difference" | "excess_billing" | "return" | "other",
+        debitType: values.debitType as
+          | "quality_issue"
+          | "price_difference"
+          | "excess_billing"
+          | "return"
+          | "other",
         reason: values.reason,
         taxType: values.taxType as "inclusive" | "exclusive",
         discountType: values.discountType as "flat" | "percentage",
@@ -136,7 +164,7 @@ export default function CreateDebitNotePage() {
           discountType: item.discountType,
           taxType: values.taxConfiguration === "IGST" ? "igst" : "cgst_sgst",
           taxRate: item.igst || item.cgst + item.sgst,
-          reason: item.reason,
+          reason: item.reason || values.reason, // Use item reason if provided, otherwise use general reason
         })),
         terms: values.terms,
         notes: values.notes,
@@ -163,6 +191,8 @@ export default function CreateDebitNotePage() {
       mockProducts={items}
       invoices={invoices}
       reasons={reasons}
+      purchaseOrders={purchaseOrders}
+      onVendorChange={setSelectedVendorId}
       loading={createDebitNoteMutation.isPending}
     />
   );

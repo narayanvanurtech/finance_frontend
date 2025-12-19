@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { useCreatePurchaseOrder } from "@/hooks/usePurchaseOrderQueries";
 import { useGetVendors } from "@/hooks/useVendorQueries";
-import { useGetItems } from "@/hooks/useItemQueries";
+import { useItems } from "@/hooks/useItemQueries";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 
 const generatePurchaseOrderNo = () => {
@@ -23,7 +23,7 @@ const generatePurchaseOrderNo = () => {
 
 export default function CreatePurchaseOrderPage() {
   const { data: vendorsData } = useGetVendors();
-  const { data: itemsData } = useGetItems();
+  const { data: itemsData } = useItems("");
   const { details } = useBussinessStore();
   const { mutate: createPurchaseOrder, isPending } = useCreatePurchaseOrder();
   const router = useRouter();

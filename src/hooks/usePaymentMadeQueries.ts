@@ -22,6 +22,13 @@ export const paymentMadeKeys = {
     vendorId?: string;
   }) => [...paymentMadeKeys.all, "stats", filters] as const,
   generateNumber: () => [...paymentMadeKeys.all, "generateNumber"] as const,
+  paymentBreakdown: (filters?: {
+    startDate?: string;
+    endDate?: string;
+    vendorId?: string;
+  }) => [...paymentMadeKeys.all, "paymentBreakdown", filters] as const,
+  vendorPendingPurchases: (vendorId: string) =>
+    [...paymentMadeKeys.all, "vendorPendingPurchases", vendorId] as const,
 };
 
 // ===========================
@@ -36,7 +43,9 @@ export const useGetPayoutReceipts = (filters?: GetPayoutReceiptsFilters) => {
     queryKey: paymentMadeKeys.list(filters),
     queryFn: async () => {
       try {
+        console.log("🔍 Fetching payments with filters:", filters);
         const response = await paymentMadeApi.getAllPayoutReceipts(filters);
+        console.log("✅ Payments fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching payout receipts:", error);
@@ -100,6 +109,36 @@ export const useGenerateReceiptNumber = (enabled = false) => {
     staleTime: 0, // Always fetch fresh
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Hook to fetch payment method breakdown
+ */
+export const useGetPaymentBreakdown = (filters?: {
+  startDate?: string;
+  endDate?: string;
+  vendorId?: string;
+}) => {
+  return useQuery({
+    queryKey: paymentMadeKeys.paymentBreakdown(filters),
+    queryFn: () => paymentMadeApi.getPaymentBreakdown(filters),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+/**
+ * Hook to fetch vendor's pending purchases
+ */
+export const useGetVendorPendingPurchases = (
+  vendorId: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: paymentMadeKeys.vendorPendingPurchases(vendorId),
+    queryFn: () => paymentMadeApi.getVendorPendingPurchases(vendorId),
+    enabled: !!vendorId && enabled,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 };
 

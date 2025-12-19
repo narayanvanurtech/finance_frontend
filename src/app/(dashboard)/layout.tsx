@@ -11,8 +11,9 @@ import PricingModal from "@/components/Common/PricingModal";
 import { Plan as PricingPlan } from "@/stores/salesCrmStore/useplanStore";
 import MainSidebar from "@/components/Common/MainSidebar";
 import MobileSidebar from "@/components/Common/MobileSidebar";
-import { Menu ,X} from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Navbar from "@/components/sales-crm/Navbar";
+import Cookies from "js-cookie";
 
 export default function DashboardLayout({
   children,
@@ -22,7 +23,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const { plans, fetchPlans } = usePlanStore();
 
   const [isFilterActive, setIsFilterActive] = useState(false);
@@ -47,11 +48,15 @@ export default function DashboardLayout({
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-
   // SubNav and Filter visibility only on allowed pages (not on detail subpages)
   const showSubNav = isAllowedPage && pathname.split("/").length === 3;
-  const showSidebarLarge = isAllowedPage && isFilterActive && pathname.split("/").length === 3;
-  const showSidebarMobile = isAllowedPage && isFilterActive && pathname.split("/").length === 3;
+  const showSidebarLarge =
+    isAllowedPage && isFilterActive && pathname.split("/").length === 3;
+  const showSidebarMobile =
+    isAllowedPage && isFilterActive && pathname.split("/").length === 3;
+
+  // Don't add authentication check here - middleware already handles it
+  // Layout should just render, not redirect
 
   // Auto-close filter if not on allowed page
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function DashboardLayout({
           onClick={() => setMobileSidebarOpen(true)}
           aria-label="Open menu"
         >
-         <Menu/>
+          <Menu />
         </button>
         <span className="text-lg font-bold text-blue-600">CRM Pro</span>
         <div className="w-6 h-6" /> {/* Spacer for symmetry */}
@@ -163,10 +168,11 @@ export default function DashboardLayout({
           />
         </div>
         <div
-          className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ease-in-out ${ sidebarCollapsed ? "md:ml-20" : "md:ml-64"
+          className={`flex-1 flex flex-col min-h-0 overflow-hidden transition-all duration-500 ease-in-out ${
+            sidebarCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
-          <Navbar/>
+          <Navbar />
           {showSubNav && (
             <SubNav
               activeTab={activeTab}
@@ -176,23 +182,31 @@ export default function DashboardLayout({
           )}
           <div className="flex flex-1 overflow-hidden relative">
             {/* Sidebar for large screens (filter) */}
-            <div className={`hidden md:block transition-all duration-500 ease-in-out overflow-hidden ${
-              showSidebarLarge ? 'w-56 opacity-100' : 'w-0 opacity-0'
-            }`}>
-              <div className={`w-56 transition-transform duration-500 ease-in-out ${
-                showSidebarLarge ? 'translate-x-0' : '-translate-x-full'
-              }`}>
+            <div
+              className={`hidden md:block transition-all duration-500 ease-in-out overflow-hidden ${
+                showSidebarLarge ? "w-56 opacity-100" : "w-0 opacity-0"
+              }`}
+            >
+              <div
+                className={`w-56 transition-transform duration-500 ease-in-out ${
+                  showSidebarLarge ? "translate-x-0" : "-translate-x-full"
+                }`}
+              >
                 <Filter />
               </div>
             </div>
             {/* Sidebar for mobile (filter) */}
-            <div className={`fixed inset-0 z-50 transition-all duration-300 ease-in-out md:hidden ${
-              showSidebarMobile ? 'bg-black/30 opacity-100' : 'bg-transparent opacity-0 pointer-events-none'
-            }`}>
+            <div
+              className={`fixed inset-0 z-50 transition-all duration-300 ease-in-out md:hidden ${
+                showSidebarMobile
+                  ? "bg-black/30 opacity-100"
+                  : "bg-transparent opacity-0 pointer-events-none"
+              }`}
+            >
               <div
                 ref={sidebarRef}
                 className={`absolute left-0 top-0 w-56 h-full bg-white shadow-lg p-4 transition-transform duration-300 ease-out ${
-                  showSidebarMobile ? 'translate-x-0' : '-translate-x-full'
+                  showSidebarMobile ? "translate-x-0" : "-translate-x-full"
                 }`}
               >
                 <div className="flex justify-end mb-4">
@@ -208,7 +222,9 @@ export default function DashboardLayout({
               </div>
             </div>
             {/* Main content */}
-            <main className="flex-1 overflow-auto transition-all duration-500 ease-in-out">{children}</main>
+            <main className="flex-1 overflow-auto transition-all duration-500 ease-in-out">
+              {children}
+            </main>
           </div>
         </div>
       </div>

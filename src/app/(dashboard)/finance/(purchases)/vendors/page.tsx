@@ -33,6 +33,7 @@ export default function VendorsPage() {
     vendors,
     loading: isLoading,
     error,
+    pagination,
     fetchVendors,
     createVendor,
     updateVendor,
@@ -65,11 +66,18 @@ export default function VendorsPage() {
   const [vendorTypeFilter, setVendorTypeFilter] = useState("all");
   const [industryFilter, setIndustryFilter] = useState("all");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // Debounced fetch function
   const fetchVendorsWithFilters = useCallback(() => {
     if (!user?.companyId) return;
 
-    const filters: any = {};
+    const filters: any = {
+      page: currentPage,
+      limit: itemsPerPage,
+    };
 
     // Add search term if present
     if (searchTerm.trim()) {
@@ -93,6 +101,8 @@ export default function VendorsPage() {
     searchTerm,
     vendorTypeFilter,
     industryFilter,
+    currentPage,
+    itemsPerPage,
     fetchVendors,
   ]);
 
@@ -155,6 +165,16 @@ export default function VendorsPage() {
 
   const handleRefresh = () => {
     fetchVendors();
+  };
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setItemsPerPage(newLimit);
+    setCurrentPage(1);
   };
 
   // Custom render for action buttons
@@ -366,6 +386,97 @@ export default function VendorsPage() {
           emptyStateMessage="No vendors found. Click 'Create Vendor' to add your first vendor."
         />
       </div>
+
+      {/* Pagination Controls */}
+      {!isLoading && vendors && vendors.length > 0 && pagination && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Items per page selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600">Items per page:</label>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => handleLimitChange(Number(e.target.value))}
+                  className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-900"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+
+              {/* Pagination info */}
+              <div className="text-sm text-gray-600">
+                Showing {(pagination.currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(
+                  pagination.currentPage * itemsPerPage,
+                  pagination.totalVendors
+                )}{" "}
+                of {pagination.totalVendors} vendors
+              </div>
+
+              {/* Page navigation */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1">
+                  {Array.from(
+                    { length: pagination.totalPages },
+                    (_, i) => i + 1
+                  ).map((page) => {
+                    if (
+                      page === 1 ||
+                      page === pagination.totalPages ||
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-1 border rounded ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-900 border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    } else if (
+                      page === currentPage - 2 ||
+                      page === currentPage + 2
+                    ) {
+                      return (
+                        <span key={page} className="px-2">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}
+                  className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AddVendorModal
         open={addVendorModalOpen}

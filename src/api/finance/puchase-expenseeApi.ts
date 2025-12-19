@@ -183,6 +183,90 @@ interface BulkDeleteResponse {
   };
 }
 
+interface PurchaseStats {
+  totalPurchases: number;
+  totalAmount: number;
+  pendingAmount: number;
+  paidAmount: number;
+  averageOrderValue: number;
+  purchasesByStatus: {
+    pending: number;
+    partial: number;
+    paid: number;
+  };
+  purchasesByPriority: {
+    low: number;
+    medium: number;
+    high: number;
+  };
+  purchasesByType: {
+    goods: number;
+    services: number;
+  };
+}
+
+interface PurchaseStatsResponse {
+  success: boolean;
+  message: string;
+  data: PurchaseStats;
+}
+
+interface PendingPurchase {
+  _id: string;
+  purchaseNumber?: string;
+  billNumber: string;
+  vendorId: Vendor;
+  billDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  priority: "low" | "medium" | "high";
+  daysOverdue?: number;
+}
+
+interface PendingPurchasesResponse {
+  success: boolean;
+  message: string;
+  data: PendingPurchase[];
+}
+
+interface PurchaseSummary {
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
+  totalPurchases: number;
+  totalAmount: number;
+  averageOrderValue: number;
+  pendingAmount: number;
+  paidAmount: number;
+  dailyBreakdown?: Array<{
+    date: string;
+    amount: number;
+    count: number;
+  }>;
+}
+
+interface PurchaseSummaryResponse {
+  success: boolean;
+  message: string;
+  data: PurchaseSummary;
+}
+
+interface UpdatePriorityPayload {
+  priority: "low" | "medium" | "high";
+}
+
+interface DuplicatePurchasePayload {
+  billDate?: string;
+  vendorId?: string;
+}
+
+interface RemoveAttachmentResponse {
+  success: boolean;
+  message: string;
+  data: Purchase;
+}
+
 const purchaseExpenseApi = {
   // Create a new purchase/expense
   createPurchase: async (
@@ -235,6 +319,130 @@ const purchaseExpenseApi = {
         throw error;
       }
       throw new Error("Error fetching purchases");
+    }
+  },
+
+  // Advanced search for purchases
+  searchPurchases: async (
+    filters: GetPurchasesFilters = {}
+  ): Promise<GetPurchasesResponse> => {
+    try {
+      const params = new URLSearchParams();
+
+      if (filters.page) params.append("page", filters.page.toString());
+      if (filters.limit) params.append("limit", filters.limit.toString());
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters.sortOrder) params.append("sortOrder", filters.sortOrder);
+      if (filters.purchaseType)
+        params.append("purchaseType", filters.purchaseType);
+      if (filters.priority) params.append("priority", filters.priority);
+      if (filters.vendorId) params.append("vendorId", filters.vendorId);
+      if (filters.paymentStatus)
+        params.append("paymentStatus", filters.paymentStatus);
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      if (filters.search) params.append("search", filters.search);
+
+      const queryString = params.toString();
+      const url = queryString
+        ? `/api/v1/finance/purchases/purchase/search?${queryString}`
+        : "/api/v1/finance/purchases/purchase/search";
+
+      const response = await axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error searching purchases");
+    }
+  },
+
+  // Get purchase statistics
+  getPurchaseStats: async (): Promise<PurchaseStatsResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        "/api/v1/finance/purchases/purchase/stats"
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching purchase statistics");
+    }
+  },
+
+  // Get pending purchases
+  getPendingPurchases: async (): Promise<PendingPurchasesResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        "/api/v1/finance/purchases/purchase/pending"
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching pending purchases");
+    }
+  },
+
+  // Get purchases summary for date range
+  getPurchasesSummary: async (
+    startDate: string,
+    endDate: string
+  ): Promise<PurchaseSummaryResponse> => {
+    try {
+      const params = new URLSearchParams();
+      params.append("startDate", startDate);
+      params.append("endDate", endDate);
+
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/purchase/summary?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching purchases summary");
+    }
+  },
+
+  // Get purchases by vendor
+  getPurchasesByVendor: async (
+    vendorId: string,
+    filters: GetPurchasesFilters = {}
+  ): Promise<GetPurchasesResponse> => {
+    try {
+      const params = new URLSearchParams();
+
+      if (filters.page) params.append("page", filters.page.toString());
+      if (filters.limit) params.append("limit", filters.limit.toString());
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
+      if (filters.sortOrder) params.append("sortOrder", filters.sortOrder);
+      if (filters.purchaseType)
+        params.append("purchaseType", filters.purchaseType);
+      if (filters.priority) params.append("priority", filters.priority);
+      if (filters.paymentStatus)
+        params.append("paymentStatus", filters.paymentStatus);
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      if (filters.search) params.append("search", filters.search);
+
+      const queryString = params.toString();
+      const url = queryString
+        ? `/api/v1/finance/purchases/purchase/vendor/${vendorId}?${queryString}`
+        : `/api/v1/finance/purchases/purchase/vendor/${vendorId}`;
+
+      const response = await axiosInstance.get(url);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching vendor purchases");
     }
   },
 
@@ -312,6 +520,44 @@ const purchaseExpenseApi = {
     }
   },
 
+  // Update purchase priority
+  updatePurchasePriority: async (
+    purchaseId: string,
+    priorityData: UpdatePriorityPayload
+  ): Promise<SinglePurchaseResponse> => {
+    try {
+      const response = await axiosInstance.patch(
+        `/api/v1/finance/purchases/purchase/${purchaseId}/priority`,
+        priorityData
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error updating purchase priority");
+    }
+  },
+
+  // Duplicate a purchase
+  duplicatePurchase: async (
+    purchaseId: string,
+    duplicateData?: DuplicatePurchasePayload
+  ): Promise<SinglePurchaseResponse> => {
+    try {
+      const response = await axiosInstance.post(
+        `/api/v1/finance/purchases/purchase/${purchaseId}/duplicate`,
+        duplicateData || {}
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error duplicating purchase");
+    }
+  },
+
   // Add attachment to purchase
   addAttachment: async (
     purchaseId: string,
@@ -345,6 +591,24 @@ const purchaseExpenseApi = {
         throw error;
       }
       throw new Error("Error adding attachment");
+    }
+  },
+
+  // Remove attachment from purchase
+  removeAttachment: async (
+    purchaseId: string,
+    attachmentIndex: number
+  ): Promise<RemoveAttachmentResponse> => {
+    try {
+      const response = await axiosInstance.delete(
+        `/api/v1/finance/purchases/purchase/${purchaseId}/attachments/${attachmentIndex}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error removing attachment");
     }
   },
 
@@ -402,4 +666,13 @@ export type {
   Vendor,
   DeleteResponse,
   BulkDeleteResponse,
+  PurchaseStats,
+  PurchaseStatsResponse,
+  PendingPurchase,
+  PendingPurchasesResponse,
+  PurchaseSummary,
+  PurchaseSummaryResponse,
+  UpdatePriorityPayload,
+  DuplicatePurchasePayload,
+  RemoveAttachmentResponse,
 };

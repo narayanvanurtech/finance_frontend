@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import ExpenseForm, { ExpenseFormValues } from "@/finance/expenses/ExpenseForm";
 import { useVendorStore } from "@/financeStore/useVendorStore";
-import { useItemStore } from "@/financeStore/useItemStore";
+// import { useItemStore } from "@/financeStore/useItemStore";
 import { useBussinessStore } from "@/financeStore/useBussinessStore";
 import {
   useCreatePurchase,
@@ -19,7 +19,7 @@ const generateExpenseNo = () => {
 
 export default function CreateExpensePage() {
   const { vendors, fetchVendors } = useVendorStore();
-  const { items } = useItemStore();
+  // const { items } = useItemStore();
   const { details } = useBussinessStore();
   const { mutate: createPurchase, isPending } = useCreatePurchase();
   const { mutate: addAttachment, isPending: isUploadingAttachment } =
@@ -143,7 +143,7 @@ export default function CreateExpensePage() {
       onSubmit={handleCreate}
       mode="create"
       mockVendors={vendors}
-      mockProducts={items}
+      // mockProducts={items}
       loading={isPending || isUploadingAttachment}
     />
   );

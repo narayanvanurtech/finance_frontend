@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCategoryStore } from "@/stores/financeStore/useCategoryStore";
 import { Category } from "@/api/finance/categoryApi";
 import {
   Select,
@@ -24,13 +23,11 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { useSubcategoryStore } from "@/stores/financeStore/useSubcategoryStore";
 import CategoryModal from "@/components/finance/CategoryModal";
 import SubcategoryModal from "@/components/finance/SubcategoryModal";
-import { useVendorStore } from "@/stores/financeStore/useVendorStore";
 import { useRouter } from "next/navigation";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
-import vendorApi, { Vendor } from "@/api/finance/vendorApi";
+import { Vendor } from "@/api/finance/vendorApi";
+import { useCreateItem, useUploadItemImage } from "@/hooks/useItemQueries";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FileText, FilePlus2, ShoppingCart, ChevronDown } from "lucide-react";
 import {
@@ -40,8 +37,18 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  useGetCategories,
+  useCreateCategory,
+} from "@/hooks/useCategoryQueries";
+import {
+  useGetSubcategories,
+  useCreateSubcategory,
+} from "@/hooks/useSubcategoryQueries";
+import { useGetVendors } from "@/hooks/useVendorQueries";
 
 export default function CreateItemPage() {
+  const [companyId, setCompanyId] = useState<string>("");
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -69,68 +76,109 @@ export default function CreateItemPage() {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const { categories } = useCategoryStore();
-  const { createCategory } = useCategoryStore();
-  const [newCategory, setNewCategory] = useState("");
-  const [showAddCategory, setShowAddCategory] = useState(false);
-  const { subcategories, fetchSubcategories } = useSubcategoryStore();
-  const { createSubcategory } = useSubcategoryStore();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
   const [taxType, setTaxType] = useState<"inter" | "intra">("inter");
   const [autoSplitGST, setAutoSplitGST] = useState(true);
   const [totalGST, setTotalGST] = useState("");
-  const {
-    vendors,
-    searchResults: vendorSearchResults,
-    loading: vendorsLoading,
-    fetchVendors: fetchAllVendors,
-    searchVendors,
-    clearSearchResults: clearVendorSearchResults,
-  } = useVendorStore();
-  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
   const [openCombobox, setOpenCombobox] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const router = useRouter();
-  const { createItem, loading, error } = useItemStore();
-  const { fetchCategories, loading: categoriesLoading } = useCategoryStore();
-  const { loading: subcategoriesLoading } = useSubcategoryStore();
 
-  // Load initial data
+  // Get companyId from localStorage
   React.useEffect(() => {
-    // Fetch categories if not already loaded
-    if (!categories || categories.length === 0) {
-      fetchCategories();
-    }
-    if (vendors.length === 0) {
-      fetchAllVendors();
-    }
-  }, [categories, vendors.length, fetchCategories, fetchAllVendors]);
+    const storedCompanyId = localStorage.getItem("currentCompanyId") || "";
+    setCompanyId(storedCompanyId);
+  }, []);
 
-  // Fetch subcategories when category changes
+  // React Query hooks
+  const {
+    mutateAsync: createItem,
+    isPending: loading,
+    error: mutationError,
+  } = useCreateItem(companyId);
+
+  const { mutateAsync: uploadItemImage } = useUploadItemImage(companyId);
+
+  const { mutateAsync: createCategoryMutation } = useCreateCategory();
+  const { mutateAsync: createSubcategoryMutation } = useCreateSubcategory();
+
+  // Fetch categories - only when companyId is available
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useGetCategories(
+    {
+      companyId,
+    },
+    {
+      enabled: !!companyId, // Only run query when companyId exists
+    }
+  );
+
+  const categories = useMemo(
+    () => categoriesData?.categories || [],
+    [categoriesData]
+  );
+
+  console.log("categories:", categories);
+
+  // Debug logging
   React.useEffect(() => {
-    const selectedCategoryObj = categories.find(
-      (cat: Category) => cat.name === form.category
+    console.log("🔍 Category Debug:", {
+      companyId,
+      categoriesCount: categories.length,
+      categories,
+      categoriesLoading,
+      categoriesError,
+    });
+  }, [companyId, categories, categoriesLoading, categoriesError]);
+
+  // Get selected category object
+  const selectedCategoryObj = useMemo(
+    () => categories.find((cat: Category) => cat.name === form.category),
+    [categories, form.category]
+  );
+
+  // Fetch subcategories for selected category - only when companyId and category exist
+  const { data: subcategories = [], isLoading: subcategoriesLoading } =
+    useGetSubcategories(
+      {
+        companyId,
+        category: selectedCategoryObj?._id,
+      },
+      {
+        enabled: !!companyId && !!selectedCategoryObj?._id, // Only run when both exist
+      }
     );
-    if (selectedCategoryObj && selectedCategoryObj._id) {
-      // Reset subcategory when category changes
+
+  // Fetch vendors
+  const { data: vendorsResponse } = useGetVendors();
+
+  const vendors = useMemo(
+    () => vendorsResponse?.result?.vendors || [],
+    [vendorsResponse]
+  );
+
+  // Reset subcategory when category changes
+  React.useEffect(() => {
+    if (selectedCategoryObj) {
       setForm((prev) => ({ ...prev, subcategory: "" }));
-      // Always fetch subcategories for the selected category to ensure we have the latest data
-      fetchSubcategories({ category: selectedCategoryObj._id });
     }
-  }, [form.category, categories, fetchSubcategories]);
+  }, [selectedCategoryObj]);
 
   // Filter subcategories for the selected category
-  const selectedCategoryObj = categories.find(
-    (cat: Category) => cat.name === form.category
+  const filteredSubcategories = useMemo(
+    () =>
+      selectedCategoryObj && subcategories
+        ? subcategories.filter(
+            (sub: any) => sub.category._id === selectedCategoryObj._id
+          )
+        : [],
+    [selectedCategoryObj, subcategories]
   );
-  const filteredSubcategories =
-    selectedCategoryObj && subcategories
-      ? subcategories.filter(
-          (sub) => sub.category._id === selectedCategoryObj._id
-        )
-      : [];
 
   const COMMON_UNITS = [
     { value: "pcs", label: "pcs" },
@@ -176,6 +224,12 @@ export default function CreateItemPage() {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
+
+    if (!companyId) {
+      setErrors({ ...errs, companyId: "Company ID is required" });
+      return;
+    }
+
     if (Object.keys(errs).length === 0) {
       try {
         // Find the actual category and subcategory objects
@@ -189,7 +243,8 @@ export default function CreateItemPage() {
           (vendor: Vendor) => vendor.name === form.preferredVendor
         );
 
-        await createItem({
+        const itemData: any = {
+          companyId: companyId,
           name: form.name,
           description: form.description,
           type: form.type === "Good" ? "goods" : "service",
@@ -209,8 +264,27 @@ export default function CreateItemPage() {
           salesDescription: form.salesDescription,
           costPrice: parseFloat(form.costPrice) || 0,
           purchaseDescription: form.purchaseDescription,
-          preferredVendor: vendorObj?._id || "",
-        });
+        };
+
+        // Only add preferredVendor if it's selected
+        if (vendorObj?._id) {
+          itemData.preferredVendor = vendorObj._id;
+        }
+
+        const response = await createItem(itemData);
+
+        // Upload image if present
+        if (form.image && response?.result?._id) {
+          try {
+            await uploadItemImage({
+              itemId: response.result._id,
+              file: form.image,
+            });
+          } catch (imageError) {
+            console.error("Failed to upload image:", imageError);
+            // Don't block the flow if image upload fails
+          }
+        }
 
         // Reset form on success
         setForm({
@@ -249,9 +323,11 @@ export default function CreateItemPage() {
   // Handler for adding new category via modal
   const handleAddCategory = async (name: string, description: string) => {
     try {
-      await createCategory({ name, description });
-      // Refresh categories to get the latest data
-      await fetchCategories();
+      await createCategoryMutation({
+        companyId,
+        name,
+        description,
+      });
       setForm((f) => ({ ...f, category: name }));
       setShowCategoryModal(false);
     } catch (error) {
@@ -269,13 +345,12 @@ export default function CreateItemPage() {
       return;
     }
     try {
-      await createSubcategory({
+      await createSubcategoryMutation({
+        companyId,
         name,
         description,
         category: selectedCategory._id,
       });
-      // Refresh subcategories for the current category
-      await fetchSubcategories({ category: selectedCategory._id });
       setForm((f) => ({ ...f, subcategory: name }));
       setShowSubcategoryModal(false);
     } catch (error) {
@@ -312,12 +387,16 @@ export default function CreateItemPage() {
 
   return (
     <div className="relative min-h-screen p-0 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-3xl">
+      <form onSubmit={handleSubmit} className="w-full max-w-3xl">
         <h1 className="text-2xl font-bold mb-6 mt-4 md:mt-0">Create Item</h1>
         {/* Display global error */}
-        {error && (
+        {mutationError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
+            <p className="text-red-800 text-sm">
+              {(mutationError as any)?.response?.data?.message ||
+                (mutationError as any)?.message ||
+                "Failed to create item"}
+            </p>
           </div>
         )}
 
@@ -394,11 +473,19 @@ export default function CreateItemPage() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat: Category) => (
-                        <SelectItem key={cat._id} value={cat.name}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
+                      {categories && categories.length > 0 ? (
+                        categories.map((cat: Category) => (
+                          <SelectItem key={cat._id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          {categoriesLoading
+                            ? "Loading..."
+                            : "No categories available"}
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                   <Button
@@ -946,28 +1033,27 @@ export default function CreateItemPage() {
             </div>
           </Card>
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="w-full max-w-3xl flex justify-end gap-2 mt-4">
-        <Button
-          type="button"
-          variant="outline"
-          className="px-4 py-2 rounded font-semibold border border-muted-foreground text-muted-foreground hover:bg-muted"
-          onClick={() => window.history.back()}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          onClick={handleSubmit}
-          disabled={loading}
-          className="px-4 py-2 rounded font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Creating..." : "Create Item"}
-        </Button>
-      </div>
+        {/* Action Buttons */}
+        <div className="w-full flex justify-end gap-2 mt-4 mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="px-4 py-2 rounded font-semibold border border-muted-foreground text-muted-foreground hover:bg-muted"
+            onClick={() => window.history.back()}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 rounded font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Creating..." : "Create Item"}
+          </Button>
+        </div>
+      </form>
 
       {/* Modals for Category and Subcategory */}
       <CategoryModal

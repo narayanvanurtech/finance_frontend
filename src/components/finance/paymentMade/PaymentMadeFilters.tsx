@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { FiSearch, FiFilter, FiX, FiRefreshCw } from "react-icons/fi";
+import { useGetVendors } from "@/hooks/useVendorQueries";
 
 interface PaymentMadeFiltersProps {
   onSearch: (filters: SearchFilters) => void;
@@ -37,6 +38,23 @@ const PaymentMadeFilters: React.FC<PaymentMadeFiltersProps> = ({
 }) => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Fetch vendors for filter dropdown
+  const { data: vendorsResponse, isLoading: vendorsLoading } = useGetVendors();
+
+  const vendors = useMemo(
+    () =>
+      (vendorsResponse?.result?.vendors || []).map((v: any) => ({
+        ...v,
+        name:
+          typeof v.name === "object"
+            ? `${v.name.streetAddress || ""}, ${v.name.city || ""}, ${
+                v.name.state || ""
+              }`.trim()
+            : v.name,
+      })),
+    [vendorsResponse]
+  );
 
   const handleFilterChange = (
     key: keyof SearchFilters,
@@ -64,18 +82,36 @@ const PaymentMadeFilters: React.FC<PaymentMadeFiltersProps> = ({
     setFilters(newFilters);
   };
 
-  const handleApplyFilters = () => {
-    // Clean up filters - remove empty strings and undefined values
+  const handleApplyFilters = useCallback(() => {
+    // Clean up filters - remove empty strings, undefined values, and trim whitespace
     const cleanedFilters: SearchFilters = {};
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value && value !== "" && value !== "all" && value !== "default") {
-        cleanedFilters[key as keyof SearchFilters] = value;
+        // Trim whitespace from string values
+        const trimmedValue = typeof value === "string" ? value.trim() : value;
+
+        // Only add if still has value after trimming
+        if (trimmedValue && trimmedValue !== "") {
+          cleanedFilters[key as keyof SearchFilters] = trimmedValue;
+        }
       }
     });
 
+    console.log("🧹 Cleaned filters being sent:", cleanedFilters);
     onSearch(cleanedFilters);
-  };
+  }, [filters, onSearch]);
+
+  // Auto-apply search filter with debounce
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (filters.search !== undefined) {
+        handleApplyFilters();
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [filters.search, handleApplyFilters]);
 
   const handleClearFilters = () => {
     setFilters({});
@@ -196,6 +232,38 @@ const PaymentMadeFilters: React.FC<PaymentMadeFiltersProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Vendor
+                </label>
+                <Select
+                  value={filters.vendorId || "all"}
+                  onValueChange={(value) =>
+                    handleFilterChange(
+                      "vendorId",
+                      value === "all" ? undefined : value
+                    )
+                  }
+                  disabled={vendorsLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        vendorsLoading ? "Loading..." : "All Vendors"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Vendors</SelectItem>
+                    {vendors.map((vendor: any) => (
+                      <SelectItem key={vendor._id} value={vendor._id}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Payment Method
                 </label>
                 <Select
@@ -212,12 +280,16 @@ const PaymentMadeFilters: React.FC<PaymentMadeFiltersProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Methods</SelectItem>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="card">Card</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Debit Card">Debit Card</SelectItem>
+                    <SelectItem value="NEFT/RTGS">NEFT/RTGS</SelectItem>
+                    <SelectItem value="IMPS">IMPS</SelectItem>
+                    <SelectItem value="Net Banking">Net Banking</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

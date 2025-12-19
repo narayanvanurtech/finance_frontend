@@ -83,7 +83,19 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
               </div>
               {filteredVendors.map((v) => (
                 <SelectItem key={v._id} value={v._id.toString()}>
-                  {v.name}
+                  {typeof v.name === "object"
+                    ? (() => {
+                        const nameObj = v.name as any;
+                        const parts = [
+                          nameObj.streetAddress,
+                          nameObj.city,
+                          nameObj.state,
+                          nameObj.postalCode,
+                          nameObj.country
+                        ].filter(Boolean);
+                        return parts.length > 0 ? parts.join(", ") : "Unnamed Vendor";
+                      })()
+                    : v.name || "Unnamed Vendor"}
                 </SelectItem>
               ))}
               <SelectItem value="new">+ Add New Vendor</SelectItem>
@@ -104,7 +116,21 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
           <div>
             <div className="text-xs text-gray-500">Vendor Name</div>
-            <div className="font-medium text-base">{vendorDetails.name}</div>
+            <div className="font-medium text-base">
+              {typeof vendorDetails.name === "object"
+                ? (() => {
+                    const nameObj = vendorDetails.name as any;
+                    const parts = [
+                      nameObj.streetAddress,
+                      nameObj.city,
+                      nameObj.state,
+                      nameObj.postalCode,
+                      nameObj.country
+                    ].filter(Boolean);
+                    return parts.length > 0 ? parts.join(", ") : "-";
+                  })()
+                : vendorDetails.name || "-"}
+            </div>
           </div>
           <div>
             <div className="text-xs text-gray-500">GSTIN</div>
@@ -115,7 +141,19 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
           <div>
             <div className="text-xs text-gray-500">Address</div>
             <div className="font-medium text-base">
-              {vendorDetails.address || "-"}
+              {typeof vendorDetails.address === "object"
+                ? (() => {
+                    const addressObj = vendorDetails.address as any;
+                    const parts = [
+                      addressObj.streetAddress,
+                      addressObj.city,
+                      addressObj.state,
+                      addressObj.postalCode,
+                      addressObj.country
+                    ].filter(Boolean);
+                    return parts.length > 0 ? parts.join(", ") : "-";
+                  })()
+                : vendorDetails.address || "-"}
             </div>
           </div>
           <div>

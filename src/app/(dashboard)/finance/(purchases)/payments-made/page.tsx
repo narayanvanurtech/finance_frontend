@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   FiEdit,
@@ -68,6 +69,7 @@ const getPaymentTypeBadge = (type: string) => {
 
 export default function PaymentsMadeListPage() {
   /** UI States **/
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
 
@@ -180,25 +182,20 @@ export default function PaymentsMadeListPage() {
   };
 
   /** Handle Filters **/
-  const handleSearch = useCallback(
-    async (filters: SearchFilters) => {
-      console.log("🔍 handleSearch called with filters:", filters);
-      setCurrentFilters(filters);
-      setCurrentPage(1);
-      refetchPayments();
-    },
-    [refetchPayments]
-  );
+  const handleSearch = useCallback((filters: SearchFilters) => {
+    console.log("🔍 handleSearch called with filters:", filters);
+    setCurrentFilters(filters);
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
 
-  const handleClearFilters = useCallback(async () => {
+  const handleClearFilters = useCallback(() => {
     setCurrentFilters({});
-    setCurrentPage(1);
-    refetchPayments();
-  }, [refetchPayments]);
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
 
   /** Stat Click Handler **/
   const handleStatClick = useCallback(
-    async (filterType: "all" | "payment" | "advance") => {
+    (filterType: "all" | "payment" | "advance") => {
       setCurrentPage(1);
 
       if (filterType === "all") {
@@ -208,10 +205,9 @@ export default function PaymentsMadeListPage() {
       } else if (filterType === "advance") {
         setCurrentFilters({ paymentType: "Advance" });
       }
-      
-      refetchPayments();
+      // React Query will auto-refetch when filters change
     },
-    [refetchPayments]
+    []
   );
 
   /** Pagination **/
@@ -364,10 +360,18 @@ export default function PaymentsMadeListPage() {
                     return (
                       <tr
                         key={payment._id || idx}
-                        className="transition hover:bg-gray-50 focus-within:bg-gray-100"
+                        onClick={() =>
+                          router.push(
+                            `/finance/payments-made/edit/${payment._id}`
+                          )
+                        }
+                        className="transition hover:bg-gray-50 focus-within:bg-gray-100 cursor-pointer"
                       >
                         {/* Checkbox */}
-                        <td className="px-6 py-4">
+                        <td
+                          className="px-6 py-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <input
                             type="checkbox"
                             checked={selectedPayments.includes(payment._id)}
@@ -386,7 +390,9 @@ export default function PaymentsMadeListPage() {
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">
-                                {payment.receiptNo || "-"}
+                                {payment.receiptNumber ||
+                                  payment.receiptNo ||
+                                  "-"}
                               </div>
                               <div className="text-xs text-gray-500">
                                 {payment.purpose || "No purpose"}
@@ -444,7 +450,13 @@ export default function PaymentsMadeListPage() {
                         {/* Amount */}
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="text-sm font-semibold text-gray-900">
-                            ₹{payment.totalAmount?.toLocaleString() || 0}
+                            ₹
+                            {(
+                              payment.totalGrossAmount ||
+                              payment.totalAmountPaid ||
+                              payment.totalAmount ||
+                              0
+                            ).toLocaleString()}
                           </div>
                           {payment.paymentRecords?.length > 1 && (
                             <div className="text-xs text-gray-500">
@@ -459,7 +471,10 @@ export default function PaymentsMadeListPage() {
                         </td>
 
                         {/* Actions */}
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Popover
                             open={openPopover === payment._id}
                             onOpenChange={(open) =>
@@ -467,14 +482,14 @@ export default function PaymentsMadeListPage() {
                             }
                           >
                             <PopoverTrigger asChild>
-                              <button className="p-2 rounded hover:bg-gray-100 transition">
+                              <button
+                                className="p-2 rounded hover:bg-gray-100 transition"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <FiMoreVertical className="w-5 h-5 text-gray-600" />
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent
-                              className="w-48 p-2"
-                              align="end"
-                            >
+                            <PopoverContent className="w-48 p-2" align="end">
                               <div className="flex flex-col gap-1">
                                 <Link
                                   href={`/finance/payments-made/${payment._id}`}
@@ -541,9 +556,13 @@ export default function PaymentsMadeListPage() {
 
             {/* Pagination info */}
             <div className="text-sm text-gray-600">
-              Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-              {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-              of {pagination.total} payments
+              Showing {(Number(pagination.currentPage) - 1) * itemsPerPage + 1}{" "}
+              to{" "}
+              {Math.min(
+                Number(pagination.currentPage) * itemsPerPage,
+                pagination.totalRecords
+              )}{" "}
+              of {pagination.totalRecords} payments
             </div>
 
             {/* Page navigation */}

@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCategoryStore } from "@/stores/financeStore/useCategoryStore";
 import { Category } from "@/api/finance/categoryApi";
 import {
   Select,
@@ -25,39 +24,36 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { useSubcategoryStore } from "@/stores/financeStore/useSubcategoryStore";
 import CategoryModal from "@/components/finance/CategoryModal";
 import SubcategoryModal from "@/components/finance/SubcategoryModal";
-import { useVendorStore } from "@/stores/financeStore/useVendorStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
-import { Item } from "@/api/finance/itemApi";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  useItemById,
+  useUpdateItem,
+  useUploadItemImage,
+  useDeleteItemImage,
+} from "@/hooks/useItemQueries";
+import {
+  useGetCategories,
+  useCreateCategory,
+} from "@/hooks/useCategoryQueries";
+import {
+  useGetSubcategories,
+  useCreateSubcategory,
+} from "@/hooks/useSubcategoryQueries";
+import { useGetVendors } from "@/hooks/useVendorQueries";
+import { Vendor } from "@/api/finance/vendorApi";
 
 export default function EditItemPage() {
   const params = useParams();
   const itemId = params.id as string;
   const router = useRouter();
-  
-  const {
-    currentItem,
-    loading,
-    error,
-    getItemById,
-    updateItem,
-    clearCurrentItem,
-    clearError,
-    uploadItemImage,
-    deleteItemImage,
-  } = useItemStore();
-
-  const { categories, fetchCategories, createCategory } = useCategoryStore();
-  const { subcategories, fetchSubcategories, createSubcategory } = useSubcategoryStore();
-  const { vendors, fetchVendors, searchVendors, searchResults, clearSearchResults, loading: vendorLoading } = useVendorStore();
+  const [companyId, setCompanyId] = useState<string>("");
 
   const [form, setForm] = useState({
     name: "",
     description: "",
-    type: "goods" as "goods" | "service",
+    type: "Good",
     category: "",
     subcategory: "",
     hsn: "",
@@ -86,122 +82,154 @@ export default function EditItemPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  
-  // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
-  
-  // Tax configuration
   const [taxType, setTaxType] = useState<"inter" | "intra">("inter");
   const [autoSplitGST, setAutoSplitGST] = useState(true);
   const [totalGST, setTotalGST] = useState("");
-  
-  // Vendor selection
-  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
   const [selectedVendor, setSelectedVendor] = useState("");
   const [openCombobox, setOpenCombobox] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  const [itemNotFound, setItemNotFound] = useState(false);
+  // Get companyId from localStorage
+  useEffect(() => {
+    const storedCompanyId = localStorage.getItem("currentCompanyId") || "";
+    setCompanyId(storedCompanyId);
+  }, []);
 
-  // Debounced search function
-  const debouncedSearchVendors = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (searchTerm: string) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(async () => {
-          if (searchTerm.trim()) {
-            try {
-              await searchVendors(searchTerm.trim());
-            } catch (error) {
-              console.error("Failed to search vendors:", error);
-            }
-          } else {
-            clearSearchResults();
-          }
-        }, 300); // 300ms debounce
-      };
-    })(),
-    [searchVendors, clearSearchResults]
+  // React Query hooks
+  const {
+    data: itemData,
+    isLoading: itemLoading,
+    error: itemError,
+  } = useItemById(companyId, itemId);
+
+  const currentItem = itemData?.result;
+
+  const {
+    mutateAsync: updateItem,
+    isPending: updateLoading,
+    error: updateError,
+  } = useUpdateItem(companyId, itemId);
+
+  const { mutateAsync: uploadImageMutation } = useUploadItemImage(companyId);
+  const { mutateAsync: deleteImageMutation } = useDeleteItemImage(companyId);
+  const { mutateAsync: createCategoryMutation } = useCreateCategory();
+  const { mutateAsync: createSubcategoryMutation } = useCreateSubcategory();
+
+  // Fetch categories
+  const { data: categoriesData, isLoading: categoriesLoading } =
+    useGetCategories({ companyId }, { enabled: !!companyId });
+
+  const categories = useMemo(
+    () => categoriesData?.categories || [],
+    [categoriesData]
   );
 
-  // Load initial data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        await Promise.all([
-          fetchCategories(),
-          fetchVendors(),
-          getItemById(itemId),
-        ]);
-      } catch (error: any) {
-        if (error?.response?.status === 404) {
-          setItemNotFound(true);
-        }
+  // Get selected category object
+  const selectedCategoryObj = useMemo(
+    () => categories.find((cat: Category) => cat.name === form.category),
+    [categories, form.category]
+  );
+
+  // Fetch subcategories for selected category
+  const { data: subcategories = [], isLoading: subcategoriesLoading } =
+    useGetSubcategories(
+      {
+        companyId,
+        category: selectedCategoryObj?._id,
+      },
+      {
+        enabled: !!companyId && !!selectedCategoryObj?._id,
       }
-    };
+    );
 
-    loadData();
+  // Fetch vendors
+  const { data: vendorsResponse } = useGetVendors();
+  const vendors = useMemo(
+    () => vendorsResponse?.result?.vendors || [],
+    [vendorsResponse]
+  );
 
-    return () => {
-      clearCurrentItem();
-      clearError();
-    };
-  }, [itemId, fetchCategories, fetchVendors, getItemById, clearCurrentItem, clearError]);
+  // Filter subcategories for the selected category
+  const filteredSubcategories = useMemo(
+    () =>
+      selectedCategoryObj && subcategories
+        ? subcategories.filter(
+            (sub: any) => sub.category._id === selectedCategoryObj._id
+          )
+        : [],
+    [selectedCategoryObj, subcategories]
+  );
 
   // Populate form when currentItem changes
   useEffect(() => {
     if (currentItem) {
-      const categoryName = typeof currentItem.category === 'object' 
-        ? currentItem.category.name 
-        : currentItem.category;
-      
-      const subcategoryName = typeof currentItem.subcategory === 'object' 
-        ? currentItem.subcategory.name 
-        : currentItem.subcategory;
+      const categoryName =
+        typeof currentItem.category === "object"
+          ? currentItem.category.name
+          : currentItem.category;
 
-      const vendorName = typeof currentItem.preferredVendor === 'object' 
-        ? (currentItem.preferredVendor?.name || currentItem.preferredVendor?.vendorName || "") 
-        : currentItem.preferredVendor;
+      const subcategoryName =
+        typeof currentItem.subcategory === "object"
+          ? currentItem.subcategory.name
+          : currentItem.subcategory;
+
+      const vendorName =
+        typeof (currentItem as any).preferredVendor === "object"
+          ? (currentItem as any).preferredVendor?.name ||
+            (currentItem as any).preferredVendor?.vendorName ||
+            ""
+          : (currentItem as any).preferredVendor;
 
       setForm({
         name: currentItem.name || "",
         description: currentItem.description || "",
-        type: currentItem.type || "goods",
+        type: currentItem.type === "goods" ? "Good" : "Service",
         category: categoryName || "",
         subcategory: subcategoryName || "",
         hsn: currentItem.hsn || "",
         unit: currentItem.unit || "",
-        weight: currentItem.weight || "",
-        igst: currentItem.igst?.toString() || "",
-        sgst: currentItem.sgst?.toString() || "",
-        cgst: currentItem.cgst?.toString() || "",
-        length: currentItem.length || "",
-        width: currentItem.width || "",
-        height: currentItem.height || "",
-        dimensionUnit: currentItem.dimensionUnit || "cm",
+        weight: (currentItem as any).weight || "",
+        igst: (currentItem as any).igst?.toString() || "",
+        sgst: (currentItem as any).sgst?.toString() || "",
+        cgst: (currentItem as any).cgst?.toString() || "",
+        length: (currentItem as any).length || "",
+        width: (currentItem as any).width || "",
+        height: (currentItem as any).height || "",
+        dimensionUnit: (currentItem as any).dimensionUnit || "cm",
         sellingPrice: currentItem.sellingPrice?.toString() || "",
-        salesDescription: currentItem.salesDescription || "",
+        salesDescription: (currentItem as any).salesDescription || "",
         costPrice: currentItem.costPrice?.toString() || "",
-        purchaseDescription: currentItem.purchaseDescription || "",
+        purchaseDescription: (currentItem as any).purchaseDescription || "",
         preferredVendor: vendorName || "",
         trackInventory: currentItem.trackInventory || false,
-        openingStock: currentItem.openingStock?.toString() || "",
+        openingStock: (currentItem as any).openingStock?.toString() || "",
         currentStock: currentItem.currentStock?.toString() || "",
         lowStockThreshold: currentItem.lowStockThreshold?.toString() || "",
-        highStockThreshold: currentItem.highStockThreshold?.toString() || "",
-        expiryDate: currentItem.expiryDate ? new Date(currentItem.expiryDate).toISOString().split('T')[0] : "",
+        highStockThreshold:
+          (currentItem as any).highStockThreshold?.toString() || "",
+        expiryDate: (currentItem as any).expiryDate
+          ? new Date((currentItem as any).expiryDate)
+              .toISOString()
+              .split("T")[0]
+          : "",
       });
 
       setSelectedVendor(vendorName || "");
 
       // Set tax type based on current item
-      if (currentItem.igst && currentItem.igst > 0) {
+      const itemWithTax = currentItem as any;
+      if (itemWithTax.igst && itemWithTax.igst > 0) {
         setTaxType("inter");
-      } else if ((currentItem.sgst && currentItem.sgst > 0) || (currentItem.cgst && currentItem.cgst > 0)) {
+      } else if (
+        (itemWithTax.sgst && itemWithTax.sgst > 0) ||
+        (itemWithTax.cgst && itemWithTax.cgst > 0)
+      ) {
         setTaxType("intra");
-        setTotalGST(((currentItem.sgst || 0) + (currentItem.cgst || 0)).toString());
+        setTotalGST(
+          ((itemWithTax.sgst || 0) + (itemWithTax.cgst || 0)).toString()
+        );
       }
 
       // Set image preview if exists
@@ -213,57 +241,46 @@ export default function EditItemPage() {
 
   // Set selected vendor when both currentItem and vendors are loaded
   useEffect(() => {
-    if (currentItem && vendors.length > 0) {
+    if (currentItem && Array.isArray(vendors) && vendors.length > 0) {
       let vendorToSelect = "";
-      
-      if (typeof currentItem.preferredVendor === 'object' && currentItem.preferredVendor) {
-        // If preferredVendor is an object, try to find it by ID first, then by name
-        const vendorId = currentItem.preferredVendor._id;
-        const vendorName = currentItem.preferredVendor.name || currentItem.preferredVendor.vendorName;
-        
-        const foundVendor = vendors.find((v: any) => v._id === vendorId || v.name === vendorName);
-        if (foundVendor) {
-          vendorToSelect = foundVendor.name;
-        }
-      } else if (typeof currentItem.preferredVendor === 'string' && currentItem.preferredVendor) {
-        // If preferredVendor is a string, it could be either an ID or a name
-        const foundVendor = vendors.find((v: any) => 
-          v._id === currentItem.preferredVendor || v.name === currentItem.preferredVendor
+      const itemWithVendor = currentItem as any;
+
+      if (
+        typeof itemWithVendor.preferredVendor === "object" &&
+        itemWithVendor.preferredVendor
+      ) {
+        const vendorId = itemWithVendor.preferredVendor._id;
+        const vendorName =
+          itemWithVendor.preferredVendor.name ||
+          itemWithVendor.preferredVendor.vendorName;
+
+        const foundVendor = vendors.find(
+          (v: any) => v._id === vendorId || v.name === vendorName
         );
         if (foundVendor) {
-          vendorToSelect = foundVendor.name;
+          vendorToSelect = (foundVendor as any).name;
+        }
+      } else if (
+        typeof itemWithVendor.preferredVendor === "string" &&
+        itemWithVendor.preferredVendor
+      ) {
+        const foundVendor = vendors.find(
+          (v: any) =>
+            v._id === itemWithVendor.preferredVendor ||
+            v.name === itemWithVendor.preferredVendor
+        );
+        if (foundVendor) {
+          vendorToSelect = (foundVendor as any).name;
         } else {
-          // If not found in vendors list, treat it as a name
-          vendorToSelect = currentItem.preferredVendor;
+          vendorToSelect = itemWithVendor.preferredVendor;
         }
       }
-      
+
       if (vendorToSelect && vendorToSelect !== selectedVendor) {
         setSelectedVendor(vendorToSelect);
       }
     }
   }, [currentItem, vendors, selectedVendor]);
-
-  // Fetch subcategories when category changes
-  useEffect(() => {
-    const selectedCategoryObj = categories.find(
-      (cat: Category) => cat.name === form.category
-    );
-    if (selectedCategoryObj && selectedCategoryObj._id) {
-      fetchSubcategories({ category: selectedCategoryObj._id });
-    }
-  }, [form.category, categories, fetchSubcategories]);
-
-  // Filter subcategories for the selected category
-  const selectedCategoryObj = categories.find(
-    (cat: Category) => cat.name === form.category
-  );
-  const filteredSubcategories =
-    selectedCategoryObj && subcategories
-      ? subcategories.filter(
-          (sub) => sub.category._id === selectedCategoryObj._id
-        )
-      : [];
 
   const COMMON_UNITS = [
     { value: "pcs", label: "pcs" },
@@ -283,7 +300,7 @@ export default function EditItemPage() {
   ) => {
     const { name, value, type } = e.target;
     const files = (e.target as HTMLInputElement).files;
-    
+
     if (type === "file") {
       const file = files && files[0] ? files[0] : null;
       setNewImageFile(file);
@@ -305,7 +322,6 @@ export default function EditItemPage() {
   const validate = () => {
     const errs: { [k: string]: string } = {};
     if (!form.name) errs.name = "Name is required";
-    if (!form.sellingPrice) errs.sellingPrice = "Selling price is required";
     return errs;
   };
 
@@ -313,7 +329,12 @@ export default function EditItemPage() {
     e.preventDefault();
     const errs = validate();
     setErrors(errs);
-    
+
+    if (!companyId) {
+      setErrors({ ...errs, companyId: "Company ID is required" });
+      return;
+    }
+
     if (Object.keys(errs).length === 0 && currentItem) {
       try {
         // Find the actual category and subcategory objects
@@ -321,16 +342,17 @@ export default function EditItemPage() {
           (cat: Category) => cat.name === form.category
         );
         const subcategoryObj = subcategories.find(
-          (sub) => sub.name === form.subcategory
+          (sub: any) => sub.name === form.subcategory
         );
         const vendorObj = vendors.find(
-          (vendor: any) => vendor.name === form.preferredVendor
+          (vendor: Vendor) => vendor.name === form.preferredVendor
         );
 
-        const updateData: Partial<Item> = {
+        const updateData: any = {
+          companyId,
           name: form.name,
           description: form.description,
-          type: form.type,
+          type: form.type === "Good" ? "goods" : "service",
           category: categoryObj?._id || "",
           subcategory: subcategoryObj?._id || "",
           hsn: form.hsn,
@@ -347,7 +369,6 @@ export default function EditItemPage() {
           salesDescription: form.salesDescription,
           costPrice: parseFloat(form.costPrice) || 0,
           purchaseDescription: form.purchaseDescription,
-          preferredVendor: vendorObj?._id || "",
           trackInventory: form.trackInventory,
           openingStock: parseFloat(form.openingStock) || 0,
           currentStock: parseFloat(form.currentStock) || 0,
@@ -356,13 +377,21 @@ export default function EditItemPage() {
           expiryDate: form.expiryDate || undefined,
         };
 
-        await updateItem(currentItem._id, updateData);
+        // Only add preferredVendor if it's selected
+        if (vendorObj?._id) {
+          updateData.preferredVendor = vendorObj._id;
+        }
+
+        await updateItem(updateData);
 
         // Handle image upload/deletion if changed
         if (newImageFile) {
-          await uploadItemImage(currentItem._id, newImageFile);
+          await uploadImageMutation({
+            itemId: currentItem._id,
+            file: newImageFile,
+          });
         } else if (!imagePreview && currentItem.imageUrl) {
-          await deleteItemImage(currentItem._id);
+          await deleteImageMutation(currentItem._id);
         }
 
         // Navigate back to items list
@@ -376,8 +405,11 @@ export default function EditItemPage() {
   // Handler for adding new category via modal
   const handleAddCategory = async (name: string, description: string) => {
     try {
-      await createCategory({ name, description });
-      await fetchCategories();
+      await createCategoryMutation({
+        companyId,
+        name,
+        description,
+      });
       setForm((f) => ({ ...f, category: name }));
       setShowCategoryModal(false);
     } catch (error) {
@@ -395,12 +427,12 @@ export default function EditItemPage() {
       return;
     }
     try {
-      await createSubcategory({
+      await createSubcategoryMutation({
+        companyId,
         name,
         description,
         category: selectedCategory._id,
       });
-      await fetchSubcategories({ category: selectedCategory._id });
       setForm((f) => ({ ...f, subcategory: name }));
       setShowSubcategoryModal(false);
     } catch (error) {
@@ -408,34 +440,31 @@ export default function EditItemPage() {
     }
   };
 
-  const filteredVendors = searchValue ? searchResults : vendors;
-
-  const handleVendorSearch = (value: string) => {
-    setSearchValue(value);
-    debouncedSearchVendors(value);
-  };
+  const filteredVendors = vendors.filter(
+    (vendor: any) =>
+      vendor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      vendor.email.toLowerCase().includes(searchValue.toLowerCase()) ||
+      vendor.phone.includes(searchValue)
+  );
 
   const handleVendorSelect = (vendor: any) => {
-    setForm(prev => ({ ...prev, preferredVendor: vendor.name }));
+    setForm((prev) => ({ ...prev, preferredVendor: vendor.name }));
     setSelectedVendor(vendor.name);
     setOpenCombobox(false);
     setSearchValue("");
-    clearSearchResults();
   };
 
   const handleOpenChange = (open: boolean) => {
     setOpenCombobox(open);
     if (!open) {
       setSearchValue("");
-      clearSearchResults();
     }
   };
 
-  const clearVendorSelection = () => {
+  const clearSelection = () => {
     setSelectedVendor("");
-    setForm(prev => ({ ...prev, preferredVendor: "" }));
+    setForm((prev) => ({ ...prev, preferredVendor: "" }));
     setSearchValue("");
-    clearSearchResults();
   };
 
   const handleGoBack = () => {
@@ -447,8 +476,16 @@ export default function EditItemPage() {
     setNewImageFile(null);
   };
 
-  // Loading state
-  if (loading) {
+  const loading = itemLoading || updateLoading;
+  const errorMessage =
+    itemError instanceof Error
+      ? itemError.message
+      : updateError instanceof Error
+      ? updateError.message
+      : null;
+
+  // Loading state - also show loading when companyId is not yet available
+  if (!companyId || itemLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -460,17 +497,13 @@ export default function EditItemPage() {
   }
 
   // Error state
-  if (error || itemNotFound) {
+  if (itemError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h3 className="text-lg font-semibold mb-2">
-            {itemNotFound ? "Item Not Found" : "Error Loading Item"}
-          </h3>
+          <h3 className="text-lg font-semibold mb-2">Error Loading Item</h3>
           <p className="text-muted-foreground mb-4">
-            {itemNotFound 
-              ? "The item you're looking for doesn't exist." 
-              : error || "An unexpected error occurred"}
+            {errorMessage || "An unexpected error occurred"}
           </p>
           <Button onClick={handleGoBack} variant="outline">
             Go Back
@@ -486,7 +519,9 @@ export default function EditItemPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <h3 className="text-lg font-semibold mb-2">Item Not Found</h3>
-          <p className="text-muted-foreground mb-4">The item you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground mb-4">
+            The item you're looking for doesn't exist.
+          </p>
           <Button onClick={handleGoBack} variant="outline">
             Go Back
           </Button>
@@ -497,22 +532,33 @@ export default function EditItemPage() {
 
   return (
     <div className="relative min-h-screen p-0 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-3xl">
+      <form onSubmit={handleSubmit} className="w-full max-w-3xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6 mt-4 md:mt-0">
-          <Button variant="outline" size="icon" onClick={handleGoBack}>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={handleGoBack}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Edit Item</h1>
-            <p className="text-muted-foreground">SKU: {currentItem.sku}</p>
+            <p className="text-muted-foreground">
+              SKU: {(currentItem as any).sku || "N/A"}
+            </p>
           </div>
         </div>
 
         {/* Display global error */}
-        {error && (
+        {updateError && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
+            <p className="text-red-800 text-sm">
+              {(updateError as any)?.response?.data?.message ||
+                (updateError as any)?.message ||
+                "Failed to update item"}
+            </p>
           </div>
         )}
 
@@ -549,20 +595,20 @@ export default function EditItemPage() {
                     <input
                       type="radio"
                       name="type"
-                      value="goods"
-                      checked={form.type === "goods"}
-                      onChange={(e) => setForm({...form, type: e.target.value as "goods" | "service"})}
+                      value="Good"
+                      checked={form.type === "Good"}
+                      onChange={handleChange}
                       className="accent-[var(--color-primary)]"
                     />
-                    Goods
+                    Good
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer font-medium">
                     <input
                       type="radio"
                       name="type"
-                      value="service"
-                      checked={form.type === "service"}
-                      onChange={(e) => setForm({...form, type: e.target.value as "goods" | "service"})}
+                      value="Service"
+                      checked={form.type === "Service"}
+                      onChange={handleChange}
                       className="accent-[var(--color-primary)]"
                     />
                     Service
@@ -576,17 +622,30 @@ export default function EditItemPage() {
                 <div className="flex gap-2 items-center">
                   <Select
                     value={form.category || ""}
-                    onValueChange={(val) => setForm({ ...form, category: val, subcategory: "" })}
+                    onValueChange={(val) =>
+                      setForm({ ...form, category: val, subcategory: "" })
+                    }
+                    disabled={categoriesLoading}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat: Category) => (
-                        <SelectItem key={cat._id} value={cat.name}>
-                          {cat.name}
+                      {categoriesLoading ? (
+                        <SelectItem value="loading" disabled>
+                          Loading categories...
                         </SelectItem>
-                      ))}
+                      ) : categories.length === 0 ? (
+                        <SelectItem value="none" disabled>
+                          No categories available
+                        </SelectItem>
+                      ) : (
+                        categories.map((cat: Category) => (
+                          <SelectItem key={cat._id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <Button
@@ -595,6 +654,7 @@ export default function EditItemPage() {
                     size="icon"
                     className="p-2"
                     onClick={() => setShowCategoryModal(true)}
+                    disabled={categoriesLoading}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -610,7 +670,11 @@ export default function EditItemPage() {
                     onValueChange={(val) =>
                       setForm({ ...form, subcategory: val })
                     }
-                    disabled={!form.category || !filteredSubcategories.length}
+                    disabled={
+                      !form.category ||
+                      subcategoriesLoading ||
+                      !filteredSubcategories.length
+                    }
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue
@@ -624,7 +688,7 @@ export default function EditItemPage() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredSubcategories.map((sub) => (
+                      {filteredSubcategories.map((sub: any) => (
                         <SelectItem key={sub._id} value={sub.name}>
                           {sub.name}
                         </SelectItem>
@@ -721,9 +785,9 @@ export default function EditItemPage() {
             />
           </div>
         </Card>
-        
+
         {/* Inventory Tracking Card */}
-        {form.type === "goods" && (
+        {form.type === "Good" && (
           <Card className="p-6 mb-6">
             <h2 className="font-semibold text-lg mb-4">Inventory Management</h2>
             <div className="mb-4">
@@ -735,10 +799,12 @@ export default function EditItemPage() {
                   onChange={handleChange}
                   className="accent-[var(--color-primary)]"
                 />
-                <span className="text-sm font-medium">Track inventory for this item</span>
+                <span className="text-sm font-medium">
+                  Track inventory for this item
+                </span>
               </label>
             </div>
-            
+
             {form.trackInventory && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -808,72 +874,76 @@ export default function EditItemPage() {
             )}
           </Card>
         )}
-        
+
         {/* Dimensions Card */}
-        {form.type === "goods" && (
-          <Card className="p-6 mb-6">
-            <h2 className="font-semibold text-lg mb-4">Dimensions</h2>
-            <div className="flex gap-2 items-center mb-4">
-              <Input
-                type="number"
-                name="length"
-                value={form.length}
-                onChange={handleChange}
-                placeholder="Length"
-                min="0"
-                className="w-1/4"
-              />
-              <span className="mx-1">×</span>
-              <Input
-                type="number"
-                name="width"
-                value={form.width}
-                onChange={handleChange}
-                placeholder="Width"
-                min="0"
-                className="w-1/4"
-              />
-              <span className="mx-1">×</span>
-              <Input
-                type="number"
-                name="height"
-                value={form.height}
-                onChange={handleChange}
-                placeholder="Height"
-                min="0"
-                className="w-1/4"
-              />
-              <Select
-                value={form.dimensionUnit}
-                onValueChange={(val) =>
-                  setForm((f) => ({ ...f, dimensionUnit: val }))
-                }
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cm">cm</SelectItem>
-                  <SelectItem value="mm">mm</SelectItem>
-                  <SelectItem value="m">m</SelectItem>
-                  <SelectItem value="in">in</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Weight</label>
-              <Input
-                type="number"
-                name="weight"
-                value={form.weight}
-                onChange={handleChange}
-                placeholder="e.g. 1.5 (kg)"
-                min="0"
-              />
-            </div>
-          </Card>
+        {form.type === "Good" && (
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <Card className="p-6">
+              <h2 className="font-semibold text-lg mb-4">Dimensions</h2>
+              <div className="flex gap-2 items-center mb-4">
+                <Input
+                  type="number"
+                  name="length"
+                  value={form.length}
+                  onChange={handleChange}
+                  placeholder="Length"
+                  min="0"
+                  className="w-1/4"
+                />
+                <span className="mx-1">×</span>
+                <Input
+                  type="number"
+                  name="width"
+                  value={form.width}
+                  onChange={handleChange}
+                  placeholder="Width"
+                  min="0"
+                  className="w-1/4"
+                />
+                <span className="mx-1">×</span>
+                <Input
+                  type="number"
+                  name="height"
+                  value={form.height}
+                  onChange={handleChange}
+                  placeholder="Height"
+                  min="0"
+                  className="w-1/4"
+                />
+                <Select
+                  value={form.dimensionUnit}
+                  onValueChange={(val) =>
+                    setForm((f) => ({ ...f, dimensionUnit: val }))
+                  }
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cm">cm</SelectItem>
+                    <SelectItem value="mm">mm</SelectItem>
+                    <SelectItem value="m">m</SelectItem>
+                    <SelectItem value="in">in</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  Weight
+                </label>
+                <Input
+                  type="number"
+                  name="weight"
+                  value={form.weight}
+                  onChange={handleChange}
+                  placeholder="e.g. 1.5 (kg)"
+                  min="0"
+                />
+              </div>
+            </Card>
+          </div>
         )}
-        
+
         {/* Tax Card */}
         <Card className="p-6 mb-6">
           <h2 className="font-semibold text-lg mb-4">Tax Information</h2>
@@ -1037,7 +1107,7 @@ export default function EditItemPage() {
             )}
           </div>
         </Card>
-        
+
         {/* Sales & Purchase Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
           <Card className="p-6">
@@ -1045,7 +1115,7 @@ export default function EditItemPage() {
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-xs font-semibold mb-1">
-                  Selling Price (INR) *
+                  Selling Price (INR)
                 </label>
                 <Input
                   type="number"
@@ -1055,11 +1125,6 @@ export default function EditItemPage() {
                   min="0"
                   placeholder="e.g. 1200"
                 />
-                {errors.sellingPrice && (
-                  <div className="text-xs mt-1 text-destructive">
-                    {errors.sellingPrice}
-                  </div>
-                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">
@@ -1137,14 +1202,11 @@ export default function EditItemPage() {
                       <CommandInput
                         placeholder="Search vendors..."
                         value={searchValue}
-                        onValueChange={handleVendorSearch}
+                        onValueChange={setSearchValue}
                       />
                       <CommandList>
-                        <CommandEmpty>
-                          {vendorLoading && searchValue ? "Searching..." : 
-                           searchValue ? "No vendors found." : "No vendors available"}
-                        </CommandEmpty>
-                        {filteredVendors.length > 0 ? (
+                        <CommandEmpty>No vendors found.</CommandEmpty>
+                        {filteredVendors.length > 0 && (
                           <CommandGroup>
                             {filteredVendors.map((vendor: any) => (
                               <CommandItem
@@ -1171,11 +1233,6 @@ export default function EditItemPage() {
                               </CommandItem>
                             ))}
                           </CommandGroup>
-                        ) : (
-                          <CommandEmpty>
-                            {vendorLoading && searchValue ? "Searching..." : 
-                             searchValue ? "No vendors found." : "No vendors available"}
-                          </CommandEmpty>
                         )}
                       </CommandList>
                     </Command>
@@ -1189,7 +1246,7 @@ export default function EditItemPage() {
                     variant="outline"
                     size="sm"
                     className="mt-2 text-xs"
-                    onClick={clearVendorSelection}
+                    onClick={clearSelection}
                   >
                     Clear Selection
                   </Button>
@@ -1202,13 +1259,13 @@ export default function EditItemPage() {
                       <strong>Selected:</strong> {selectedVendor}
                     </div>
                     {(() => {
-                      // Find vendor by name, or by ID if selectedVendor is an ID
                       const vendor = filteredVendors.find(
-                        (v: any) => v.name === selectedVendor || v._id === selectedVendor
+                        (v: any) =>
+                          v.name === selectedVendor || v._id === selectedVendor
                       );
                       return vendor ? (
                         <div className="text-xs text-muted-foreground mt-1">
-                          {vendor.email} • {vendor.phone}
+                          {(vendor as any).email} • {(vendor as any).phone}
                         </div>
                       ) : null;
                     })()}
@@ -1218,29 +1275,28 @@ export default function EditItemPage() {
             </div>
           </Card>
         </div>
-      </div>
-      
-      {/* Action Buttons */}
-      <div className="w-full max-w-3xl flex justify-end gap-2 mt-4">
-        <Button
-          type="button"
-          variant="outline"
-          className="px-4 py-2 rounded font-semibold border border-muted-foreground text-muted-foreground hover:bg-muted"
-          onClick={handleGoBack}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          onClick={handleSubmit}
-          disabled={loading}
-          className="px-4 py-2 rounded font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? "Updating..." : "Update Item"}
-        </Button>
-      </div>
-      
+
+        {/* Action Buttons */}
+        <div className="w-full flex justify-end gap-2 mt-4 mb-6">
+          <Button
+            type="button"
+            variant="outline"
+            className="px-4 py-2 rounded font-semibold border border-muted-foreground text-muted-foreground hover:bg-muted"
+            onClick={handleGoBack}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 rounded font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Updating..." : "Update Item"}
+          </Button>
+        </div>
+      </form>
+
       {/* Modals for Category and Subcategory */}
       <CategoryModal
         open={showCategoryModal}
@@ -1381,7 +1437,10 @@ function DragDropImageUpload({
             type="button"
             aria-label="Remove image"
             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5 shadow-md z-20 border-2 border-white"
-            style={{ outline: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}
+            style={{
+              outline: "none",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+            }}
             onClick={handleRemove}
             tabIndex={0}
             onMouseDown={(e) => e.stopPropagation()}

@@ -76,13 +76,13 @@ export const useSearchPurchaseOrders = (
   enabled: boolean = true
 ) => {
   const hasSearchTerm = !!(filters?.search && filters.search.trim().length > 0);
-  
+
   return useQuery({
     queryKey: purchaseOrderKeys.search(filters),
     queryFn: () => {
       // Double check before making API call
       if (!hasSearchTerm) {
-        throw new Error('Search term is required');
+        throw new Error("Search term is required");
       }
       return purchaseOrderApi.searchPurchaseOrders(filters!);
     },

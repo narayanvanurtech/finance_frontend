@@ -5,6 +5,13 @@ type Invoice = {
   label: string;
 };
 
+type PurchaseOrder = {
+  _id: string;
+  purchaseOrderNumber: string;
+  purchaseOrderDate: string;
+  vendorId: any;
+};
+
 type HeaderBarProps = {
   debitNoteNo: string;
   setDebitNoteNo: (val: string) => void;
@@ -22,6 +29,9 @@ type HeaderBarProps = {
   setDebitType: (val: string) => void;
   invoices: Invoice[];
   reasons: string[];
+  purchaseOrders?: PurchaseOrder[];
+  onPurchaseOrderSelect?: (purchaseOrder: PurchaseOrder) => void;
+  selectedVendorId?: string;
 };
 
 const HeaderBar: React.FC<HeaderBarProps> = ({
@@ -41,6 +51,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   setDebitType,
   invoices,
   reasons,
+  purchaseOrders = [],
+  onPurchaseOrderSelect,
+  selectedVendorId,
 }) => {
   const debitTypes = [
     { value: "quality_issue", label: "Quality Issue" },
@@ -77,15 +90,27 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Link Invoice</label>
+        <label className="block text-sm font-medium mb-1">
+          Select Purchase Order {selectedVendorId && <span className="text-red-500">*</span>}
+        </label>
         <select
           className="w-full border rounded px-3 py-2"
-          value={linkedInvoice}
-          onChange={e => setLinkedInvoice(e.target.value)}
+          value={purchaseId}
+          onChange={(e) => {
+            const selectedPO = purchaseOrders.find(po => po._id === e.target.value);
+            if (selectedPO && onPurchaseOrderSelect) {
+              onPurchaseOrderSelect(selectedPO);
+            }
+          }}
+          disabled={!selectedVendorId}
         >
-          <option value="">Select Invoice</option>
-          {invoices.map(inv => (
-            <option key={inv.id} value={inv.id}>{inv.label}</option>
+          <option value="">
+            {selectedVendorId ? "Select Purchase Order" : "Select vendor first"}
+          </option>
+          {purchaseOrders.map(po => (
+            <option key={po._id} value={po._id}>
+              {po.purchaseOrderNumber} - {new Date(po.purchaseOrderDate).toLocaleDateString()}
+            </option>
           ))}
         </select>
       </div>
@@ -107,28 +132,15 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">
-          Purchase ID <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          className="w-full border rounded px-3 py-2"
-          value={purchaseId}
-          onChange={e => setPurchaseId(e.target.value)}
-          placeholder="Enter Purchase ID"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">
           Original Bill Number <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded px-3 py-2 bg-gray-50"
           value={originalBillNumber}
           onChange={e => setOriginalBillNumber(e.target.value)}
-          placeholder="Enter Original Bill Number"
-          required
+          placeholder="Auto-filled from purchase order"
+          readOnly
         />
       </div>
       <div>

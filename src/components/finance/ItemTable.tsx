@@ -208,7 +208,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
               <th className="px-3 py-2 text-left min-w-[200px]">
                 Item Details
               </th>
-              
+
               <th className="px-3 py-2 text-center min-w-[80px]">Qty</th>
               <th className="px-3 py-2 text-center min-w-[100px]">Rate</th>
               <th className="px-3 py-2 text-right min-w-[140px]">Discount</th>
@@ -263,19 +263,6 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     }
                   />
                 </td>
-
-                {/* Item Reason */}
-                {/* <td className="px-3 py-3 align-top">
-                  <Input
-                    type="text"
-                    className="w-full min-w-[140px] h-10"
-                    placeholder="Enter reason"
-                    value={item.reason || ""}
-                    onChange={(e) =>
-                      handleItemChange(idx, "reason", e.target.value)
-                    }
-                  />
-                </td> */}
 
                 {/* Qty */}
                 <td className="px-3 py-3 align-top">

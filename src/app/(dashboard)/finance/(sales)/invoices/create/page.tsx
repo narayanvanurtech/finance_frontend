@@ -6,7 +6,7 @@ import InvoiceForm, {
   InvoiceFormValues,
 } from "@/components/finance/invoice/InvoiceForm";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
@@ -21,7 +21,8 @@ const generateInvoiceNumber = () => {
 export default function CreateInvoicePage() {
   const router = useRouter();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+  const { data: itemsData } = useItems("");
+  const items = itemsData?.result?.items || [];
   const [loading, setLoading] = useState(false);
   const createInvoice = useInvoiceStore((state) => state.createInvoice);
   const { details } = useBussinessStore();

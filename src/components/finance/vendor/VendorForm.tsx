@@ -231,6 +231,7 @@ const FormInput = React.memo(
     className = "",
     value,
     onChange,
+    onBlur,
     error,
     touched,
     ...props
@@ -243,11 +244,12 @@ const FormInput = React.memo(
     className?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
     error?: string;
     touched?: boolean;
   } & Omit<
     React.InputHTMLAttributes<HTMLInputElement>,
-    "name" | "type" | "value" | "onChange"
+    "name" | "type" | "value" | "onChange" | "onBlur"
   >) => (
     <div className="space-y-2">
       <Label
@@ -267,6 +269,7 @@ const FormInput = React.memo(
         name={name}
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         placeholder={placeholder}
         className={`
         ${
@@ -398,8 +401,6 @@ export default function VendorForm({
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value, type } = e.target;
 
-      setTouched((prev) => ({ ...prev, [name]: true }));
-
       if (type === "checkbox") {
         const target = e.target as HTMLInputElement;
         setForm((prev) => ({
@@ -434,6 +435,79 @@ export default function VendorForm({
     [errors]
   );
 
+  // Handle blur to mark field as touched and validate
+  const handleBlur = useCallback(
+    (name: string) => {
+      setTouched((prev) => ({ ...prev, [name]: true }));
+
+      // Validate field immediately on blur
+      const value = form[name as keyof VendorFormValues];
+      const valueStr = typeof value === "string" ? value : "";
+
+      // Check required fields
+      if (name === "name" && !valueStr.trim()) {
+        setErrors((prev) => ({ ...prev, name: "Business Name is required" }));
+      } else if (name === "country" && !valueStr.trim()) {
+        setErrors((prev) => ({ ...prev, country: "Country is required" }));
+      } else if (name === "email") {
+        if (!valueStr.trim()) {
+          setErrors((prev) => ({
+            ...prev,
+            email: "Email address is required",
+          }));
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valueStr)) {
+          setErrors((prev) => ({
+            ...prev,
+            email: "Please enter a valid email address",
+          }));
+        }
+      } else if (name === "phone") {
+        if (!valueStr.trim()) {
+          setErrors((prev) => ({ ...prev, phone: "Phone number is required" }));
+        } else if (
+          !/^[\+]?[1-9][\d]{0,15}$/.test(valueStr.replace(/\s/g, ""))
+        ) {
+          setErrors((prev) => ({
+            ...prev,
+            phone: "Please enter a valid phone number",
+          }));
+        }
+      }
+      // Validate optional fields format if they have values
+      else if (
+        name === "gstin" &&
+        valueStr.trim() &&
+        !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
+          valueStr
+        )
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          gstin: "Please enter a valid GSTIN format (e.g., 22AAAAA0000A1Z5)",
+        }));
+      } else if (
+        name === "panNumber" &&
+        valueStr.trim() &&
+        !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(valueStr)
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          panNumber: "Please enter a valid PAN format (e.g., ABCDE1234F)",
+        }));
+      } else if (
+        name === "postalCode" &&
+        valueStr.trim() &&
+        !/^\d{6}$/.test(valueStr)
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          postalCode: "Please enter a valid 6-digit postal code",
+        }));
+      }
+    },
+    [form]
+  );
+
   // Handler for shadcn Select components
   const handleSelectChange = useCallback(
     (name: string) => (value: string) => {
@@ -443,9 +517,14 @@ export default function VendorForm({
         [name]: value,
       }));
 
-      // Clear error when user starts typing
+      // Clear error when user selects a value
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
+      }
+
+      // Validate immediately for required fields
+      if (name === "country" && !value.trim()) {
+        setErrors((prev) => ({ ...prev, [name]: "Country is required" }));
       }
     },
     [errors]
@@ -689,6 +768,7 @@ export default function VendorForm({
                 required
                 value={form.name || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("name")}
                 error={errors.name}
                 touched={touched.name}
               />
@@ -698,6 +778,7 @@ export default function VendorForm({
                 placeholder="Display name for invoices"
                 value={form.displayName || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("displayName")}
                 error={errors.displayName}
                 touched={touched.displayName}
               />
@@ -740,6 +821,7 @@ export default function VendorForm({
               placeholder="22AAAAA0000A1Z5"
               value={form.gstin || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("gstin")}
               error={errors.gstin}
               touched={touched.gstin}
             />
@@ -759,6 +841,7 @@ export default function VendorForm({
               placeholder="ABCDE1234F"
               value={form.panNumber || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("panNumber")}
               error={errors.panNumber}
               touched={touched.panNumber}
             />
@@ -811,6 +894,7 @@ export default function VendorForm({
               placeholder="Enter city name"
               value={form.city || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("city")}
               error={errors.city}
               touched={touched.city}
             />
@@ -820,6 +904,7 @@ export default function VendorForm({
               placeholder="110001"
               value={form.postalCode || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("postalCode")}
               error={errors.postalCode}
               touched={touched.postalCode}
             />
@@ -830,6 +915,7 @@ export default function VendorForm({
                 placeholder="Enter street address"
                 value={form.streetAddress || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("streetAddress")}
                 error={errors.streetAddress}
                 touched={touched.streetAddress}
               />
@@ -841,6 +927,7 @@ export default function VendorForm({
                 placeholder="Full address for correspondence"
                 value={form.address || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("address")}
                 error={errors.address}
                 touched={touched.address}
               />
@@ -865,6 +952,7 @@ export default function VendorForm({
               className="bg-gray-50"
               value={form.uniqueKey || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("uniqueKey")}
               error={errors.uniqueKey}
               touched={touched.uniqueKey}
             />
@@ -877,6 +965,7 @@ export default function VendorForm({
                 required
                 value={form.email || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("email")}
                 error={errors.email}
                 touched={touched.email}
               />
@@ -900,6 +989,7 @@ export default function VendorForm({
                 required
                 value={form.phone || ""}
                 onChange={handleChange}
+                onBlur={() => handleBlur("phone")}
                 error={errors.phone}
                 touched={touched.phone}
               />
@@ -921,6 +1011,7 @@ export default function VendorForm({
               placeholder="Primary contact person"
               value={form.contact || ""}
               onChange={handleChange}
+              onBlur={() => handleBlur("contact")}
               error={errors.contact}
               touched={touched.contact}
             />

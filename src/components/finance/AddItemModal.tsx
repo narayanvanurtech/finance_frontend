@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCategoryStore } from "@/stores/financeStore/useCategoryStore";
 import {
   Select,
   SelectTrigger,
@@ -18,11 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useSubcategoryStore } from "@/stores/financeStore/useSubcategoryStore";
-import { useVendorStore } from "@/stores/financeStore/useVendorStore";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useCreateItem } from "@/hooks/useItemQueries";
+import { useGetCategories } from "@/hooks/useCategoryQueries";
+import { useGetSubcategories } from "@/hooks/useSubcategoryQueries";
+import { useGetVendors } from "@/hooks/useVendorQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 interface AddItemModalProps {
   open: boolean;
@@ -111,22 +112,36 @@ export default function AddItemModal({
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
-  const categories = useCategoryStore((state) => state.categories);
-  const createCategory = useCategoryStore((state) => state.createCategory);
-  const subcategories = useSubcategoryStore((state) => state.subcategories);
-  const createSubcategory = useSubcategoryStore(
-    (state) => state.createSubcategory
-  );
-  const vendors = useVendorStore((state) => state.vendors);
-  const router = useRouter();
-  const [showAddCategory, setShowAddCategory] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSubcategoryModal, setShowSubcategoryModal] = useState(false);
-  const [newCategory, setNewCategory] = useState("");
   const [taxType, setTaxType] = useState<"inter" | "intra">("inter");
   const [autoSplitGST, setAutoSplitGST] = useState(true);
   const [totalGST, setTotalGST] = useState("");
-  const createItem = useItemStore((state) => state.createItem);
+
+  // Get user and companyId
+  const { user } = useAuthStore();
+  const companyId = user?.companyId;
+
+  // React Query hooks
+  const { data: categoriesData } = useGetCategories({
+    companyId: companyId || "",
+    limit: 1000,
+  });
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+
+  const { data: subcategoriesData } = useGetSubcategories({
+    companyId: companyId || "",
+    limit: 1000,
+  });
+  const subcategories = Array.isArray(subcategoriesData)
+    ? subcategoriesData
+    : [];
+
+  const { data: vendorsData } = useGetVendors();
+  const vendors = Array.isArray(vendorsData) ? vendorsData : [];
+
+  const createItemMutation = useCreateItem(companyId || "");
+  const router = useRouter();
 
   // Filter subcategories for the selected category
   const selectedCategoryObj = categories.find(
@@ -243,9 +258,9 @@ export default function AddItemModal({
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length === 0) {
-      await createItem({
+      createItemMutation.mutate({
+        companyId: companyId || "",
         name: form.name,
-        sku: form.sku,
         description: form.description,
         type: form.type,
         category: form.category,
@@ -266,32 +281,36 @@ export default function AddItemModal({
         purchaseDescription: form.purchaseDescription,
         preferredVendor: form.preferredVendor,
       });
-      setForm({
-        name: "",
-        sku: "",
-        description: "",
-        type: "goods",
-        category: "",
-        subcategory: "",
-        hsn: "",
-        unit: "",
-        weight: "",
-        length: "",
-        width: "",
-        height: "",
-        dimensionUnit: "cm",
-        image: null,
-        igst: "",
-        sgst: "",
-        cgst: "",
-        sellingPrice: "",
-        salesDescription: "",
-        costPrice: "",
-        purchaseDescription: "",
-        preferredVendor: "",
-      });
-      setImagePreview(null);
-      onClose();
+
+      // Reset form on next effect when mutation succeeds
+      if (createItemMutation.status === "success") {
+        setForm({
+          name: "",
+          sku: "",
+          description: "",
+          type: "goods",
+          category: "",
+          subcategory: "",
+          hsn: "",
+          unit: "",
+          weight: "",
+          length: "",
+          width: "",
+          height: "",
+          dimensionUnit: "cm",
+          image: null,
+          igst: "",
+          sgst: "",
+          cgst: "",
+          sellingPrice: "",
+          salesDescription: "",
+          costPrice: "",
+          purchaseDescription: "",
+          preferredVendor: "",
+        });
+        setImagePreview(null);
+        onClose();
+      }
     }
   };
 
@@ -425,7 +444,7 @@ export default function AddItemModal({
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredSubcategories.map((sub) => (
+                      {filteredSubcategories.map((sub: any) => (
                         <SelectItem key={sub._id} value={sub.name}>
                           {sub.name}
                         </SelectItem>
@@ -838,7 +857,7 @@ export default function AddItemModal({
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {vendors.map((vendor) => (
+                        {vendors.map((vendor: any) => (
                           <SelectItem key={vendor._id} value={vendor.name}>
                             {vendor.name}
                           </SelectItem>

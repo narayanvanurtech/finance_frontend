@@ -8,6 +8,7 @@ import categoryApi, {
   PaginationInfo,
 } from "../../api/finance/categoryApi";
 import axios, { AxiosError, AxiosInstance } from "axios";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 interface CategoryState {
   // Data
@@ -26,8 +27,12 @@ interface CategoryState {
   error: string | null;
 
   // Actions
-  fetchCategories: (filters?: GetCategoriesFilters) => Promise<void>;
-  createCategory: (data: CreateCategoryPayload) => Promise<void>;
+  fetchCategories: (
+    filters?: Omit<GetCategoriesFilters, "companyId">
+  ) => Promise<void>;
+  createCategory: (
+    data: Omit<CreateCategoryPayload, "companyId">
+  ) => Promise<void>;
   updateCategory: (id: string, data: UpdateCategoryPayload) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   getCategoryById: (id: string) => Promise<void>;
@@ -57,18 +62,34 @@ export const useCategoryStore = create<CategoryState>()(
       ...initialState,
 
       // Fetch categories with optional filters
-      fetchCategories: async (filters?: GetCategoriesFilters) => {
+      fetchCategories: async (
+        filters?: Omit<GetCategoriesFilters, "companyId">
+      ) => {
         set({ loading: true, error: null });
         try {
-          const response = await categoryApi.getCategories(filters);
+          const user = useAuthStore.getState().user;
+          const companyId = user?.companyId;
+
+          if (!companyId) {
+            throw new Error("Company ID is required");
+          }
+
+          const response = await categoryApi.getCategories({
+            ...filters,
+            companyId,
+          });
+
+          console.log("Category API Response:", response);
+          console.log("Categories Data:", response?.data);
+
           set({
-            categories: response.result.categories,
-            pagination: response.result.pagination,
+            categories: response?.data || [],
+            pagination: response?.pagination || null,
             loading: false,
           });
         } catch (error) {
           let errorMessage = "Failed to fetch categories";
-          
+
           if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error instanceof Error) {
@@ -78,16 +99,42 @@ export const useCategoryStore = create<CategoryState>()(
           set({
             error: errorMessage,
             loading: false,
+            categories: [], // Ensure categories is always an array
           });
         }
       },
 
       // Create new category
-      createCategory: async (data: CreateCategoryPayload) => {
+      createCategory: async (
+        data: Omit<CreateCategoryPayload, "companyId">
+      ) => {
         set({ creating: true, error: null });
         try {
-          const response = await categoryApi.createCategory(data);
-          const newCategory = response.result;
+          const user = useAuthStore.getState().user;
+          const companyId = user?.companyId;
+
+          if (!companyId) {
+            throw new Error("Company ID is required");
+          }
+
+          const response = await categoryApi.createCategory({
+            ...data,
+            companyId,
+          });
+
+          console.log("Create Category Response:", response);
+          const newCategory = response?.result;
+
+          if (!newCategory) {
+            console.error("Invalid response structure:", response);
+            // If response is successful but structure is different, try to refetch
+            if (response?.success) {
+              await get().fetchCategories();
+              set({ creating: false, error: null });
+              return;
+            }
+            throw new Error("Invalid response from server");
+          }
 
           set((state) => ({
             categories: [newCategory, ...state.categories],
@@ -108,7 +155,7 @@ export const useCategoryStore = create<CategoryState>()(
           }
         } catch (error) {
           let errorMessage = "Failed to create category";
-          
+
           if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error instanceof Error) {
@@ -128,9 +175,20 @@ export const useCategoryStore = create<CategoryState>()(
         set({ updating: true, error: null });
         try {
           const response = await categoryApi.updateCategory(id, data);
-          const updatedCategory = response.result;
+          const updatedCategory = response?.result;
 
-          console.log("response", response);
+          console.log("Update Category Response:", response);
+
+          if (!updatedCategory) {
+            console.error("Invalid response structure:", response);
+            // If response is successful but structure is different, try to refetch
+            if (response?.success) {
+              await get().fetchCategories();
+              set({ updating: false, error: null });
+              return;
+            }
+            throw new Error("Invalid response from server");
+          }
 
           set((state) => ({
             categories: state.categories.map((cat) =>
@@ -191,7 +249,7 @@ export const useCategoryStore = create<CategoryState>()(
           }
         } catch (error) {
           let errorMessage = "Failed to delete category";
-          
+
           if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error instanceof Error) {
@@ -212,12 +270,12 @@ export const useCategoryStore = create<CategoryState>()(
         try {
           const response = await categoryApi.getCategoryById(id);
           set({
-            selectedCategory: response.result,
+            selectedCategory: response?.result || null,
             loading: false,
           });
         } catch (error) {
           let errorMessage = "Failed to fetch category";
-          
+
           if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error instanceof Error) {
@@ -237,12 +295,12 @@ export const useCategoryStore = create<CategoryState>()(
         try {
           const response = await categoryApi.getCategoryHierarchy();
           set({
-            categoryHierarchy: response.result,
+            categoryHierarchy: response?.result || [],
             loading: false,
           });
         } catch (error) {
           let errorMessage = "Failed to fetch category hierarchy";
-          
+
           if (axios.isAxiosError(error) && error.response?.data?.message) {
             errorMessage = error.response.data.message;
           } else if (error instanceof Error) {
@@ -273,9 +331,15 @@ export const useCategoryStore = create<CategoryState>()(
       name: "category-store",
       // Only persist categories and hierarchy, not loading states or errors
       partialize: (state) => ({
-        categories: state.categories,
-        categoryHierarchy: state.categoryHierarchy,
+        categories: state.categories || [],
+        categoryHierarchy: state.categoryHierarchy || [],
         pagination: state.pagination,
+      }),
+      merge: (persistedState: any, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        categories: persistedState?.categories || [],
+        categoryHierarchy: persistedState?.categoryHierarchy || [],
       }),
     }
   )
