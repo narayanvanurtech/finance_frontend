@@ -125,6 +125,7 @@ export default function EditPurchaseOrderPage() {
     terms: purchaseOrder.terms || "",
     notes: purchaseOrder.notes || "",
     attachments: [],
+    existingAttachments: purchaseOrder.attachments || [], // ✅ Add this
     showSignature: false,
   };
 
@@ -178,6 +179,7 @@ export default function EditPurchaseOrderPage() {
       mode="edit"
       loading={isPending}
       mockVendors={vendors}
+      purchaseOrderId={purchaseOrderId} // ✅ Add this - important!
     />
   );
 }

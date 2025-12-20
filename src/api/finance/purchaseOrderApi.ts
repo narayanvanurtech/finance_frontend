@@ -63,6 +63,7 @@ export interface CreatePurchaseOrderPayload {
   items: PurchaseOrderItem[];
   terms?: string;
   notes?: string;
+  attachments?: string[]; // Array of attachment URLs (optional)
 }
 
 export interface UpdatePurchaseOrderPayload {
@@ -257,6 +258,41 @@ export const bulkDeletePurchaseOrders = async (ids: string[]) => {
   return res.data;
 };
 
+// ADD ATTACHMENT
+export const addAttachment = async (
+  purchaseOrderId: string,
+  file: File
+): Promise<PurchaseOrderResponse> => {
+  const formData = new FormData();
+  formData.append("attachment", file);
+
+  const res = await axiosInstance.post(
+    `/api/v1/finance/purchases/purchase-orders/addAttachment/${purchaseOrderId}`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  return res.data;
+};
+
+// REMOVE ATTACHMENT
+export const removeAttachment = async (
+  purchaseOrderId: string,
+  attachmentIndex: number,
+  attachmentUrl: string
+): Promise<PurchaseOrderResponse> => {
+  const res = await axiosInstance.delete(
+    `/api/v1/finance/purchases/purchase-orders/removeAttachment/${purchaseOrderId}/${attachmentIndex}`,
+    {
+      data: { url: attachmentUrl }, // ✅ Backend expects url field
+    }
+  );
+  return res.data;
+};
+
 // EXPORT DEFAULT
 export default {
   createPurchaseOrder,
@@ -269,4 +305,6 @@ export default {
   getPurchaseOrderStats,
   searchPurchaseOrders,
   bulkDeletePurchaseOrders,
+  addAttachment,
+  removeAttachment,
 };

@@ -10,6 +10,10 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import AddVendorModal from "@/components/finance/AddVendorModal";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import type { Vendor } from "@/api/finance/vendorApi";
+import {
+  useAddAttachment,
+  useRemoveAttachment,
+} from "@/hooks/usePurchaseOrderQueries";
 
 export type PurchaseOrderFormValues = {
   purchaseOrderNo: string;
@@ -36,6 +40,7 @@ export type PurchaseOrderFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  existingAttachments?: string[];
   showSignature: boolean;
 };
 
@@ -47,6 +52,7 @@ type PurchaseOrderFormProps = {
   loading?: boolean;
   mockVendors: Vendor[];
   mockProducts?: any[];
+  purchaseOrderId?: string;
 };
 
 const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
@@ -56,11 +62,14 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   onSuccess,
   loading,
   mockVendors,
-  
+  purchaseOrderId,
 }) => {
-  
   // Use vendors passed as props
   const availableVendors = mockVendors;
+
+  // Attachment hooks
+  const addAttachmentMutation = useAddAttachment();
+  const removeAttachmentMutation = useRemoveAttachment();
   // Header state
   const [purchaseOrderNo, setPurchaseOrderNo] = useState(
     initialValues.purchaseOrderNo || ""
@@ -70,12 +79,20 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   );
   const [orderDate, setOrderDate] = useState(initialValues.orderDate || "");
   const [dueDate, setDueDate] = useState(initialValues.dueDate || "");
-  const [deliveryDate, setDeliveryDate] = useState(initialValues.deliveryDate || "");
-  const [paymentTerms, setPaymentTerms] = useState(initialValues.paymentTerms || "Net 30");
+  const [deliveryDate, setDeliveryDate] = useState(
+    initialValues.deliveryDate || ""
+  );
+  const [paymentTerms, setPaymentTerms] = useState(
+    initialValues.paymentTerms || "Net 30"
+  );
   const [status, setStatus] = useState(initialValues.status || "Draft");
   const [priority, setPriority] = useState(initialValues.priority || "Medium");
-  const [referenceNumber, setReferenceNumber] = useState(initialValues.referenceNumber || "");
-  const [deliveryAddress, setDeliveryAddress] = useState(initialValues.deliveryAddress || "");
+  const [referenceNumber, setReferenceNumber] = useState(
+    initialValues.referenceNumber || ""
+  );
+  const [deliveryAddress, setDeliveryAddress] = useState(
+    initialValues.deliveryAddress || ""
+  );
   const [currency, setCurrency] = useState(initialValues.currency || "INR");
   // Vendor state
   const [vendorId, setVendorId] = useState(initialValues.vendorId);
@@ -106,12 +123,36 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   const [attachments, setAttachments] = useState<File[]>(
     initialValues.attachments
   );
+  const [existingAttachments, setExistingAttachments] = useState<string[]>(
+    initialValues.existingAttachments || []
+  );
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Attachment handlers
+  const handleAddAttachment = async (file: File) => {
+    if (!purchaseOrderId) return;
+    await addAttachmentMutation.mutateAsync({
+      purchaseOrderId,
+      file,
+    });
+  };
+
+  const handleRemoveAttachment = async (
+    attachmentIndex: number,
+    attachmentUrl: string
+  ) => {
+    if (!purchaseOrderId) return;
+    await removeAttachmentMutation.mutateAsync({
+      purchaseOrderId,
+      attachmentIndex,
+      attachmentUrl,
+    });
+  };
 
   // Handlers for items
   const handleItemChange = (idx: number, field: string, value: any) => {
@@ -279,28 +320,28 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         )}
       </div>
       {/* Flex row for billed to (business) and billed by (vendor) details */}
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {/* Business Details */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
-                  Business Details
-                </h3>
-                <YourDetailsSection businessDetails={businessDetails} hideSelector />
-              </div>
-      
-              {/* Vendor Details */}
-      
-              <SelectVendorSection
-                vendorId={vendorId}
-                onVendorSelect={handleVendorSelect}
-                showAddVendor={showAddVendor}
-                setShowAddVendor={setShowAddVendor}
-                vendorDetails={vendorDetails}
-                setVendorDetails={setVendorDetails}
-                handleAddVendor={() => setShowAddVendor(true)}
-                mockVendors={mockVendors}
-              />
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* Business Details */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-3">
+            Business Details
+          </h3>
+          <YourDetailsSection businessDetails={businessDetails} hideSelector />
+        </div>
+
+        {/* Vendor Details */}
+
+        <SelectVendorSection
+          vendorId={vendorId}
+          onVendorSelect={handleVendorSelect}
+          showAddVendor={showAddVendor}
+          setShowAddVendor={setShowAddVendor}
+          vendorDetails={vendorDetails}
+          setVendorDetails={setVendorDetails}
+          handleAddVendor={() => setShowAddVendor(true)}
+          mockVendors={mockVendors}
+        />
+      </div>
 
       {/* Delivery Address Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -308,7 +349,9 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
           Delivery Address
         </h3>
         <div>
-          <label className="block text-sm font-medium mb-2">Delivery Location</label>
+          <label className="block text-sm font-medium mb-2">
+            Delivery Location
+          </label>
           <textarea
             className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
             value={deliveryAddress}
@@ -335,7 +378,6 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         setCessList={() => {}}
         taxConfiguration={"IGST"}
         setTaxConfiguration={() => {}}
-       
       />
       {/* Error message for items */}
       {errors.items && (
@@ -363,6 +405,14 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         handleAttachment={handleAttachment}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
+        purchaseOrderId={purchaseOrderId}
+        existingAttachments={existingAttachments}
+        onAddAttachment={handleAddAttachment}
+        onRemoveAttachment={handleRemoveAttachment}
+        mode={mode}
+        isLoadingAttachment={
+          addAttachmentMutation.isPending || removeAttachmentMutation.isPending
+        }
       />
       <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
       <AddItemModal

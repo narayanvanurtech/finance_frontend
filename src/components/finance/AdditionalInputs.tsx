@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { IoClose } from "react-icons/io5";
 import SignaturePad from "@/components/finance/SignaturePad";
+import AttachmentManager from "@/components/finance/AttachmentManager";
 
 export type AdditionalInputsProps = {
   terms: string;
@@ -21,6 +22,13 @@ export type AdditionalInputsProps = {
   handleAttachment: (e: React.ChangeEvent<HTMLInputElement>) => void;
   showSignature: boolean;
   setShowSignature: React.Dispatch<React.SetStateAction<boolean>>;
+  // New props for attachment management
+  purchaseOrderId?: string;
+  existingAttachments?: string[];
+  onAddAttachment?: (file: File) => Promise<void>;
+  onRemoveAttachment?: (index: number, url: string) => Promise<void>; // ✅ Added url parameter
+  mode?: "create" | "edit";
+  isLoadingAttachment?: boolean;
 };
 
 const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
@@ -32,6 +40,12 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   handleAttachment,
   showSignature,
   setShowSignature,
+  purchaseOrderId,
+  existingAttachments = [],
+  onAddAttachment,
+  onRemoveAttachment,
+  mode = "create",
+  isLoadingAttachment = false,
 }) => {
   const [signatureMode, setSignatureMode] = useState<"none" | "upload" | "pad">(
     "none"
@@ -154,24 +168,39 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
           </Button>
         )}
       </div>
-      <div>
-        <label className="block text-xs font-semibold mb-1 text-gray-500">
-          Attachment Upload
-        </label>
-        <Input
-          type="file"
-          className="input"
-          multiple
-          onChange={handleAttachment}
+      
+      {/* Attachment Manager */}
+      <div className="md:col-span-2">
+        <AttachmentManager
+          purchaseOrderId={purchaseOrderId}
+          existingAttachments={existingAttachments}
+          onAdd={onAddAttachment}
+          onRemove={onRemoveAttachment}
+          localAttachments={attachments}
+          onLocalAdd={(file) => {
+            const dt = new DataTransfer();
+            attachments.forEach(f => dt.items.add(f));
+            dt.items.add(file);
+            const event = {
+              target: { files: dt.files }
+            } as any;
+            handleAttachment(event);
+          }}
+          onLocalRemove={(index) => {
+            const dt = new DataTransfer();
+            attachments.forEach((f, i) => {
+              if (i !== index) dt.items.add(f);
+            });
+            const event = {
+              target: { files: dt.files }
+            } as any;
+            handleAttachment(event);
+          }}
+          mode={mode}
+          isLoading={isLoadingAttachment}
         />
-        {attachments.length > 0 && (
-          <ul className="mt-2 text-xs text-gray-600">
-            {attachments.map((file, i) => (
-              <li key={i}>{file.name}</li>
-            ))}
-          </ul>
-        )}
       </div>
+
       <div className="flex flex-col gap-2 mt-4">
         <span className="font-semibold text-sm mb-1">Signature Block</span>
         <div className="flex gap-4 items-center">

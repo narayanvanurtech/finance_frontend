@@ -99,6 +99,7 @@ export const transformFormToCreatePayload = (
       }),
     terms: formValues.terms,
     notes: formValues.notes,
+    attachments: [], // Send empty array for attachments (files will be uploaded separately if needed)
   };
 };
 

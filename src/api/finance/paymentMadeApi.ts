@@ -88,10 +88,14 @@ interface PayoutReceiptStats {
   _id: null;
   totalReceipts: number;
   totalAmountPaid: number;
+  totalGrossAmount: number;
   totalTdsDeducted: number;
   totalTransactionCharges: number;
+  totalAllocatedAmount: number;
   advancePayments: number;
+  advancePaymentsCount: number;
   settlementPayments: number;
+  settlementPaymentsCount: number;
 }
 
 interface StatsResponse {

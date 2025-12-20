@@ -252,15 +252,37 @@ export default function PaymentsMadeForm({
 
   // Filter purchase orders for this vendor (memoized to prevent re-renders)
   const vendorPurchases = React.useMemo(() => {
+    if (!vendorId || vendorId === "new") {
+      console.log("❌ No vendor selected");
+      return [];
+    }
+
     const filtered = purchaseOrders.filter((po: any) => {
       // Handle different vendorId structures
       let poVendorId = null;
 
+      // Console logs show vendorId is coming as a string in the object
+      // Example from logs: {poVendorId: '694398e89abdf58be860aa7a', ...}
+      console.log(`  PO ${po.purchaseOrderNumber}:`, {
+        rawVendorId: po.vendorId,
+        vendorIdType: typeof po.vendorId,
+      });
+
       // Try to get vendorId from different possible locations
       if (typeof po.vendorId === "string") {
         poVendorId = po.vendorId;
-      } else if (po.vendorId?._id) {
-        poVendorId = po.vendorId._id;
+      } else if (typeof po.vendorId === "object" && po.vendorId !== null) {
+        // If vendorId is an object, try to get _id or the ID from the object
+        if (po.vendorId._id) {
+          poVendorId = po.vendorId._id;
+        } else {
+          // Sometimes the object itself contains the ID as a property
+          // Try to find any property that looks like an ID
+          const keys = Object.keys(po.vendorId);
+          if (keys.length > 0) {
+            poVendorId = po.vendorId[keys[0]]; // Get first property value
+          }
+        }
       } else if (po.vendorSnapshot?._id) {
         poVendorId = po.vendorSnapshot._id;
       } else if (po.vendorDetails?._id) {
@@ -271,14 +293,15 @@ export default function PaymentsMadeForm({
       return matches;
     });
 
-    // Debug log
-    console.log("==================");
-    console.log("🎯 FINAL RESULTS:");
-    console.log("Selected Vendor ID:", vendorId);
-    console.log("Total POs:", purchaseOrders.length);
-    console.log("Matched POs:", filtered.length);
-    console.log("==================");
-
+    if (filtered.length > 0) {
+      console.log(
+        "✅ Matched Purchase Orders:",
+        filtered.map((po: any) => ({
+          id: po._id,
+          number: po.purchaseOrderNumber,
+        }))
+      );
+    }
     return filtered;
   }, [purchaseOrders, vendorId]);
 
@@ -563,16 +586,9 @@ export default function PaymentsMadeForm({
                 </SelectItem>
               ) : (
                 vendorPurchases.map((po: any) => {
-                  const total =
-                    (po.items || []).reduce(
-                      (sum: number, item: any) =>
-                        sum + (Number(item.amount) || 0),
-                      0
-                    ) + (Number(po.shipping) || 0);
                   return (
                     <SelectItem key={po._id} value={po._id || ""}>
-                      {po.purchaseOrderNumber} - ₹{total.toFixed(2)} (
-                      {po.purchaseOrderDate})
+                      {po.purchaseOrderNumber}
                     </SelectItem>
                   );
                 })

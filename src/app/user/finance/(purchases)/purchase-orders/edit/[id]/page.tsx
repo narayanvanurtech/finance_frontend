@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import PurchaseOrderForm, { PurchaseOrderFormValues } from "@/components/finance/purchaseOrder/PurchaseOrderForm";
+import PurchaseOrderForm, {
+  PurchaseOrderFormValues,
+} from "@/components/finance/purchaseOrder/PurchaseOrderForm";
 import {
   useGetPurchaseOrderById,
   useUpdatePurchaseOrder,
 } from "@/hooks/usePurchaseOrderQueries";
 import { useGetVendors } from "@/hooks/useVendorQueries";
-import { useGetItems } from "@/hooks/useItemQueries";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -21,12 +22,11 @@ export default function EditPurchaseOrderPage() {
   const purchaseOrderId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const { data: vendorsData } = useGetVendors();
-  const { data: itemsData } = useGetItems();
-  const { data: purchaseOrderData, isLoading } = useGetPurchaseOrderById(purchaseOrderId);
+  const { data: purchaseOrderData, isLoading } =
+    useGetPurchaseOrderById(purchaseOrderId);
   const { mutate: updatePurchaseOrder, isPending } = useUpdatePurchaseOrder();
 
   const vendors = vendorsData?.result?.vendors || [];
-  const items = itemsData?.result?.items || [];
   const purchaseOrder = purchaseOrderData?.result;
 
   if (isLoading) {
@@ -44,7 +44,10 @@ export default function EditPurchaseOrderPage() {
     orderDate: purchaseOrder.purchaseOrderDate,
     dueDate: purchaseOrder.expectedDeliveryDate || "",
     deliveryDate: purchaseOrder.expectedDeliveryDate || "",
-    vendorId: typeof purchaseOrder.vendorId === "string" ? purchaseOrder.vendorId : purchaseOrder.vendorId._id,
+    vendorId:
+      typeof purchaseOrder.vendorId === "string"
+        ? purchaseOrder.vendorId
+        : purchaseOrder.vendorId._id,
     vendorDetails: purchaseOrder.vendorDetails || {
       name: "",
       gstin: "",
@@ -84,6 +87,7 @@ export default function EditPurchaseOrderPage() {
     terms: purchaseOrder.terms || "",
     notes: purchaseOrder.notes || "",
     attachments: [],
+    existingAttachments: purchaseOrder.attachments || [], // ✅ Add this
     showSignature: false,
   };
 
@@ -133,7 +137,7 @@ export default function EditPurchaseOrderPage() {
       mode="edit"
       loading={isPending}
       mockVendors={vendors}
-      mockProducts={items}
+      purchaseOrderId={purchaseOrderId} // ✅ Add this - important!
     />
   );
-} 
+}

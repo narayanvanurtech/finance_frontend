@@ -103,8 +103,30 @@ export default function CreatePurchaseOrderPage() {
 
       // Call API to create purchase order
       createPurchaseOrder(apiPayload, {
-        onSuccess: () => {
+        onSuccess: async (response) => {
           toast.success("Purchase order created successfully!");
+
+          // Upload attachments if any (after purchase order is created)
+          if (values.attachments && values.attachments.length > 0) {
+            try {
+              const purchaseOrderId = response.result._id;
+              const { addAttachment } = await import(
+                "@/api/finance/purchaseOrderApi"
+              );
+
+              for (const file of values.attachments) {
+                await addAttachment(purchaseOrderId, file);
+              }
+
+              toast.success("Attachments uploaded successfully!");
+            } catch (attachmentError) {
+              console.error("Error uploading attachments:", attachmentError);
+              toast.error(
+                "Purchase order created, but failed to upload attachments"
+              );
+            }
+          }
+
           router.push("/finance/purchase-orders");
         },
         onError: (error: any) => {

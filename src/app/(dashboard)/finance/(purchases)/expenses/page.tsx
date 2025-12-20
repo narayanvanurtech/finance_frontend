@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   usePurchasesList,
   useDeletePurchase,
   useUpdatePaymentStatus,
   useDuplicatePurchase,
   useUpdateDeliveryStatus,
+  useUpdatePurchasePriority,
 } from "@/hooks/usePurchaseExpenseQueries";
 import { useRouter } from "next/navigation";
 import {
@@ -17,8 +18,9 @@ import {
   FiDollarSign,
   FiPackage,
   FiCopy,
+  FiFlag,
 } from "react-icons/fi";
-import { Package2, TrendingUp, Search } from "lucide-react";
+import { Package2, TrendingUp } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -28,52 +30,33 @@ import Link from "next/link";
 import DeleteExpenseDialog from "@/components/finance/expenses/DeleteExpenseDialog";
 import UpdatePaymentStatusDialog from "@/components/finance/expenses/UpdatePaymentStatusDialog";
 import UpdateDeliveryStatusDialog from "@/components/finance/expenses/UpdateDeliveryStatusDialog";
+import UpdatePriorityDialog from "@/components/finance/expenses/UpdatePriorityDialog";
+import ExpenseFilters, {
+  SearchFilters,
+} from "@/components/finance/expenses/ExpenseFilters";
 import type { ExpenseFormValues } from "@/components/finance/expenses/ExpenseForm";
 
 export default function ExpensesListPage() {
-  // Search and filter state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-
-  // Pagination state
+  /** Pagination **/
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Debounce search term
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); // Reset to first page when searching
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  /** Filters **/
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
 
   const { purchases, isLoading, pagination, refetch, isError, error } =
     usePurchasesList({
       page: currentPage,
       limit: itemsPerPage,
-      search: debouncedSearchTerm.trim() || undefined,
-      paymentStatus: statusFilter !== "all" ? statusFilter : undefined,
-      priority: priorityFilter !== "all" ? priorityFilter : undefined,
+      ...currentFilters,
     });
-
-  // Refetch when filters change
-  React.useEffect(() => {
-    refetch();
-  }, [
-    debouncedSearchTerm,
-    statusFilter,
-    priorityFilter,
-    currentPage,
-    itemsPerPage,
-  ]);
   const { mutate: deletePurchase, isPending: isDeleting } = useDeletePurchase();
   const { mutate: updatePaymentStatus, isPending: isUpdatingPayment } =
     useUpdatePaymentStatus();
   const { mutate: updateDeliveryStatus, isPending: isUpdatingDelivery } =
     useUpdateDeliveryStatus();
+  const { mutate: updatePurchasePriority, isPending: isUpdatingPriority } =
+    useUpdatePurchasePriority();
   const { mutate: duplicatePurchase, isPending: isDuplicating } =
     useDuplicatePurchase();
   const router = useRouter();
@@ -81,6 +64,7 @@ export default function ExpensesListPage() {
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const [showPriorityDialog, setShowPriorityDialog] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
 
   // Delete dialog state
@@ -252,6 +236,32 @@ export default function ExpensesListPage() {
     );
   };
 
+  const handlePriorityClick = (purchase: any) => {
+    setSelectedPurchase(purchase);
+    setShowPriorityDialog(true);
+    setOpenPopoverId(null);
+  };
+
+  const handlePriorityUpdate = (priority: "low" | "medium" | "high") => {
+    if (!selectedPurchase) return;
+
+    updatePurchasePriority(
+      {
+        purchaseId: selectedPurchase._id,
+        data: {
+          priority: priority,
+        },
+      },
+      {
+        onSuccess: () => {
+          setShowPriorityDialog(false);
+          setSelectedPurchase(null);
+          refetch();
+        },
+      }
+    );
+  };
+
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -261,6 +271,18 @@ export default function ExpensesListPage() {
     setItemsPerPage(newLimit);
     setCurrentPage(1);
   };
+
+  /** Handle Filters **/
+  const handleSearch = useCallback((filters: SearchFilters) => {
+    console.log("🔍 handleSearch called with filters:", filters);
+    setCurrentFilters(filters);
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setCurrentFilters({});
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
 
   return (
     <div
@@ -351,40 +373,12 @@ export default function ExpensesListPage() {
           </div>
         </div>
 
-        {/* SEARCH + FILTERS */}
-        <div className="bg-[var(--color-card)] p-4 border border-[var(--color-border)] rounded-lg flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] h-4 w-4" />
-            <input
-              className="w-full pl-10 px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-card)] text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-card)] text-[var(--color-foreground)]"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="partial">Partial</option>
-            <option value="paid">Paid</option>
-          </select>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="px-3 py-2 border border-[var(--color-border)] rounded-lg bg-[var(--color-card)] text-[var(--color-foreground)]"
-          >
-            <option value="all">All Priority</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
+        {/* Filters Section */}
+        <ExpenseFilters
+          onSearch={handleSearch}
+          onClear={handleClearFilters}
+          loading={isLoading}
+        />
 
         {/* Bulk Actions Bar */}
         {selectedExpenses.length > 0 && (
@@ -537,7 +531,7 @@ export default function ExpensesListPage() {
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-mono font-semibold text-sm text-[var(--color-foreground)]">
+                        <span className="font-mono font-semibold text-sm text-blue-600">
                           {purchase.billNumber || purchase.purchaseNumber}
                         </span>
                       </td>
@@ -686,6 +680,18 @@ export default function ExpensesListPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  handlePriorityClick(purchase);
+                                }}
+                                className="px-3 py-2 rounded hover:bg-[var(--color-muted)]/60 text-[var(--color-foreground)] text-sm text-left flex items-center gap-2"
+                                aria-label="Update Priority"
+                              >
+                                <FiFlag className="w-4 h-4" />
+                                Priority
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   handleDeleteClick(purchase);
                                   setOpenPopoverId(null);
                                 }}
@@ -821,6 +827,18 @@ export default function ExpensesListPage() {
           onConfirm={handleDeliveryStatusUpdate}
           expense={selectedPurchase}
           loading={isUpdatingDelivery}
+        />
+
+        {/* Update Priority Dialog */}
+        <UpdatePriorityDialog
+          open={showPriorityDialog}
+          onClose={() => {
+            setShowPriorityDialog(false);
+            setSelectedPurchase(null);
+          }}
+          onConfirm={handlePriorityUpdate}
+          expense={selectedPurchase}
+          loading={isUpdatingPriority}
         />
 
         {/* Delete Expense Dialog */}

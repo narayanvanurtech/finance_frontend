@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   useGetPurchaseOrders,
@@ -14,6 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import PurchaseOrderFilters, {
+  SearchFilters,
+} from "@/components/finance/purchase-order/PurchaseOrderFilters";
 
 import {
   Table,
@@ -103,27 +106,17 @@ const statusIcons = {
 };
 
 export default function PurchaseOrdersPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-
+  /** Pagination **/
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  /** Filters **/
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
 
   const [selectedPOs, setSelectedPOs] = useState<string[]>([]);
 
   const router = useRouter();
   const [showSendMenu, setShowSendMenu] = useState<string | null>(null);
-
-  // Search Debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   const {
     data: purchaseOrdersData,
@@ -134,20 +127,8 @@ export default function PurchaseOrdersPage() {
   } = useGetPurchaseOrders({
     page: currentPage,
     limit: itemsPerPage,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    priority: priorityFilter !== "all" ? priorityFilter : undefined,
-    search: debouncedSearchTerm.trim() || undefined,
+    ...currentFilters,
   });
-
-  useEffect(() => {
-    refetch();
-  }, [
-    debouncedSearchTerm,
-    currentPage,
-    itemsPerPage,
-    statusFilter,
-    priorityFilter,
-  ]);
 
   const { data: statsData } = useGetPurchaseOrderStats();
 
@@ -251,6 +232,18 @@ export default function PurchaseOrdersPage() {
     setBulkDeleteDialog({ open: false, loading: false });
   };
 
+  /** Handle Filters **/
+  const handleSearch = useCallback((filters: SearchFilters) => {
+    console.log("🔍 handleSearch called with filters:", filters);
+    setCurrentFilters(filters);
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setCurrentFilters({});
+    setCurrentPage(1); // React Query will auto-refetch when filters change
+  }, []);
+
   const calculateTotalAmount = (po: PurchaseOrder) => {
     const itemsTotal = po.items.reduce((sum, item) => {
       const total = item.rate * item.quantity;
@@ -305,65 +298,82 @@ export default function PurchaseOrdersPage() {
       {/* STATS SECTION */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Example Stat Card */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="text-sm text-gray-600">Total POs</div>
-            <div className="text-3xl font-bold">{stats.totalPOs}</div>
+          {/* Total POs */}
+          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  Total POs
+                </p>
+                <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1">
+                  {stats.totalPOs}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-blue-100">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="text-sm text-gray-600">Acknowledged</div>
-            <div className="text-3xl font-bold">{stats.acknowledgedPOs}</div>
+          {/* Acknowledged */}
+          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  Acknowledged
+                </p>
+                <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1">
+                  {stats.acknowledgedPOs}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-amber-100">
+                <CheckCircle className="h-6 w-6 text-amber-600" />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="text-sm text-gray-600">Completed</div>
-            <div className="text-3xl font-bold">{stats.completePOs}</div>
+          {/* Completed */}
+          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  Completed
+                </p>
+                <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1">
+                  {stats.completePOs}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-green-100">
+                <Package className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="text-sm text-gray-600">Pending Approval</div>
-            <div className="text-3xl font-bold">{stats.pendingApproval}</div>
+          {/* Pending Approval */}
+          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[var(--color-muted-foreground)]">
+                  Pending Approval
+                </p>
+                <p className="text-2xl font-bold text-[var(--color-foreground)] mt-1">
+                  {stats.pendingApproval}
+                </p>
+              </div>
+              <div className="p-3 rounded-full bg-purple-100">
+                <Clock className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* SEARCH + FILTERS */}
-      <div className="bg-white p-4 border rounded-lg flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input
-            className="w-full pl-10 px-3 py-2 border rounded-lg"
-            placeholder="Search purchase orders..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border rounded-lg"
-        >
-          <option value="all">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
-          <option value="acknowledged">Acknowledged</option>
-          <option value="complete">Complete</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <select
-          value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
-          className="px-3 py-2 border rounded-lg"
-        >
-          <option value="all">All Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
+      {/* Filters Section */}
+      <PurchaseOrderFilters
+        onSearch={handleSearch}
+        onClear={handleClearFilters}
+        loading={isLoading}
+      />
 
       {/* BULK ACTION BAR */}
       {selectedPOs.length > 0 && (
@@ -494,9 +504,11 @@ export default function PurchaseOrdersPage() {
                                   nameObj.city,
                                   nameObj.state,
                                   nameObj.postalCode,
-                                  nameObj.country
+                                  nameObj.country,
                                 ].filter(Boolean);
-                                return parts.length > 0 ? parts.join(", ") : "N/A";
+                                return parts.length > 0
+                                  ? parts.join(", ")
+                                  : "N/A";
                               }
                               return vendorName;
                             })()}
@@ -573,8 +585,6 @@ export default function PurchaseOrdersPage() {
                           </DropdownMenuTrigger>
 
                           <DropdownMenuContent align="end" className="w-44">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-
                             {/* Edit */}
                             <DropdownMenuItem
                               onClick={() =>

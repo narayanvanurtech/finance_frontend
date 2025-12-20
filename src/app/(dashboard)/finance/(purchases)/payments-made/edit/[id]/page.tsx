@@ -137,12 +137,7 @@ export default function PaymentsMadeEditPage() {
     notes: payment.paymentRecords?.[0]?.notes || "",
   };
 
-  console.log("✨ Initial Form Values:", initialFormValues);
-  console.log(
-    "✨ Selected Purchase Orders:",
-    initialFormValues.selectedPurchases
-  );
-
+  
   const handleSubmit = async (values: PaymentsMadeFormValues) => {
     try {
       const updatePayload: UpdatePayoutReceiptPayload = {
@@ -156,30 +151,16 @@ export default function PaymentsMadeEditPage() {
         data: updatePayload,
       });
 
-      toast.success("Payment updated successfully!");
+      // Toast is already handled in the mutation hook
       router.push("/finance/payments-made");
     } catch (error) {
+      // Error toast is also handled in the mutation hook
       console.error("Failed to update payment:", error);
-      toast.error("Failed to update payment");
     }
   };
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <button
-          onClick={() => router.back()}
-          className="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4"
-        >
-          ← Back
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Payment</h1>
-        <p className="text-gray-600 mt-1">
-          Update payment details for{" "}
-          {payment.receiptNumber || payment.receiptNo || "this payment"}
-        </p>
-      </div>
-
       <PaymentsMadeForm
         initialValues={initialFormValues}
         mode="edit"

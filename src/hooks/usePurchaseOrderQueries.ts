@@ -265,6 +265,73 @@ export const useVendorAcknowledgment = () => {
 };
 
 // =====================================================
+// ADD ATTACHMENT
+// =====================================================
+export const useAddAttachment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      purchaseOrderId,
+      file,
+    }: {
+      purchaseOrderId: string;
+      file: File;
+    }) => purchaseOrderApi.addAttachment(purchaseOrderId, file),
+
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: purchaseOrderKeys.detail(vars.purchaseOrderId),
+      });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() });
+      toast.success(response.message || "Attachment added successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to add attachment");
+    },
+  });
+};
+
+// =====================================================
+// REMOVE ATTACHMENT
+// =====================================================
+export const useRemoveAttachment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      purchaseOrderId,
+      attachmentIndex,
+      attachmentUrl,
+    }: {
+      purchaseOrderId: string;
+      attachmentIndex: number;
+      attachmentUrl: string;
+    }) =>
+      purchaseOrderApi.removeAttachment(
+        purchaseOrderId,
+        attachmentIndex,
+        attachmentUrl
+      ),
+
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: purchaseOrderKeys.detail(vars.purchaseOrderId),
+      });
+      queryClient.invalidateQueries({ queryKey: purchaseOrderKeys.lists() });
+      toast.success(response.message || "Attachment removed successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to remove attachment"
+      );
+    },
+  });
+};
+
+// =====================================================
 // COMBINED HOOK FOR LIST PAGES
 // =====================================================
 export const usePurchaseOrdersList = (filters?: any) => {

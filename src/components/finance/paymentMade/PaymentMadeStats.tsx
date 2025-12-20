@@ -20,7 +20,11 @@ interface PaymentMadeStatsProps {
     totalTdsDeducted?: number;
     totalTransactionCharges?: number;
     advancePayments?: number;
+    advancePaymentsCount?: number;
     settlementPayments?: number;
+    settlementPaymentsCount?: number;
+    totalGrossAmount?: number;
+    totalAllocatedAmount?: number;
   };
   loading?: boolean;
   onStatClick?: (filterType: "all" | "payment" | "advance") => void;
@@ -54,8 +58,9 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
 
   return (
     <div className="space-y-6 mb-6">
-      {/* Main Stats Cards */}
+      {/* Main Stats Cards - Top 4 Most Important */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Total Payments Count */}
         <Card
           className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => onStatClick?.("all")}
@@ -63,7 +68,7 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Total Receipts
+                Total Payments
               </p>
               <p className="text-2xl font-bold text-gray-900">
                 {stats.totalReceipts || 0}
@@ -76,16 +81,19 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
           </div>
         </Card>
 
+        {/* 2. Total Amount Paid */}
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">
-                Total Amount Paid
+              <p className="text-sm font-medium text-gray-600">Total Paid</p>
+              <p className="text-2xl font-bold text-green-600">
+                {formatCurrency(
+                  stats.totalGrossAmount || stats.totalAmountPaid || 0
+                )}
               </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(stats.totalAmountPaid || 0)}
+              <p className="text-xs text-gray-500 mt-1">
+                Total outgoing payments
               </p>
-              <p className="text-xs text-gray-500 mt-1">Total payments made</p>
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
               <FiDollarSign className="w-6 h-6 text-green-600" />
@@ -93,41 +101,7 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
           </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">TDS Deducted</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(stats.totalTdsDeducted || 0)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Tax deductions</p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-lg">
-              <FiClock className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Transaction Charges
-              </p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(stats.totalTransactionCharges || 0)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Total charges</p>
-            </div>
-            <div className="p-3 bg-red-100 rounded-lg">
-              <FiCheckCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Payment Type Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* 3. Advance Payments */}
         <Card
           className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => onStatClick?.("advance")}
@@ -137,17 +111,21 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
               <p className="text-sm font-medium text-gray-600">
                 Advance Payments
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-yellow-600">
                 {formatCurrency(stats.advancePayments || 0)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Payments in advance</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stats.advancePaymentsCount || 0} advance payment
+                {(stats.advancePaymentsCount || 0) !== 1 ? "s" : ""}
+              </p>
             </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <FiClock className="w-6 h-6 text-purple-600" />
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <FiClock className="w-6 h-6 text-yellow-600" />
             </div>
           </div>
         </Card>
 
+        {/* 4. Settlement Payments */}
         <Card
           className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
           onClick={() => onStatClick?.("payment")}
@@ -157,39 +135,20 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
               <p className="text-sm font-medium text-gray-600">
                 Settlement Payments
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-emerald-600">
                 {formatCurrency(stats.settlementPayments || 0)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">Settled payments</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stats.settlementPaymentsCount || 0} settlement
+                {(stats.settlementPaymentsCount || 0) !== 1 ? "s" : ""}
+              </p>
             </div>
             <div className="p-3 bg-emerald-100 rounded-lg">
               <FiCheckCircle className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
         </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Net Payment</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(
-                  (stats.totalAmountPaid || 0) -
-                    (stats.totalTdsDeducted || 0) -
-                    (stats.totalTransactionCharges || 0)
-                )}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">After deductions</p>
-            </div>
-            <div className="p-3 bg-indigo-100 rounded-lg">
-              <FiTrendingUp className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </Card>
       </div>
-
-      {/* Payment Method Breakdown */}
-      <PaymentMethodBreakdown />
     </div>
   );
 };
