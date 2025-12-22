@@ -32,6 +32,7 @@ import {
   useUpdateItem,
   useUploadItemImage,
   useDeleteItemImage,
+  useUpdateItemImage,
 } from "@/hooks/useItemQueries";
 import {
   useGetCategories,
@@ -44,11 +45,35 @@ import {
 import { useGetVendors } from "@/hooks/useVendorQueries";
 import { Vendor } from "@/api/finance/vendorApi";
 
+// Helper function to get full image URL
+const getImageUrl = (imagePath: string | null | undefined): string | null => {
+  if (!imagePath) return null;
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  // If it's a relative path from backend, prepend the API base URL
+  const baseURL = process.env.NEXT_PUBLIC_API_URL || "";
+  // Remove trailing slash from baseURL if exists
+  const cleanBaseURL = baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
+  // Ensure imagePath starts with /
+  const cleanImagePath = imagePath.startsWith("/")
+    ? imagePath
+    : `/${imagePath}`;
+  return `${cleanBaseURL}/public${cleanImagePath}`;
+};
+
 export default function EditItemPage() {
   const params = useParams();
   const itemId = params.id as string;
   const router = useRouter();
-  const [companyId, setCompanyId] = useState<string>("");
+  const [companyId, setCompanyId] = useState<string>(() => {
+    // Initialize companyId from localStorage immediately
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("currentCompanyId") || "";
+    }
+    return "";
+  });
 
   const [form, setForm] = useState({
     name: "",
@@ -79,7 +104,8 @@ export default function EditItemPage() {
     expiryDate: "",
   });
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>("");
+
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -91,11 +117,18 @@ export default function EditItemPage() {
   const [openCombobox, setOpenCombobox] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
-  // Get companyId from localStorage
+  // Update companyId if it changes in localStorage (optional, for real-time updates)
   useEffect(() => {
-    const storedCompanyId = localStorage.getItem("currentCompanyId") || "";
-    setCompanyId(storedCompanyId);
-  }, []);
+    const handleStorageChange = () => {
+      const storedCompanyId = localStorage.getItem("currentCompanyId") || "";
+      if (storedCompanyId !== companyId) {
+        setCompanyId(storedCompanyId);
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [companyId]);
 
   // React Query hooks
   const {
@@ -104,7 +137,7 @@ export default function EditItemPage() {
     error: itemError,
   } = useItemById(companyId, itemId);
 
-  const currentItem = itemData?.result;
+  const currentItem = itemData?.data;
 
   const {
     mutateAsync: updateItem,
@@ -112,8 +145,9 @@ export default function EditItemPage() {
     error: updateError,
   } = useUpdateItem(companyId, itemId);
 
-  const { mutateAsync: uploadImageMutation } = useUploadItemImage(companyId);
-  const { mutateAsync: deleteImageMutation } = useDeleteItemImage(companyId);
+  const { mutateAsync: uploadImageMutation } = useUploadItemImage();
+  const { mutateAsync: deleteImageMutation } = useDeleteItemImage();
+  const { mutateAsync: updateImageMutation } = useUpdateItemImage(itemId);
   const { mutateAsync: createCategoryMutation } = useCreateCategory();
   const { mutateAsync: createSubcategoryMutation } = useCreateSubcategory();
 
@@ -234,7 +268,12 @@ export default function EditItemPage() {
 
       // Set image preview if exists
       if (currentItem.imageUrl) {
-        setImagePreview(currentItem.imageUrl);
+        console.log(
+          "sdfdsfdsfsdfdsfdsfdsfs",
+          getImageUrl(currentItem.imageUrl)
+        );
+
+        setImagePreview(getImageUrl(currentItem.imageUrl));
       }
     }
   }, [currentItem]);
@@ -309,7 +348,7 @@ export default function EditItemPage() {
         reader.onloadend = () => setImagePreview(reader.result as string);
         reader.readAsDataURL(file);
       } else {
-        setImagePreview(currentItem?.imageUrl || null);
+        setImagePreview(getImageUrl(currentItem?.imageUrl) || null);
       }
     } else if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
@@ -386,11 +425,10 @@ export default function EditItemPage() {
 
         // Handle image upload/deletion if changed
         if (newImageFile) {
-          await uploadImageMutation({
-            itemId: currentItem._id,
-            file: newImageFile,
-          });
+          // Use the new updateImageMutation for seamless image replacement
+          await updateImageMutation(newImageFile);
         } else if (!imagePreview && currentItem.imageUrl) {
+          // Delete image if removed
           await deleteImageMutation(currentItem._id);
         }
 
@@ -764,6 +802,9 @@ export default function EditItemPage() {
               <label className="block text-xs font-semibold mb-1 self-start">
                 Image
               </label>
+              <div className="mb-2 text-xs text-muted-foreground self-start">
+                Upload a new image to update. Max size: 2MB
+              </div>
               <DragDropImageUpload
                 imagePreview={imagePreview}
                 setImagePreview={setImagePreview}

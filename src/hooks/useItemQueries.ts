@@ -150,47 +150,111 @@ export const useUpdateStock = (companyId: string, itemId: string) => {
 };
 
 // UPLOAD ITEM IMAGE
-export const useUploadItemImage = (companyId: string) => {
+export const useUploadItemImage = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ itemId, file }: { itemId: string; file: File }) =>
-      itemApi.uploadItemImage(itemId, file),
-    onSuccess: (_, variables) => {
+    mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
+      // Validate file before upload
+      if (!file) {
+        throw new Error("No file selected");
+      }
+
+      // Validate file size (max 2MB)
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      if (file.size > maxSize) {
+        throw new Error("Image must be less than 2MB");
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Only image files are allowed");
+      }
+
+      return itemApi.uploadItemImage(itemId, file);
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate all item-related queries for consistency
       qc.invalidateQueries({
-        queryKey: itemKeys.detail(companyId, variables.itemId),
+        queryKey: itemKeys.all,
       });
-      qc.invalidateQueries({
-        queryKey: itemKeys.lists(),
-      });
+
       toast.success("Image uploaded successfully");
     },
     onError: (error: any) => {
       const errorMessage =
-        error?.response?.data?.message || "Failed to upload image";
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to upload image";
       toast.error(errorMessage);
     },
   });
 };
 
 // DELETE ITEM IMAGE
-export const useDeleteItemImage = (companyId: string) => {
+export const useDeleteItemImage = () => {
   const qc = useQueryClient();
 
   return useMutation({
     mutationFn: (itemId: string) => itemApi.deleteItemImage(itemId),
-    onSuccess: (_, itemId) => {
+    onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: itemKeys.detail(companyId, itemId),
-      });
-      qc.invalidateQueries({
-        queryKey: itemKeys.lists(),
+        queryKey: itemKeys.all,
       });
       toast.success("Image deleted successfully");
     },
     onError: (error: any) => {
       const errorMessage =
         error?.response?.data?.message || "Failed to delete image";
+      toast.error(errorMessage);
+    },
+  });
+};
+
+// UPDATE ITEM IMAGE (Upload new image replacing old one)
+export const useUpdateItemImage = (itemId: string) => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      // Validate file before upload
+      if (!file) {
+        throw new Error("No file selected");
+      }
+
+      // Validate file size (max 2MB)
+      const maxSize = 2 * 1024 * 1024; // 2MB
+      if (file.size > maxSize) {
+        throw new Error("Image must be less than 2MB");
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Only image files are allowed");
+      }
+
+      // Delete old image if exists
+      try {
+        await itemApi.deleteItemImage(itemId);
+      } catch (error) {
+        console.warn("Could not delete old image:", error);
+      }
+
+      // Upload new image
+      return itemApi.uploadItemImage(itemId, file);
+    },
+    onSuccess: () => {
+      // Invalidate all item-related queries for consistency
+      qc.invalidateQueries({
+        queryKey: itemKeys.all,
+      });
+      toast.success("Item image updated successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Failed to update image";
       toast.error(errorMessage);
     },
   });

@@ -99,7 +99,7 @@ export default function CreateItemPage() {
     error: mutationError,
   } = useCreateItem(companyId);
 
-  const { mutateAsync: uploadItemImage } = useUploadItemImage(companyId);
+  const { mutateAsync: uploadItemImage } = useUploadItemImage();
 
   const { mutateAsync: createCategoryMutation } = useCreateCategory();
   const { mutateAsync: createSubcategoryMutation } = useCreateSubcategory();
@@ -274,10 +274,10 @@ export default function CreateItemPage() {
         const response = await createItem(itemData);
 
         // Upload image if present
-        if (form.image && response?.result?._id) {
+        if (form.image && response?.data?._id) {
           try {
             await uploadItemImage({
-              itemId: response.result._id,
+              itemId: response.data._id,
               file: form.image,
             });
           } catch (imageError) {

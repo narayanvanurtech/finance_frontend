@@ -73,7 +73,7 @@ export interface UpdateStockPayload {
 export interface ItemResponse {
   success: boolean;
   message: string;
-  result: Item;
+  data: Item;
 }
 
 export interface ItemsResponse {
