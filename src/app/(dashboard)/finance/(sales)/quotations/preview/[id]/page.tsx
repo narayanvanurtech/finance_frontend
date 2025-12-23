@@ -5,11 +5,13 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import PremiumTemplate from "@/components/finance/PremiumTemplate";
 import ClassicTemplate from "@/components/finance/ClassicTemplate";
+import EliteTemplate from "@/components/finance/EliteTemplate";
 import { useParams, useRouter } from "next/navigation";
 import quotationApi from "@/api/finance/quotationApi";
 import { toast } from "sonner";
 
 const templates = [
+  { label: "Elite", value: "elite" },
   { label: "Premium", value: "premium" },
   { label: "Classic", value: "classic" },
 ];
@@ -20,9 +22,10 @@ export default function QuotationPreviewPage() {
   const quotationId = params.id as string;
   console.log("Quotation ID from params:", quotationId);
 
-  const [selectedTemplate, setSelectedTemplate] = useState("premium");
+  const [selectedTemplate, setSelectedTemplate] = useState("elite");
   const [quotationData, setQuotationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showPhases, setShowPhases] = useState(true);
 
   useEffect(() => {
     const fetchQuotation = async () => {
@@ -130,7 +133,14 @@ export default function QuotationPreviewPage() {
             notes: quote.notes || "",
             attachments: quote.attachments || [],
             signature: quote.showSignature || null,
-            phases: quote.phases || [],
+            phases: (quote.phases || []).map((phase: any) => ({
+              name: phase.title || `Phase ${phase.name || ""}`,
+              dueDate: phase.dueDate || "",
+              amount:
+                phase.amount ||
+                ((quote.grandTotal || 0) * (phase.percentage || 0)) / 100 ||
+                0,
+            })),
           };
 
           console.log("Transformed Data:", transformedData); // Debug log
@@ -157,7 +167,15 @@ export default function QuotationPreviewPage() {
 
     const phases = quotationData.phases || [];
 
-    if (selectedTemplate === "premium") {
+    if (selectedTemplate === "elite") {
+      return (
+        <EliteTemplate
+          quotation={quotationData}
+          phases={phases}
+          showPhases={showPhases}
+        />
+      );
+    } else if (selectedTemplate === "premium") {
       return <PremiumTemplate quotation={quotationData} phases={phases} />;
     } else {
       return <ClassicTemplate quotation={quotationData} phases={phases} />;
@@ -240,6 +258,24 @@ export default function QuotationPreviewPage() {
                 ))}
               </div>
 
+              {/* Show Phases Toggle (Only for Elite template) */}
+              {selectedTemplate === "elite" &&
+                quotationData.phases?.length > 0 && (
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={showPhases}
+                        onChange={(e) => setShowPhases(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-gray-700 font-medium">
+                        Show Phases
+                      </span>
+                    </label>
+                  </div>
+                )}
+
               {/* Print Button */}
               <Button
                 variant="outline"
@@ -265,9 +301,9 @@ export default function QuotationPreviewPage() {
               {/* Download Button */}
               {getDoc() && (
                 <PDFDownloadLink
-                  key={selectedTemplate}
+                  key={`${selectedTemplate}-${showPhases}`}
                   document={getDoc()!}
-                  fileName={`quotation-${quotationData.number}.pdf`}
+                  fileName={`quotation-${quotationData.number}-${selectedTemplate}.pdf`}
                 >
                   {({ loading }) => (
                     <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
@@ -337,6 +373,12 @@ export default function QuotationPreviewPage() {
                 />
               </svg>
               <span className="font-medium">PDF Preview</span>
+              <span className="text-xs text-gray-400">
+                (
+                {selectedTemplate.charAt(0).toUpperCase() +
+                  selectedTemplate.slice(1)}{" "}
+                Template)
+              </span>
             </div>
             <span className="text-xs text-gray-500">
               Use browser zoom or PDF toolbar to adjust view
@@ -344,7 +386,7 @@ export default function QuotationPreviewPage() {
           </div>
           <div style={{ height: "calc(100vh - 240px)", minHeight: 600 }}>
             <PDFViewer
-              key={selectedTemplate}
+              key={`${selectedTemplate}-${showPhases}`}
               width="100%"
               height="100%"
               showToolbar={true}

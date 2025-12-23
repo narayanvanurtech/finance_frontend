@@ -3,17 +3,21 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import { useGetCreditNoteById, useUpdateCreditNote } from "../hooks/useCreditNoteQueries";
 import CreditNotesForm, { CreditNoteFormValues, Invoice } from "../components/CreditNotesForm";
+import { useItems } from "@/hooks/useItemQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 export default function UpdateCreditNote() {
   const params = useParams();
   const router = useRouter();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+ const { user } = useAuthStore();
+    const { data: itemsData } = useItems(user?.companyId || "");
+    const items = itemsData?.result?.items || [];
   const { details: businessStoreDetails } = useBussinessStore();
   const { invoices: apiInvoices, fetchInvoices } = useInvoiceStore();
   const [invoicesLoading, setInvoicesLoading] = useState(true);

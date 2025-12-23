@@ -5,12 +5,13 @@ import PerformaInvoiceForm, {
   PerformaInvoiceFormValues,
 } from "@/components/finance/performa-invoice/PerformaInvoiceForm";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+
 import { usePerformaInvoiceStore } from "@/stores/financeStore/usePerformaInvoiceStore";
 import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { toast } from "sonner";
+import { useItems } from "@/hooks/useItemQueries";
 
 const generateInvoiceNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -21,8 +22,9 @@ const generateInvoiceNumber = () => {
 export default function CreatePerformaInvoicePage() {
   const router = useRouter();
   const { clients, fetchClients } = useClientStore();
-  const { items } = useItemStore();
   const { user } = useAuthStore();
+    const { data: itemsData } = useItems(user?.companyId || "");
+    const items = itemsData?.result?.items || [];
   const [loading, setLoading] = useState(false);
   const createPerformaInvoice = usePerformaInvoiceStore(
     (state) => state.createPerformaInvoice

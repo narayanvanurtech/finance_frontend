@@ -57,6 +57,12 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
     const isSelected = v._id.toString() === vendorId;
     return matchesSearch || isSelected;
   });
+  // Debug logs to help diagnose empty PO issue
+  React.useEffect(() => {
+    console.log("SelectVendorSection: mockVendors count:", mockVendors.length);
+    console.log("SelectVendorSection: filteredVendors count:", filteredVendors.length);
+    if (mockVendors.length > 0) console.log("First vendor id:", String(mockVendors[0]._id));
+  }, [mockVendors, filteredVendors]);
   return (
     <Card className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 h-full flex flex-col">
       <h2 className="text-lg font-semibold mb-4 border-b pb-2">
@@ -81,8 +87,8 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
                   onKeyDown={(e) => e.stopPropagation()}
                 />
               </div>
-              {filteredVendors.map((v) => (
-                <SelectItem key={v._id} value={v._id.toString()}>
+                  {filteredVendors.map((v) => (
+                    <SelectItem key={String(v._id)} value={String(v._id)}>
                   {typeof v.name === "object"
                     ? (() => {
                         const nameObj = v.name as any;

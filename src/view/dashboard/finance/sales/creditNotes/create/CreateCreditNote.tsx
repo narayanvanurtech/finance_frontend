@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import { useCreateCreditNote } from "../hooks/useCreditNoteQueries";
@@ -20,11 +20,12 @@ const generateCreditNoteNo = () => {
 
 export default function CreateCreditNote() {
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+ const { user } = useAuthStore();
+    const { data: itemsData } = useItems(user?.companyId || "");
+    const items = itemsData?.result?.items || [];
   const { details } = useBussinessStore();
   const createNoteMutation = useCreateCreditNote();
   const { invoices: apiInvoices, fetchInvoices } = useInvoiceStore();
-  const user = useAuthStore((state) => state.user);
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);

@@ -3,18 +3,22 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import PerformaInvoiceForm, {
   PerformaInvoiceFormValues,
 } from "@/components/finance/performa-invoice/PerformaInvoiceForm";
 import { usePerformaInvoiceStore } from "@/stores/financeStore/usePerformaInvoiceStore";
+import { useItems } from "@/hooks/useItemQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 export default function EditPerformaInvoicePage() {
   const params = useParams();
   const router = useRouter();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+const { user } = useAuthStore();
+const { data: itemsData } = useItems(user?.companyId || "");
+const items = itemsData?.result?.items || [];
+
   const { fetchPerformaInvoiceById } = usePerformaInvoiceStore();
   const [loading, setLoading] = useState(true);
   const [initialValues, setInitialValues] = useState<

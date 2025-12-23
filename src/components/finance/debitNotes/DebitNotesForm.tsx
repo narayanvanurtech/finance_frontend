@@ -23,6 +23,8 @@ export type DebitNoteFormValues = {
   reason: string;
   purchaseId: string;
   originalBillNumber: string;
+  originalBillDate?: string;
+  priority?: string;
   debitType: string;
   vendorId: string;
   vendorDetails: any;
@@ -94,6 +96,10 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const [debitNoteNo, setDebitNoteNo] = useState(
     initialValues.debitNoteNo || ""
   );
+  const [originalBillDate, setOriginalBillDate] = useState(
+    initialValues.originalBillDate || ""
+  );
+  const [priority, setPriority] = useState(initialValues.priority || "");
   const [debitNoteDate, setDebitNoteDate] = useState(
     initialValues.debitNoteDate || ""
   );
@@ -249,6 +255,7 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const handlePurchaseOrderSelect = (purchaseOrder: PurchaseOrder) => {
     setPurchaseId(purchaseOrder._id);
     setOriginalBillNumber(purchaseOrder.purchaseOrderNumber);
+    setOriginalBillDate(purchaseOrder.purchaseOrderDate || "");
 
     // Optionally populate items from purchase order
     if (purchaseOrder.items && purchaseOrder.items.length > 0) {
@@ -332,8 +339,10 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
     if (!debitNoteNo.trim())
       newErrors.debitNoteNo = "Debit Note No is required";
     if (!debitNoteDate) newErrors.debitNoteDate = "Debit Note Date is required";
+    if (!vendorId || !vendorId.trim())
+      newErrors.vendorId = "Please select a vendor";
     if (!reason) newErrors.reason = "Reason is required";
-    if (!purchaseId.trim()) newErrors.purchaseId = "Purchase ID is required";
+    // purchaseId is optional
     if (!originalBillNumber.trim())
       newErrors.originalBillNumber = "Original Bill Number is required";
     if (!debitType) newErrors.debitType = "Debit Type is required";
@@ -353,6 +362,8 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       reason,
       purchaseId,
       originalBillNumber,
+      originalBillDate,
+      priority,
       debitType,
       vendorId,
       vendorDetails: { ...vendorDetails },
@@ -392,6 +403,10 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           setPurchaseId={setPurchaseId}
           originalBillNumber={originalBillNumber}
           setOriginalBillNumber={setOriginalBillNumber}
+          originalBillDate={originalBillDate}
+          setOriginalBillDate={setOriginalBillDate}
+          priority={priority}
+          setPriority={setPriority}
           debitType={debitType}
           setDebitType={setDebitType}
           invoices={invoices}
@@ -528,6 +543,9 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           handleAddVendor={handleAddVendor}
           mockVendors={vendors}
         />
+        {errors.vendorId && (
+          <p className="text-red-500 text-sm mt-2">{errors.vendorId}</p>
+        )}
       </div>
 
       {/* Items Section */}

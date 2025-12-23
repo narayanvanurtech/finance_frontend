@@ -7,15 +7,18 @@ import InvoiceForm, {
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
+import { useItems } from "@/hooks/useItemQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 export default function EditInvoicePage() {
   const params = useParams();
   const router = useRouter();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+  const { user } = useAuthStore();
+  const { data: itemsData } = useItems(user?.companyId || "");
+  const items = itemsData?.result?.items || [];
   const { fetchInvoiceById, updateInvoice } = useInvoiceStore();
   const [loading, setLoading] = useState(true);
   const [initialValues, setInitialValues] = useState<

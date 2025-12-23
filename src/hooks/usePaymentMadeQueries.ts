@@ -29,6 +29,9 @@ export const paymentMadeKeys = {
   }) => [...paymentMadeKeys.all, "paymentBreakdown", filters] as const,
   vendorPendingPurchases: (vendorId: string) =>
     [...paymentMadeKeys.all, "vendorPendingPurchases", vendorId] as const,
+  debugListVendors: () => [...paymentMadeKeys.all, "debugListVendors"] as const,
+  debugVendorData: (vendorId: string) =>
+    [...paymentMadeKeys.all, "debugVendorData", vendorId] as const,
 };
 
 // ===========================
@@ -137,6 +140,30 @@ export const useGetVendorPendingPurchases = (
   return useQuery({
     queryKey: paymentMadeKeys.vendorPendingPurchases(vendorId),
     queryFn: () => paymentMadeApi.getVendorPendingPurchases(vendorId),
+    enabled: !!vendorId && enabled,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+};
+
+/**
+ * Hook to fetch all vendors (Debug endpoint)
+ */
+export const useDebugListAllVendors = (enabled = true) => {
+  return useQuery({
+    queryKey: paymentMadeKeys.debugListVendors(),
+    queryFn: () => paymentMadeApi.debugListAllVendors(),
+    enabled: enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+/**
+ * Hook to fetch vendor debug data (Debug endpoint)
+ */
+export const useDebugVendorData = (vendorId: string, enabled = true) => {
+  return useQuery({
+    queryKey: paymentMadeKeys.debugVendorData(vendorId),
+    queryFn: () => paymentMadeApi.debugVendorData(vendorId),
     enabled: !!vendorId && enabled,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });

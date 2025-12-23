@@ -62,6 +62,32 @@ export interface PhaseType {
   amount: number;
 }
 
+export type DocumentType = "quotation" | "invoice" | "proforma";
+
+const DOC_LABELS: Record<
+  DocumentType,
+  { title: string; number: string; date: string; summary: string }
+> = {
+  quotation: {
+    title: "QUOTATION",
+    number: "Quotation Number",
+    date: "Quotation Date",
+    summary: "QUOTATION SUMMARY",
+  },
+  invoice: {
+    title: "INVOICE",
+    number: "Invoice Number",
+    date: "Invoice Date",
+    summary: "INVOICE SUMMARY",
+  },
+  proforma: {
+    title: "PERFORMA INVOICE",
+    number: "Performa Invoice Number",
+    date: "Performa Invoice Date",
+    summary: "PERFORMA INVOICE SUMMARY",
+  },
+};
+
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -416,16 +442,16 @@ const styles = StyleSheet.create({
 });
 
 function PremiumTemplate({
-  title = "Quotation",
+  documentType = "quotation",
+  title,
   quotation,
   phases,
 }: {
+  documentType?: DocumentType;
   title?: string;
   quotation: QuotationType;
   phases: PhaseType[];
 }) {
-
-  
   console.log("📄 PREMIUM QUOTATION DATA → ", quotation);
   console.log("📄 PREMIUM PHASES → ", phases);
 
@@ -452,7 +478,9 @@ function PremiumTemplate({
     : 0;
   const finalTotal = quotation?.roundOff
     ? Math.round(quotation.total)
-    : quotation?.total ? quotation.total : 0;
+    : quotation?.total
+    ? quotation.total
+    : 0;
 
   // Convert number to words (simplified version)
   const numberToWords = (num: number): string => {
@@ -535,7 +563,7 @@ function PremiumTemplate({
         <View style={styles.headerBorder}>
           {/* Header Title */}
           <View style={styles.headerTitle}>
-            <Text>PROFORMA INVOICE</Text>
+            <Text>{DOC_LABELS[documentType || "quotation"].title}</Text>
           </View>
 
           {/* Company Info with Logo */}
@@ -572,7 +600,8 @@ function PremiumTemplate({
               </Text>
               <Text style={styles.companyAddress}>
                 E-Mail :{" "}
-                {quotation.business?.email || "vanurtechmediaofficial@gmail.com"}
+                {quotation.business?.email ||
+                  "vanurtechmediaofficial@gmail.com"}
               </Text>
             </View>
           </View>
@@ -604,11 +633,15 @@ function PremiumTemplate({
             {/* Invoice Details */}
             <View style={styles.invoiceSection}>
               <View style={styles.invoiceRow}>
-                <Text style={styles.invoiceLabel}>Invoice No.</Text>
+                <Text style={styles.invoiceLabel}>
+                  {DOC_LABELS[documentType || "quotation"].number}
+                </Text>
                 <Text style={styles.invoiceValue}>{quotation.number}</Text>
               </View>
               <View style={styles.invoiceRow}>
-                <Text style={styles.invoiceLabel}>Dated</Text>
+                <Text style={styles.invoiceLabel}>
+                  {DOC_LABELS[documentType || "quotation"].date}
+                </Text>
                 <Text style={styles.invoiceValue}>
                   {new Date(quotation.date).toLocaleDateString("en-GB", {
                     day: "2-digit",
@@ -1031,8 +1064,8 @@ function PremiumTemplate({
               </Text>
               <Text style={styles.termsTitle}>PAYMENT TERMS :-</Text>
               <Text style={styles.termText}>
-                * Payment must be cleared within the same calendar month of
-                invoice date.
+                * Payment must be cleared within the same calendar month of{" "}
+                {DOC_LABELS[documentType || "quotation"].title} date.
               </Text>
               <Text style={styles.termText}>
                 * Delay beyond this will attract interest @10% per day until
@@ -1051,7 +1084,10 @@ function PremiumTemplate({
 
           {/* Computer Generated */}
           <View style={styles.computerGeneratedRow}>
-            <Text>This is a Computer Generated Invoice</Text>
+            <Text>
+              This is a Computer Generated{" "}
+              {DOC_LABELS[documentType || "quotation"].title}
+            </Text>
           </View>
         </View>
       </Page>

@@ -6,10 +6,12 @@ import DeliveryChallanForm, {
 } from "@/components/finance/deliveryChallan/DeliveryChallanForm";
 import { useDeliveryChallanStore } from "@/stores/financeStore/useDeliveryChallanStore";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { useRouter } from "next/navigation";
+import { useItems } from "@/hooks/useItemQueries";
+
+
 
 const generateChallanNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -19,9 +21,10 @@ const generateChallanNumber = () => {
 
 export default function CreateDeliveryChallanPage() {
   const { clients } = useClientStore();
-  const { items } = useItemStore();
   const { details } = useBussinessStore();
   const { user } = useAuthStore();
+  const { data: itemsData } = useItems(user?.companyId || "");
+  const items = itemsData?.result?.items || [];
   const createChallan = useDeliveryChallanStore((state) => state.createChallan);
   const setCompanyId = useDeliveryChallanStore((state) => state.setCompanyId);
   const router = useRouter();

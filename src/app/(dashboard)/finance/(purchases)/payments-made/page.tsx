@@ -28,7 +28,9 @@ import {
 } from "@/hooks/usePaymentMadeQueries";
 
 // Import components
-import PaymentMadeStats from "@/components/finance/paymentMade/PaymentMadeStats";
+import PaymentMadeStats, {
+  PaymentMethodBreakdown,
+} from "@/components/finance/paymentMade/PaymentMadeStats";
 import PaymentMadeFilters, {
   SearchFilters,
 } from "@/components/finance/paymentMade/PaymentMadeFilters";
@@ -236,12 +238,27 @@ export default function PaymentsMadeListPage() {
             Track and Manage Outgoing Payments
           </p>
         </div>
-        <Link
-          href="/finance/payments-made/create"
-          className="px-4 py-2 rounded-lg transition bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
-        >
-          + New Payment
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/finance/payments-made/analytics"
+            className="px-4 py-2 rounded-lg transition bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+          >
+            📊 Analytics
+          </Link>
+          {/* Temporarily disabled until backend debug endpoints are ready */}
+          {/* <Link
+            href="/finance/payments-made/debug-vendors"
+            className="px-4 py-2 rounded-lg transition bg-purple-600 text-white hover:bg-purple-700 shadow-sm"
+          >
+            🔍 Debug Vendors
+          </Link> */}
+          <Link
+            href="/finance/payments-made/create"
+            className="px-4 py-2 rounded-lg transition bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+          >
+            + New Payment
+          </Link>
+        </div>
       </div>
 
       {/* Stats Section */}
@@ -250,6 +267,9 @@ export default function PaymentsMadeListPage() {
         loading={statsLoading}
         onStatClick={handleStatClick}
       />
+
+      {/* Payment Method Breakdown */}
+      <PaymentMethodBreakdown />
 
       {/* Filters Section */}
       <PaymentMadeFilters
@@ -485,7 +505,6 @@ export default function PaymentsMadeListPage() {
                             </PopoverTrigger>
                             <PopoverContent className="w-48 p-2" align="end">
                               <div className="flex flex-col gap-1">
-                               
                                 <Link
                                   href={`/finance/payments-made/edit/${payment._id}`}
                                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-100 transition"

@@ -168,6 +168,36 @@ interface VendorPendingPurchasesResponse {
   result: PendingPurchase[];
 }
 
+interface Vendor {
+  _id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  gstNumber?: string;
+  address?: string;
+}
+
+interface DebugListVendorsResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  result: Vendor[];
+}
+
+interface DebugVendorDataResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  result: {
+    vendor: Vendor;
+    purchaseOrders?: any[];
+    payoutReceipts?: any[];
+    totalPurchases?: number;
+    totalPaid?: number;
+    balance?: number;
+  };
+}
+
 // API Functions
 const paymentMadeApi = {
   // Create a new payout receipt
@@ -376,6 +406,38 @@ const paymentMadeApi = {
       throw new Error("Error fetching vendor pending purchases");
     }
   },
+
+  // Debug: List all vendors
+  debugListAllVendors: async (): Promise<DebugListVendorsResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        "/api/v1/finance/purchases/payout-receipts/debug-list-vendors"
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching vendor list");
+    }
+  },
+
+  // Debug: Get vendor data with purchases and receipts
+  debugVendorData: async (
+    vendorId: string
+  ): Promise<DebugVendorDataResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/payout-receipts/debug-vendor/${vendorId}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching vendor debug data");
+    }
+  },
 };
 
 export default paymentMadeApi;
@@ -397,4 +459,7 @@ export type {
   PaymentBreakdownResponse,
   PendingPurchase,
   VendorPendingPurchasesResponse,
+  Vendor,
+  DebugListVendorsResponse,
+  DebugVendorDataResponse,
 };

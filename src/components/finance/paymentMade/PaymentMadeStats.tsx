@@ -154,7 +154,7 @@ const PaymentMadeStats: React.FC<PaymentMadeStatsProps> = ({
 };
 
 // Payment Method Breakdown Component
-const PaymentMethodBreakdown: React.FC = () => {
+export const PaymentMethodBreakdown: React.FC = () => {
   const { data: breakdownData, isLoading } = useGetPaymentBreakdown();
 
   const formatCurrency = (value: number) => {

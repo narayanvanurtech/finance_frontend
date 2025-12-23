@@ -5,12 +5,14 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import PremiumTemplate from "@/components/finance/PremiumTemplate";
 import ClassicTemplate from "@/components/finance/ClassicTemplate";
+import EliteTemplate from "@/components/finance/EliteTemplate";
 import { useParams, useRouter } from "next/navigation";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import { toast } from "sonner";
 import Link from "next/link";
 
 const templates = [
+  { label: "Elite", value: "elite" },
   { label: "Premium", value: "premium" },
   { label: "Classic", value: "classic" },
 ];
@@ -109,6 +111,16 @@ export default function InvoicePreviewPage() {
     if (!invoiceData) return null;
 
     const phases = invoiceData.phases || [];
+
+    if (selectedTemplate === "elite") {
+      return (
+        <EliteTemplate
+          documentType="invoice"
+          quotation={invoiceData}
+          phases={phases}
+        />
+      );
+    }
 
     return selectedTemplate === "premium" ? (
       <PremiumTemplate quotation={invoiceData} phases={phases} />

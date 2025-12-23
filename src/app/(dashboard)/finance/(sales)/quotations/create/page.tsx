@@ -8,7 +8,7 @@ import QuotationForm, {
 import { useQuotationStore } from "@/stores/financeStore/useQuotationStore";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useRouter } from "next/navigation";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { CreateQuotationPayload } from "@/api/finance/quotationApi";
@@ -16,9 +16,10 @@ import { toast } from "sonner";
 
 export default function CreateQuotationPage() {
   const { clients } = useClientStore();
-  const { items } = useItemStore();
   const { createQuotation, previewQuotationNumber } = useQuotationStore();
   const { user } = useAuthStore();
+  const { data: itemsData } = useItems(user?.companyId || "");
+  const items = itemsData?.result?.items || [];
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { details } = useBussinessStore();

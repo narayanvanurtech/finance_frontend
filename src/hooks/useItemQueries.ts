@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import itemApi from "@/api/finance/itemApi";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 // -----------------------------------------------------
 //                    QUERY KEYS
@@ -63,6 +64,15 @@ export const useSearchItems = (companyId: string, params: { search: string }) =>
     queryFn: () => itemApi.searchItems(companyId, params),
     enabled: !!companyId && !!params?.search,
   });
+
+// Backwards-compatible hook: many components call `useGetItems()` without
+// passing a companyId. Provide a wrapper that reads the current user's
+// companyId from the auth store and delegates to `useItems`.
+export const useGetItems = (params?: any) => {
+  const user = useAuthStore((s) => s.user);
+  const companyId = user?.companyId || "";
+  return useItems(companyId, params);
+};
 
 // ITEM STATISTICS
 export const useItemStatistics = (companyId: string) =>

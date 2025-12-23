@@ -25,35 +25,53 @@ export default function CreateDebitNotePage() {
   // Fetch data using React Query
   const { data: vendorsData, isLoading: vendorsLoading } = useGetVendors();
   const { data: itemsData, isLoading: itemsLoading } = useGetItems();
+
   const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } =
     useGetPurchaseOrders();
   const createDebitNoteMutation = useCreateDebitNote();
-console.log("puchaseOrdersData",purchaseOrdersData);
+  console.log("puchaseOrdersData", purchaseOrdersData);
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];
   const items = itemsData?.result?.items || [];
+
   const allPurchaseOrders = purchaseOrdersData?.result?.purchaseOrders || [];
-  
-  // Filter purchase orders by selected vendor
-  const purchaseOrders = selectedVendorId 
+
+  // Filter purchase orders by selected vendor id (handles vendorId as object or string)
+  const purchaseOrders = selectedVendorId
     ? allPurchaseOrders.filter((po: any) => {
-        const vendorIdStr = typeof po.vendorId === 'object' ? po.vendorId._id || po.vendorId.id : po.vendorId;
+        const vendorField =
+          po.vendorId || po.vendor || po.vendorSnapshot || null;
+        const vendorIdStr = vendorField
+          ? typeof vendorField === "object"
+            ? vendorField._id || vendorField.id || vendorField
+            : vendorField
+          : null;
         return String(vendorIdStr) === String(selectedVendorId);
       })
     : [];
 
-  // Debug logging
+  // Detailed debug logging to diagnose why POs may not appear
   React.useEffect(() => {
-    console.log("🔍 Selected Vendor ID:", selectedVendorId);
-    console.log("📦 All Purchase Orders:", allPurchaseOrders.length);
-    console.log("📋 Filtered Purchase Orders:", purchaseOrders.length);
-    if (purchaseOrders.length > 0) {
-      console.log("🎯 Sample PO:", purchaseOrders[0]);
+    console.log("[PO DEBUG] selectedVendorId:", selectedVendorId);
+    console.log(
+      "[PO DEBUG] total allPurchaseOrders:",
+      allPurchaseOrders.length
+    );
+    if (allPurchaseOrders.length > 0) {
+      console.log(
+        "[PO DEBUG] sample vendorId fields:",
+        allPurchaseOrders.slice(0, 10).map((p: any) => ({
+          _id: p._id,
+          vendorId: p.vendorId && (p.vendorId._id || p.vendorId),
+          vendorSnapshot: p.vendorSnapshot && p.vendorSnapshot.name,
+        }))
+      );
     }
+    console.log("[PO DEBUG] matched purchaseOrders:", purchaseOrders.length);
+    if (purchaseOrders.length > 0)
+      console.log("[PO DEBUG] matches:", purchaseOrders);
   }, [selectedVendorId, allPurchaseOrders, purchaseOrders]);
 
-  // For now, using placeholder business details
-  // You can add a separate query for business details if needed
   const mappedBusinessDetails = {
     name: "Your Business Name",
     gstin: "",
@@ -132,12 +150,12 @@ console.log("puchaseOrdersData",purchaseOrdersData);
   const handleCreate = async (values: DebitNoteFormValues) => {
     try {
       // Transform form values to API payload
-      const payload: CreateDebitNotePayload = {
+      // Build base payload
+      const payload: any = {
         vendorId: values.vendorId,
-        purchaseId: values.purchaseId,
         debitNoteDate: values.debitNoteDate,
         originalBillNumber: values.originalBillNumber,
-        originalBillDate: values.debitNoteDate, // You may need to adjust this
+        originalBillDate: values.originalBillDate || values.debitNoteDate,
         debitType: values.debitType as
           | "quality_issue"
           | "price_difference"
@@ -169,6 +187,18 @@ console.log("puchaseOrdersData",purchaseOrdersData);
         terms: values.terms,
         notes: values.notes,
       };
+
+      // Only add purchaseId if it has a valid value
+      if (values.purchaseId && values.purchaseId.trim() !== "") {
+        payload.purchaseId = values.purchaseId;
+      }
+
+      // Only add priority if it has a valid value
+      if (values.priority && values.priority.trim() !== "") {
+        payload.priority = values.priority;
+      }
+
+      console.log("📤 Sending payload to backend:", payload);
 
       await createDebitNoteMutation.mutateAsync(payload);
       router.push("/user/finance/debit-notes");

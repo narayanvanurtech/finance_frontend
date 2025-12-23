@@ -25,6 +25,10 @@ type HeaderBarProps = {
   setPurchaseId: (val: string) => void;
   originalBillNumber: string;
   setOriginalBillNumber: (val: string) => void;
+  originalBillDate?: string;
+  setOriginalBillDate?: (val: string) => void;
+  priority?: string;
+  setPriority?: (val: string) => void;
   debitType: string;
   setDebitType: (val: string) => void;
   invoices: Invoice[];
@@ -47,6 +51,10 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   setPurchaseId,
   originalBillNumber,
   setOriginalBillNumber,
+  originalBillDate,
+  setOriginalBillDate,
+  priority,
+  setPriority,
   debitType,
   setDebitType,
   invoices,
@@ -64,6 +72,17 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   ];
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {/** Debug logs for purchase orders visibility */}
+      {(() => {
+        if (typeof window !== "undefined") {
+          console.log("HeaderBar: selectedVendorId:", selectedVendorId);
+          console.log(
+            "HeaderBar: purchaseOrders count:",
+            purchaseOrders.length
+          );
+        }
+        return null;
+      })()}
       <div>
         <label className="block text-sm font-medium mb-1">
           Debit Note No <span className="text-red-500">*</span>
@@ -72,7 +91,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           type="text"
           className="w-full border rounded px-3 py-2"
           value={debitNoteNo}
-          onChange={e => setDebitNoteNo(e.target.value)}
+          onChange={(e) => setDebitNoteNo(e.target.value)}
           placeholder="D00001"
           required
         />
@@ -85,19 +104,22 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           type="date"
           className="w-full border rounded px-3 py-2"
           value={debitNoteDate}
-          onChange={e => setDebitNoteDate(e.target.value)}
+          onChange={(e) => setDebitNoteDate(e.target.value)}
           required
         />
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">
-          Select Purchase Order {selectedVendorId && <span className="text-red-500">*</span>}
+          Select Purchase Order{" "}
+          {selectedVendorId && <span className="text-red-500">*</span>}
         </label>
         <select
           className="w-full border rounded px-3 py-2"
           value={purchaseId}
           onChange={(e) => {
-            const selectedPO = purchaseOrders.find(po => po._id === e.target.value);
+            const selectedPO = purchaseOrders.find(
+              (po) => po._id === e.target.value
+            );
             if (selectedPO && onPurchaseOrderSelect) {
               onPurchaseOrderSelect(selectedPO);
             }
@@ -107,9 +129,15 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
           <option value="">
             {selectedVendorId ? "Select Purchase Order" : "Select vendor first"}
           </option>
-          {purchaseOrders.map(po => (
+          {selectedVendorId && purchaseOrders.length === 0 && (
+            <option value="" disabled>
+              No purchase orders for selected vendor
+            </option>
+          )}
+          {purchaseOrders.map((po) => (
             <option key={po._id} value={po._id}>
-              {po.purchaseOrderNumber} - {new Date(po.purchaseOrderDate).toLocaleDateString()}
+              {po.purchaseOrderNumber} -{" "}
+              {new Date(po.purchaseOrderDate).toLocaleDateString()}
             </option>
           ))}
         </select>
@@ -121,12 +149,14 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         <select
           className="w-full border rounded px-3 py-2"
           value={reason}
-          onChange={e => setReason(e.target.value)}
+          onChange={(e) => setReason(e.target.value)}
           required
         >
           <option value="">Select reason</option>
-          {reasons.map(r => (
-            <option key={r} value={r}>{r}</option>
+          {reasons.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
       </div>
@@ -136,12 +166,43 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         </label>
         <input
           type="text"
-          className="w-full border rounded px-3 py-2 bg-gray-50"
+          className="w-full border rounded px-3 py-2"
           value={originalBillNumber}
-          onChange={e => setOriginalBillNumber(e.target.value)}
-          placeholder="Auto-filled from purchase order"
-          readOnly
+          onChange={(e) => setOriginalBillNumber(e.target.value)}
+          placeholder="Enter bill number or select purchase order"
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Auto-filled when purchase order is selected, or enter manually
+        </p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">
+          Original Bill Date
+        </label>
+        <input
+          type="date"
+          className="w-full border rounded px-3 py-2"
+          value={originalBillDate || ""}
+          onChange={(e) =>
+            setOriginalBillDate && setOriginalBillDate(e.target.value)
+          }
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Auto-filled when purchase order is selected, or enter manually
+        </p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Priority</label>
+        <select
+          className="w-full border rounded px-3 py-2"
+          value={priority || ""}
+          onChange={(e) => setPriority && setPriority(e.target.value)}
+        >
+          <option value="">Select priority</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
       </div>
       <div>
         <label className="block text-sm font-medium mb-1">
@@ -150,12 +211,14 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
         <select
           className="w-full border rounded px-3 py-2"
           value={debitType}
-          onChange={e => setDebitType(e.target.value)}
+          onChange={(e) => setDebitType(e.target.value)}
           required
         >
           <option value="">Select Debit Type</option>
-          {debitTypes.map(type => (
-            <option key={type.value} value={type.value}>{type.label}</option>
+          {debitTypes.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
           ))}
         </select>
       </div>
@@ -163,4 +226,4 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
   );
 };
 
-export default HeaderBar; 
+export default HeaderBar;

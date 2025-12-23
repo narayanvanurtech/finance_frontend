@@ -7,15 +7,18 @@ import QuotationForm, {
 import { useQuotationStore } from "@/stores/financeStore/useQuotationStore";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { on } from "events";
 
 export default function EditQuotationPage() {
   const params = useParams();
   const router = useRouter();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+   const { user } = useAuthStore();
+ const { data: itemsData } = useItems(user?.companyId || "");
+   const items = itemsData?.result?.items || [];
   const { currentQuotation, fetchQuotationById } = useQuotationStore();
   const [loading, setLoading] = useState(true);
   const [initialValues, setInitialValues] = useState<

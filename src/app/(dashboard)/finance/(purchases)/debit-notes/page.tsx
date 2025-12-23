@@ -29,7 +29,7 @@ export default function DebitNotesPage() {
               background: "var(--color-primary)",
               color: "var(--color-primary-foreground)",
             }}
-            onClick={() => router.push("/user/finance/debit-notes/create")}
+            onClick={() => router.push("/finance/debit-notes/create")}
           >
             + Create Debit Note
           </Button>

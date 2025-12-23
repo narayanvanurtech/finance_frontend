@@ -170,7 +170,7 @@ export const createDebitNote = async (
   data: CreateDebitNotePayload
 ): Promise<DebitNoteResponse> => {
   const res = await axiosInstance.post(
-    "/api/v1/finance/purchases/debit-notes",
+    "/api/v1/finance/purchases/debit-notes/create",
     data
   );
   return res.data;
