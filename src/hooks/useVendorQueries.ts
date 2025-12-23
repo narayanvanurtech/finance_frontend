@@ -16,6 +16,8 @@ export const vendorKeys = {
   detail: (id: string) => [...vendorKeys.details(), id] as const,
   search: (searchTerm: string) =>
     [...vendorKeys.all, "search", searchTerm] as const,
+  withPurchases: (page?: number, limit?: number) =>
+    [...vendorKeys.all, "withPurchases", page, limit] as const,
 };
 
 // ===========================
@@ -65,6 +67,33 @@ export const useSearchVendors = (searchTerm: string, enabled = true) => {
     queryFn: () => vendorApi.searchVendors(searchTerm),
     enabled: enabled && searchTerm.length > 0,
     staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+};
+
+/**
+ * Hook to fetch vendors with their purchase statistics and recent purchases
+ */
+export const useGetVendorsWithPurchases = (
+  page: number = 1,
+  limit: number = 10,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: vendorKeys.withPurchases(page, limit),
+    queryFn: async () => {
+      try {
+        const response = await vendorApi.getVendorsWithPurchases(page, limit);
+        return response;
+      } catch (error) {
+        console.error("❌ Error fetching vendors with purchases:", error);
+        throw error;
+      }
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnMount: true,
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 

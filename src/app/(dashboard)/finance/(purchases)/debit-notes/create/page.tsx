@@ -5,10 +5,9 @@ import DebitNotesForm, {
   DebitNoteFormValues,
   Invoice,
 } from "@/finance/debitNotes/DebitNotesForm";
-import { useGetVendors } from "@/hooks/useVendorQueries";
+import { useGetVendorsWithPurchases } from "@/hooks/useVendorQueries";
 import { useGetItems } from "@/hooks/useItemQueries";
 import { useCreateDebitNote } from "@/hooks/useDebitNotesQueries";
-import { useGetPurchaseOrders } from "@/hooks/usePurchaseOrderQueries";
 import { useRouter } from "next/navigation";
 import { CreateDebitNotePayload } from "@/api/finance/debitNotesApi";
 
@@ -22,55 +21,33 @@ export default function CreateDebitNotePage() {
   const router = useRouter();
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
 
-  // Fetch data using React Query
-  const { data: vendorsData, isLoading: vendorsLoading } = useGetVendors();
+  // Fetch vendors with their purchases
+  const { data: vendorsData, isLoading: vendorsLoading } =
+    useGetVendorsWithPurchases(1, 100);
   const { data: itemsData, isLoading: itemsLoading } = useGetItems();
 
-  const { data: purchaseOrdersData, isLoading: purchaseOrdersLoading } =
-    useGetPurchaseOrders();
   const createDebitNoteMutation = useCreateDebitNote();
-  console.log("puchaseOrdersData", purchaseOrdersData);
+
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];
   const items = itemsData?.result?.items || [];
 
-  const allPurchaseOrders = purchaseOrdersData?.result?.purchaseOrders || [];
+  // Get purchase orders for the selected vendor
+  const selectedVendor = vendors.find(
+    (vendor) => vendor._id === selectedVendorId
+  );
 
-  // Filter purchase orders by selected vendor id (handles vendorId as object or string)
-  const purchaseOrders = selectedVendorId
-    ? allPurchaseOrders.filter((po: any) => {
-        const vendorField =
-          po.vendorId || po.vendor || po.vendorSnapshot || null;
-        const vendorIdStr = vendorField
-          ? typeof vendorField === "object"
-            ? vendorField._id || vendorField.id || vendorField
-            : vendorField
-          : null;
-        return String(vendorIdStr) === String(selectedVendorId);
-      })
-    : [];
-
-  // Detailed debug logging to diagnose why POs may not appear
-  React.useEffect(() => {
-    console.log("[PO DEBUG] selectedVendorId:", selectedVendorId);
-    console.log(
-      "[PO DEBUG] total allPurchaseOrders:",
-      allPurchaseOrders.length
-    );
-    if (allPurchaseOrders.length > 0) {
-      console.log(
-        "[PO DEBUG] sample vendorId fields:",
-        allPurchaseOrders.slice(0, 10).map((p: any) => ({
-          _id: p._id,
-          vendorId: p.vendorId && (p.vendorId._id || p.vendorId),
-          vendorSnapshot: p.vendorSnapshot && p.vendorSnapshot.name,
-        }))
-      );
-    }
-    console.log("[PO DEBUG] matched purchaseOrders:", purchaseOrders.length);
-    if (purchaseOrders.length > 0)
-      console.log("[PO DEBUG] matches:", purchaseOrders);
-  }, [selectedVendorId, allPurchaseOrders, purchaseOrders]);
+  // Map purchases to the format expected by the form
+  const purchaseOrders =
+    selectedVendor?.purchases?.map((purchase) => ({
+      _id: purchase._id,
+      purchaseOrderNumber: purchase.billNumber,
+      purchaseOrderDate: purchase.billDate,
+      vendorId: purchase.vendorId,
+      paymentStatus: purchase.paymentStatus,
+      totalPaidAmount: purchase.totalPaidAmount,
+      priority: purchase.priority,
+    })) || [];
 
   const mappedBusinessDetails = {
     name: "Your Business Name",
@@ -209,7 +186,7 @@ export default function CreateDebitNotePage() {
 
   // Show loading state if data is being fetched
   if (vendorsLoading || itemsLoading) {
-    return <div className="p-8 text-center">Loading...</div>;
+    return <div className="p-8 text-center">Loading vendors and items...</div>;
   }
 
   return (

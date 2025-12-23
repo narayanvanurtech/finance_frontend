@@ -206,8 +206,8 @@ export const useDebitNotesList = (filters?: any) => {
   const query = useGetDebitNotes(filters);
 
   return {
-    debitNotes: query.data?.result?.debitNotes || [],
-    pagination: query.data?.result?.pagination,
+    debitNotes: query.data?.data || [],
+    pagination: query?.data?.data?.pagination,
     ...query,
   };
 };

@@ -43,7 +43,7 @@ export default function DebitNotesPage() {
             <div className="text-center text-red-500 py-16 text-lg">
               Error loading debit notes.
             </div>
-          ) : debitNotes.length === 0 ? (
+          ) : debitNotes?.length === 0 ? (
             <div className="text-center text-gray-500 py-16 text-lg">
               No debit notes found.
             </div>
@@ -123,7 +123,7 @@ export default function DebitNotesPage() {
                             className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/30"
                             onClick={() =>
                               router.push(
-                                `/user/finance/debit-notes/edit/${note._id}`
+                                `/finance/debit-notes/edit/${note._id}`
                               )
                             }
                           >
