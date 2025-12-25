@@ -25,6 +25,9 @@ export default function CreatePurchaseOrderPage() {
   const { data: vendorsData } = useGetVendors();
   const { data: itemsData } = useGetItems();
   const { details } = useBussinessStore();
+
+  console.log("sfsdfsdfdsfewredsdfsd");
+
   const { mutate: createPurchaseOrder, isPending } = useCreatePurchaseOrder();
   const router = useRouter();
 
@@ -32,15 +35,15 @@ export default function CreatePurchaseOrderPage() {
   const items = itemsData?.result?.items || [];
   const businessStoreDetails = details;
 
-  if (!businessStoreDetails) {
-    return <div>Loading business details...</div>;
-  }
+  // if (!businessStoreDetails) {
+  //   return <div>Loading business details...</div>;
+  // }
 
   const mappedBusinessDetails = {
-    name: businessStoreDetails.businessName,
-    gstin: businessStoreDetails.gstNumber || "",
-    address: businessStoreDetails.website || "",
-    contact: businessStoreDetails.phone,
+    name: businessStoreDetails?.businessName,
+    gstin: businessStoreDetails?.gstNumber || "",
+    address: businessStoreDetails?.website || "",
+    contact: businessStoreDetails?.phone,
     email: "",
   };
 

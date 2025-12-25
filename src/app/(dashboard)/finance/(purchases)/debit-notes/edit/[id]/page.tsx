@@ -34,6 +34,8 @@ export default function EditDebitNotePage() {
   } = useGetDebitNoteById(debitNoteId);
   const updateDebitNoteMutation = useUpdateDebitNote();
 
+  console.log("sdfdsfsdfsdfdsfdsfdsfsd", debitNoteData);
+
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];
   const items = itemsData?.result?.items || [];
@@ -60,9 +62,10 @@ export default function EditDebitNotePage() {
   // Set the selected vendor ID from the debit note data
   React.useEffect(() => {
     if (debitNote?.vendorId) {
-      const vendorId = typeof debitNote.vendorId === 'string' 
-        ? debitNote.vendorId 
-        : debitNote.vendorId._id;
+      const vendorId =
+        typeof debitNote.vendorId === "string"
+          ? debitNote.vendorId
+          : debitNote.vendorId._id;
       setSelectedVendorId(vendorId);
     }
   }, [debitNote]);
@@ -109,16 +112,16 @@ export default function EditDebitNotePage() {
     debitNoteDate: debitNote.debitNoteDate.split("T")[0],
     linkedInvoice: debitNote.originalBillNumber,
     reason: debitNote.reason,
-    purchaseId: debitNote.purchaseId || "",
+    purchaseId: debitNote.purchaseId?._id || "",
     originalBillNumber: debitNote.originalBillNumber || "",
     debitType: debitNote.debitType || "",
     vendorId: debitNote.vendorId?._id || debitNote.vendorId,
-    vendorDetails: debitNote.vendorDetails || {
-      name: "",
-      gstin: "",
-      address: "",
-      contact: "",
-      email: "",
+    vendorDetails:  {
+      name: debitNote.vendorId?.name,
+      gstin: debitNote.vendorId?.gstin,
+      address: debitNote.vendorId?.address,
+      contact: debitNote.vendorId?.phone,
+      email: debitNote.vendorId?.email,
     },
     businessDetails: mappedBusinessDetails,
     items: debitNote.items.map((item) => ({
@@ -155,6 +158,7 @@ export default function EditDebitNotePage() {
     try {
       // Transform form values to API payload
       const payload: UpdateDebitNotePayload = {
+        vendorId: values.vendorId,
         reason: values.reason,
         purchaseId: values.purchaseId,
         debitNoteDate: values.debitNoteDate,
@@ -190,11 +194,11 @@ export default function EditDebitNotePage() {
         notes: values.notes,
       };
 
-  await updateDebitNoteMutation.mutateAsync({
+      await updateDebitNoteMutation.mutateAsync({
         debitNoteId,
         data: payload,
       });
-      router.push("/user/finance/debit-notes");
+      router.push("/finance/debit-notes");
     } catch (error) {
       console.error("Error updating debit note:", error);
     }
@@ -214,4 +218,4 @@ export default function EditDebitNotePage() {
       loading={updateDebitNoteMutation.isPending}
     />
   );
-}  
+}

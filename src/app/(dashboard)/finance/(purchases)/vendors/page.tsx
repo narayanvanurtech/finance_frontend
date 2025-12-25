@@ -24,6 +24,7 @@ import {
   Plus,
   Download,
   Filter,
+  ShoppingCart,
 } from "lucide-react";
 
 export default function VendorsPage() {
@@ -191,6 +192,11 @@ export default function VendorsPage() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+          <DropdownMenuItem onClick={() => router.push(`/finance/vendors/${vendor._id}`)}>
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            View Purchases
+          </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => handleEditVendor(vendor)}>
             <Edit className="h-4 w-4 mr-2" />
