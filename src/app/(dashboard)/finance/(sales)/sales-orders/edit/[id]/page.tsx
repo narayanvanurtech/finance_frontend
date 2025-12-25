@@ -7,7 +7,7 @@ import SalesOrderForm, {
 import { useSalesOrderStore } from "@/stores/financeStore/useSalesOrderStore";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
-import { useItemStore } from "@/stores/financeStore/useItemStore";
+import { useItems } from "@/hooks/useItemQueries";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { toast } from "sonner";
 
@@ -16,7 +16,8 @@ export default function EditSalesOrderPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { clients } = useClientStore();
-  const { items } = useItemStore();
+const { data: itemsData } = useItems("");
+  const items = itemsData?.result?.items || [];
   const { currentSalesOrder, fetchSalesOrderById, updateSalesOrder } =
     useSalesOrderStore();
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,10 @@ export default function EditSalesOrderPage() {
             setInitialValues({
               type: "salesOrder",
               orderTitle:
-                order.orderTitle || (order as any).salesOrderTitle || "",
+                (order.orderTitle && order.orderTitle.trim()) || 
+                (order as any).salesOrderTitle || 
+                order.orderNumber || 
+                "Sales Order",
               orderNumber:
                 (order as any).salesOrderNumber || order.orderNumber || "",
               orderDate:

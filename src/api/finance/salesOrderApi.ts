@@ -1,5 +1,4 @@
 import axiosInstance from "../../utils/axios";
-import axios from "../../utils/axios";
 import { ConvertToInvoicePayload } from "./quotationApi";
 
 // Sales Order Item interface
@@ -301,9 +300,20 @@ const salesOrderApi = {
     data?: ConvertToInvoicePayload
   ): Promise<SalesOrderResponse> => {
     try {
-      const response = await axiosInstance.post<SalesOrderResponse>(
-        `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice/${companyId}`,
+      const url = `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice/${companyId}`;
+      console.log(
+        "salesOrderApi.convertToInvoice -> POST",
+        url,
+        "payload:",
         data || {}
+      );
+      const response = await axiosInstance.post<SalesOrderResponse>(
+        url,
+        data || {}
+      );
+      console.log(
+        "salesOrderApi.convertToInvoice <- response:",
+        response?.data
       );
       return response.data;
     } catch (error) {
@@ -405,17 +415,25 @@ const salesOrderApi = {
   bulkAction: async (
     action: string,
     orderIds: string[],
+    companyId?: string,
     data?: any
   ): Promise<DeleteResponse> => {
     try {
-      const response = await axios.post<DeleteResponse>(
-        "/api/v1/finance/sales/sales-orders/bulk-action",
-        {
-          action,
-          orderIds,
-          ...data,
-        }
-      );
+      // Prefer endpoint with companyId in path when provided to match backend routes
+      const url = companyId
+        ? `/api/v1/finance/sales/sales-orders/${companyId}/bulk-action`
+        : "/api/v1/finance/sales/sales-orders/bulk-action";
+
+      // Include multiple possible id keys to match backend expectations
+      const payload = {
+        action,
+        orderIds,
+        salesOrderIds: orderIds,
+        ids: orderIds,
+        ...data,
+      };
+
+      const response = await axiosInstance.post<DeleteResponse>(url, payload);
       return response.data;
     } catch (error) {
       throw error;

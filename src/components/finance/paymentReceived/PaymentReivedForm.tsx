@@ -32,7 +32,7 @@ export type Allocation = {
 export type PaymentsMadeFormValues = {
   clientId: string;
   paymentDate: string;
-  paymentType: string; // "Receipt" or "Advance"
+  paymentType: string; // Payment type: Receipt, Advance, Partial Payment, Full Payment, Refund, Credit Note, Adjustment
   paymentRecords: PaymentRecord[];
   allocations: Allocation[];
   attachments?: string[];
@@ -94,7 +94,15 @@ const PAYMENT_MODES = [
   "Other",
 ];
 
-const PAYMENT_TYPES = ["Receipt", "Advance"];
+const PAYMENT_TYPES = [
+  "Receipt",
+  "Advance",
+  "Partial Payment",
+  "Full Payment",
+  "Refund",
+  "Credit Note",
+  "Adjustment",
+];
 
 export default function PaymentsMadeForm({
   initialValues,
@@ -189,6 +197,64 @@ export default function PaymentsMadeForm({
     }
   }, [clientId, clients]);
 
+  // Initialize selectedInvoice from initialValues when invoices are loaded
+  useEffect(() => {
+    if (initialValues && invoices.length > 0 && clientId) {
+      // First try to get from selectedInvoices array (invoiceNumbers)
+      if (initialValues.selectedInvoices && initialValues.selectedInvoices.length > 0) {
+        const invoiceNumber = initialValues.selectedInvoices[0];
+        // Verify it exists in the invoices list
+        const invoiceExists = invoices.some(
+          (inv) => inv.invoiceNumber === invoiceNumber
+        );
+        if (invoiceExists && !selectedInvoice) {
+          setSelectedInvoice(invoiceNumber);
+        }
+      }
+      // If not found, try to map from allocations (invoiceIds)
+      else if (initialValues.allocations && initialValues.allocations.length > 0) {
+        const allocation = initialValues.allocations[0];
+        // Try to find invoice by _id first
+        let invoice = invoices.find((inv) => inv._id === allocation.invoiceId);
+        // If not found by _id, try by invoiceNumber
+        if (!invoice) {
+          invoice = invoices.find((inv) => inv.invoiceNumber === allocation.invoiceId);
+        }
+        if (invoice && invoice.invoiceNumber && !selectedInvoice) {
+          setSelectedInvoice(invoice.invoiceNumber);
+        }
+      }
+    }
+  }, [initialValues, invoices, clientId, selectedInvoice]);
+
+  // Update form fields when initialValues change (for edit mode)
+  useEffect(() => {
+    if (initialValues && mode === "edit") {
+      if (initialValues.referenceNo !== undefined) {
+        setReferenceNo(initialValues.referenceNo || "");
+      }
+      if (initialValues.notes !== undefined) {
+        setNotes(initialValues.notes || "");
+      }
+      if (initialValues.paymentMode !== undefined) {
+        setPaymentMode(initialValues.paymentMode || "");
+      }
+      if (initialValues.paidThrough !== undefined) {
+        setPaidThrough(initialValues.paidThrough || "");
+      }
+      if (initialValues.amountPaid !== undefined) {
+        setAmountPaid(initialValues.amountPaid || "");
+      }
+      if (initialValues.paymentDate !== undefined) {
+        setPaymentDate(initialValues.paymentDate || "");
+      }
+      if (initialValues.paymentType !== undefined) {
+        setPaymentType(initialValues.paymentType || "");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValues?.referenceNo, initialValues?.notes, initialValues?.paymentMode, initialValues?.paidThrough, initialValues?.amountPaid, initialValues?.paymentDate, initialValues?.paymentType, mode]);
+
   // Filter invoices for this client
   const clientInvoices = invoices.filter((inv) => {
     const invClientId =
@@ -252,12 +318,8 @@ export default function PaymentsMadeForm({
     if (!amountPaid || Number(amountPaid) <= 0) {
       newErrors.amountPaid = "Please enter a valid amount";
     }
-    if (
-      !paymentType ||
-      (paymentType !== "Receipt" && paymentType !== "Advance")
-    ) {
-      newErrors.paymentType =
-        "Payment type must be either 'Receipt' or 'Advance'";
+    if (!paymentType || !PAYMENT_TYPES.includes(paymentType)) {
+      newErrors.paymentType = "Please select a valid payment type";
     }
 
     // If there are errors, set them and stop

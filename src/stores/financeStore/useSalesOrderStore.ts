@@ -63,7 +63,7 @@ interface SalesOrderStore {
     params: SalesOrderQueryParams
   ) => Promise<void>;
   getSalesOrderStats: (companyId: string, period?: string) => Promise<any>;
-  bulkAction: (action: string, orderIds: string[]) => Promise<void>;
+  bulkAction: (action: string, orderIds: string[], data?: any) => Promise<void>;
   convertToInvoice: (orderId: string, data?: any) => Promise<SalesOrder>;
 
   clearError: () => void;
@@ -420,11 +420,17 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
 
         set({ loading: true, error: null });
         try {
+          console.log("store.convertToInvoice ->", {
+            orderId,
+            companyId,
+            data,
+          });
           const res = await salesOrderApi.convertToInvoice(
             orderId,
             companyId,
             data
           );
+          console.log("store.convertToInvoice <- res:", res);
 
           // Update the local state to reflect the conversion
           set((state) => ({
@@ -442,6 +448,20 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
 
           toast.success("Successfully converted to invoice");
 
+          // Refresh invoices store so the newly created invoice appears in invoices section
+          try {
+            const { useInvoiceStore } = await import("./useInvoiceStore");
+            const invoiceStore = useInvoiceStore.getState();
+            // Fetch latest invoices (page 1 with default limit)
+            await invoiceStore.fetchInvoices();
+            console.log("🔄 Invoices refreshed after conversion");
+          } catch (err) {
+            console.error(
+              "Failed to refresh invoice store after conversion:",
+              err
+            );
+          }
+
           return res.data;
         } catch (error: any) {
           const msg =
@@ -455,7 +475,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
       // ===========================
       // Bulk Action
       // ===========================
-      bulkAction: async (action, orderIds) => {
+      bulkAction: async (action, orderIds, data) => {
         const state = get();
         if (!state.companyId) {
           toast.error("Company ID is required");
@@ -464,7 +484,21 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
 
         set({ loading: true, error: null });
         try {
-          await salesOrderApi.bulkAction(action, orderIds);
+          // Debug log to verify selections sent to backend
+          console.log("Bulk action invoked", {
+            action,
+            orderIds,
+            companyId: state.companyId,
+            data,
+          });
+
+          // Pass companyId to API so backend can route correctly
+          await salesOrderApi.bulkAction(
+            action,
+            orderIds,
+            state.companyId,
+            data
+          );
 
           if (action === "delete") {
             // Remove deleted orders from the store
