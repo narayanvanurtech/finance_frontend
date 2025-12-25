@@ -26,21 +26,23 @@ export default function PaymentReceivedEditPage() {
       }
 
       // 🟢 FORMAT RESPONSE FOR FORM
+      const firstPaymentRecord = data.paymentRecords?.[0] || {};
+      
       const formatted: PaymentsMadeFormValues = {
         clientId:
           typeof data.clientId === "object" ? data.clientId._id : data.clientId,
         paymentDate: data.receiptDate?.split("T")[0] || "",
         paymentType: data.paymentType || "Receipt",
 
-        // ---- Payment Records fill
-        paymentMode: data.paymentRecords?.[0]?.paymentMethod || "",
-        paidThrough: data.paymentRecords?.[0]?.depositedTo || "",
-        amountPaid: data.paymentRecords?.[0]?.amountReceived?.toString() || "",
-        referenceNo: data.paymentRecords?.[0]?.referenceId || "",
-        notes: data.paymentRecords?.[0]?.notes || "",
+        // ---- Payment Records fill - ensure all fields are set
+        paymentMode: firstPaymentRecord.paymentMethod || "",
+        paidThrough: firstPaymentRecord.depositedTo || "",
+        amountPaid: firstPaymentRecord.amountReceived?.toString() || "",
+        referenceNo: firstPaymentRecord.referenceId || "",
+        notes: firstPaymentRecord.notes || "",
 
-        // ---- Invoice match by InvoiceId (REAL FIX 🔥)
-        selectedInvoices: data.allocations?.map((a) => a.invoiceId) || [],
+        // ---- Invoice match by InvoiceId (could be _id or invoiceNumber)
+        selectedInvoices: data.allocations?.map((a) => a.invoiceId).filter(Boolean) || [],
 
         allocations: data.allocations || [],
         paymentRecords: data.paymentRecords || [],

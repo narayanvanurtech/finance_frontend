@@ -127,12 +127,16 @@ const ClientDetailsPage = () => {
         pan: currentClient.pan || "",
         taxTreatment: currentClient.taxTreatment || "",
         gstType: currentClient.gstType || false,
-        accountHolderName: currentClient.accountHolderName || "",
-        bankName: currentClient.bankName || "",
-        bankAccountNumber: currentClient.bankAccountNumber || "",
-        ifscCode: currentClient.ifscCode || "",
-        branchName: currentClient.branchName || "",
-        accountType: currentClient.accountType || "",
+        // backend stores bank details under `accountDetails`
+        accountHolderName:
+          (currentClient.accountDetails as any)?.accountHolderName || "",
+        bankName: (currentClient.accountDetails as any)?.bankName || "",
+        // backend field is `accountNumber` -> map to formData.bankAccountNumber
+        bankAccountNumber:
+          (currentClient.accountDetails as any)?.accountNumber || "",
+        ifscCode: (currentClient.accountDetails as any)?.ifscCode || "",
+        branchName: (currentClient.accountDetails as any)?.branchName || "",
+        accountType: (currentClient.accountDetails as any)?.accountType || "",
       });
     }
   }, [currentClient]);
@@ -151,53 +155,56 @@ const ClientDetailsPage = () => {
     router.push(`/finance/clients/${clientId}/edit`);
   };
 
- const handleSave = async () => {
-   if (!user?.companyId || !clientId) return;
+  const handleSave = async () => {
+    if (!user?.companyId || !clientId) return;
 
-   setIsSaving(true);
-   try {
-     await updateClient(user.companyId, clientId, {
-       businessName: formData.businessName,
-       clientType: formData.clientType as "Individual" | "Company" | undefined,
-       industry: formData.industry || undefined,
-       email: formData.email,
-       phone: formData.phone || undefined,
-       address: {
-         street: formData.street || undefined,
-         city: formData.city || undefined,
-         state: formData.state || undefined,
-         postalCode: formData.postalCode || undefined,
-         country: formData.country || undefined,
-       },
-       gstin: formData.gstin || undefined,
-       pan: formData.pan || undefined,
-       taxTreatment: formData.taxTreatment
-         ? (formData.taxTreatment as
-             | "Registered Business"
-             | "Unregistered Business"
-             | "Consumer"
-             | "Overseas")
-         : undefined,
-       gstType: formData.gstType,
-       accountHolderName: formData.accountHolderName || undefined,
-       bankName: formData.bankName || undefined,
-       bankAccountNumber: formData.bankAccountNumber || undefined,
-       ifscCode: formData.ifscCode || undefined,
-       branchName: formData.branchName || undefined,
-       accountType: formData.accountType || undefined,
-     });
+    setIsSaving(true);
+    try {
+      await updateClient(user.companyId, clientId, {
+        businessName: formData.businessName,
+        clientType: formData.clientType as "Individual" | "Company" | undefined,
+        industry: formData.industry || undefined,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        address: {
+          street: formData.street || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+        },
+        gstin: formData.gstin || undefined,
+        pan: formData.pan || undefined,
+        taxTreatment: formData.taxTreatment
+          ? (formData.taxTreatment as
+              | "Registered Business"
+              | "Unregistered Business"
+              | "Consumer"
+              | "Overseas")
+          : undefined,
+        gstType: formData.gstType,
+        // send bank/account details under `accountDetails` to match backend
+        accountDetails: {
+          accountHolderName: formData.accountHolderName || undefined,
+          bankName: formData.bankName || undefined,
+          // backend expects `accountNumber`
+          accountNumber: formData.bankAccountNumber || undefined,
+          ifscCode: formData.ifscCode || undefined,
+          branchName: formData.branchName || undefined,
+          accountType: formData.accountType || undefined,
+        },
+      } as any);
 
-     await getClientById(user.companyId, clientId);
+      await getClientById(user.companyId, clientId);
 
-     // 👇 Redirect after update
-     router.push("/finance/clients");
-   } catch (error) {
-     console.error("Error updating client:", error);
-   } finally {
-     setIsSaving(false);
-   }
- };
-
+      // 👇 Redirect after update
+      router.push("/finance/clients");
+    } catch (error) {
+      console.error("Error updating client:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!user?.companyId || !clientId) return;

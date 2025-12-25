@@ -178,16 +178,19 @@ export default function SalesOrdersPage() {
     setStatsLoading(true);
     try {
       const statsData = await getSalesOrderStats(user.companyId, "30");
+      console.log("📊 Raw Stats Data:", statsData); // Debug ke liye
+      
+      // API response ke actual field names ko UI ke expected field names se map karein
       setStats({
-        totalOrders: statsData?.totalOrders || 0,
-        draftOrders: statsData?.draftOrders || 0,
-        confirmedOrders: statsData?.confirmedOrders || 0,
-        processingOrders: statsData?.processingOrders || 0,
-        shippedOrders: statsData?.shippedOrders || 0,
-        deliveredOrders: statsData?.deliveredOrders || 0,
-        cancelledOrders: statsData?.cancelledOrders || 0,
-        totalValue: statsData?.totalValue || 0,
-        period: "30 days",
+        totalOrders: statsData?.totalSalesOrders ?? statsData?.totalOrders ?? 0,
+        draftOrders: statsData?.draftCount ?? statsData?.draftOrders ?? 0,
+        confirmedOrders: statsData?.confirmedCount ?? statsData?.confirmedOrders ?? 0,
+        processingOrders: statsData?.processingCount ?? statsData?.processingOrders ?? 0,
+        shippedOrders: statsData?.shippedCount ?? statsData?.shippedOrders ?? 0,
+        deliveredOrders: statsData?.deliveredCount ?? statsData?.deliveredOrders ?? 0,
+        cancelledOrders: statsData?.cancelledCount ?? statsData?.cancelledOrders ?? 0,
+        totalValue: statsData?.totalValue ?? 0,
+        period: statsData?.period ?? "30 days",
       });
     } catch (error) {
       console.error("Failed to load stats:", error);
