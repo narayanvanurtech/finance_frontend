@@ -55,6 +55,7 @@ import {
   ChevronDown,
   MoreVertical,
 } from "lucide-react";
+import { getLogoUrl } from "@/lib/utils";
 
 const ClientDetailsPage = () => {
   const router = useRouter();
@@ -108,6 +109,7 @@ const ClientDetailsPage = () => {
     ifscCode: "",
     branchName: "",
     accountType: "",
+    logoUrl: "",
   });
 
   useEffect(() => {
@@ -133,6 +135,7 @@ const ClientDetailsPage = () => {
         ifscCode: currentClient.ifscCode || "",
         branchName: currentClient.branchName || "",
         accountType: currentClient.accountType || "",
+        logoUrl: currentClient.logoUrl || "",
       });
     }
   }, [currentClient]);
@@ -339,6 +342,10 @@ const ClientDetailsPage = () => {
     }
   };
 
+
+
+  
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
@@ -410,6 +417,10 @@ const ClientDetailsPage = () => {
     return null;
   }
 
+
+  console.log("formData.logoUrl", formData.logoUrl);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header with gradient background */}
@@ -429,11 +440,11 @@ const ClientDetailsPage = () => {
 
               <div className="flex items-center space-x-4">
                 <div className="relative group">
-                  {currentClient.logoUrl ? (
+                  {formData.logoUrl ? (
                     <div className="relative">
                       <img
-                        src={currentClient.logoUrl}
-                        alt={`${currentClient.businessName} logo`}
+                        src={getLogoUrl(formData.logoUrl) || ""}
+                        alt={`${formData.businessName} logo`}
                         className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -451,7 +462,7 @@ const ClientDetailsPage = () => {
                     <div className="relative">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
                         <span className="text-white font-semibold text-lg">
-                          {currentClient.businessName
+                          {formData.businessName
                             ?.charAt(0)
                             ?.toUpperCase() || "?"}
                         </span>

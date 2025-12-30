@@ -55,6 +55,7 @@ import {
   ChevronDown,
   MoreVertical,
 } from "lucide-react";
+import { getLogoUrl } from "@/lib/utils";
 
 const ClientDetailsPage = () => {
   const router = useRouter();
@@ -112,6 +113,12 @@ const ClientDetailsPage = () => {
 
   useEffect(() => {
     if (currentClient) {
+      // Support both flat and nested `accountDetails` shapes from the API
+      const accountDetails = 
+        typeof currentClient.accountDetails === "object" && currentClient.accountDetails !== null
+          ? currentClient.accountDetails
+          : null;
+      
       setFormData({
         businessName: currentClient.businessName || "",
         clientType: currentClient.clientType || "",
@@ -127,12 +134,32 @@ const ClientDetailsPage = () => {
         pan: currentClient.pan || "",
         taxTreatment: currentClient.taxTreatment || "",
         gstType: currentClient.gstType || false,
-        accountHolderName: currentClient.accountHolderName || "",
-        bankName: currentClient.bankName || "",
-        bankAccountNumber: currentClient.bankAccountNumber || "",
-        ifscCode: currentClient.ifscCode || "",
-        branchName: currentClient.branchName || "",
-        accountType: currentClient.accountType || "",
+        // account details: prefer top-level fields but fallback to nested accountDetails
+        accountHolderName:
+          currentClient.accountHolderName ||
+          accountDetails?.accountHolderName ||
+          "",
+        bankName:
+          currentClient.bankName ||
+          accountDetails?.bankName ||
+          "",
+        // API may provide `accountNumber` inside accountDetails -> map to bankAccountNumber
+        bankAccountNumber:
+          currentClient.bankAccountNumber ||
+          accountDetails?.accountNumber ||
+          "",
+        ifscCode:
+          currentClient.ifscCode ||
+          accountDetails?.ifscCode ||
+          "",
+        branchName:
+          currentClient.branchName ||
+          accountDetails?.branchName ||
+          "",
+        accountType:
+          currentClient.accountType ||
+          accountDetails?.accountType ||
+          "",
       });
     }
   }, [currentClient]);
@@ -151,53 +178,56 @@ const ClientDetailsPage = () => {
     router.push(`/finance/clients/${clientId}/edit`);
   };
 
- const handleSave = async () => {
-   if (!user?.companyId || !clientId) return;
+  console.log("asfsdafdsfsdaffsfs", formData.clientType);
 
-   setIsSaving(true);
-   try {
-     await updateClient(user.companyId, clientId, {
-       businessName: formData.businessName,
-       clientType: formData.clientType as "Individual" | "Company" | undefined,
-       industry: formData.industry || undefined,
-       email: formData.email,
-       phone: formData.phone || undefined,
-       address: {
-         street: formData.street || undefined,
-         city: formData.city || undefined,
-         state: formData.state || undefined,
-         postalCode: formData.postalCode || undefined,
-         country: formData.country || undefined,
-       },
-       gstin: formData.gstin || undefined,
-       pan: formData.pan || undefined,
-       taxTreatment: formData.taxTreatment
-         ? (formData.taxTreatment as
-             | "Registered Business"
-             | "Unregistered Business"
-             | "Consumer"
-             | "Overseas")
-         : undefined,
-       gstType: formData.gstType,
-       accountHolderName: formData.accountHolderName || undefined,
-       bankName: formData.bankName || undefined,
-       bankAccountNumber: formData.bankAccountNumber || undefined,
-       ifscCode: formData.ifscCode || undefined,
-       branchName: formData.branchName || undefined,
-       accountType: formData.accountType || undefined,
-     });
+  const handleSave = async () => {
+    if (!user?.companyId || !clientId) return;
 
-     await getClientById(user.companyId, clientId);
+    setIsSaving(true);
+    try {
+      await updateClient(user.companyId, clientId, {
+        businessName: formData.businessName,
+        clientType: formData.clientType as "Individual" | "Company",
+        industry: formData.industry || undefined,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        address: {
+          street: formData.street || undefined,
+          city: formData.city || undefined,
+          state: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          country: formData.country || undefined,
+        },
+        gstin: formData.gstin || undefined,
+        pan: formData.pan || undefined,
+        taxTreatment: formData.taxTreatment
+          ? (formData.taxTreatment as
+              | "Registered Business"
+              | "Unregistered Business"
+              | "Consumer"
+              | "Overseas")
+          : undefined,
+        gstType: formData.gstType,
+        accountDetails: {
+          accountHolderName: formData.accountHolderName || undefined,
+          bankName: formData.bankName || undefined,
+          accountNumber: formData.bankAccountNumber || undefined,
+          ifscCode: formData.ifscCode || undefined,
+          branchName: formData.branchName || undefined,
+          accountType: formData.accountType || undefined,
+        },
+      });
 
-     // 👇 Redirect after update
-     router.push("/finance/clients");
-   } catch (error) {
-     console.error("Error updating client:", error);
-   } finally {
-     setIsSaving(false);
-   }
- };
+      await getClientById(user.companyId, clientId);
 
+      // 👇 Redirect after update
+      router.push("/finance/clients");
+    } catch (error) {
+      console.error("Error updating client:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!user?.companyId || !clientId) return;
@@ -430,7 +460,7 @@ const ClientDetailsPage = () => {
                   {currentClient.logoUrl ? (
                     <div className="relative">
                       <img
-                        src={currentClient.logoUrl}
+                        src={getLogoUrl(currentClient.logoUrl) || ""}
                         alt={`${currentClient.businessName} logo`}
                         className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
                         onError={(e) => {
@@ -569,8 +599,12 @@ const ClientDetailsPage = () => {
                   <div className="flex items-center">
                     <Input
                       id="clientType"
-                      value={currentClient.clientType || ""}
+                      value={formData.clientType}
+                      onChange={(e) =>
+                        setFormData({ ...formData, clientType: e.target.value })
+                      }
                       className=" border-gray-200"
+                      placeholder="Enter client type"
                     />
                     {/* <Badge variant="secondary" className="ml-2">
                       {currentClient.clientType}

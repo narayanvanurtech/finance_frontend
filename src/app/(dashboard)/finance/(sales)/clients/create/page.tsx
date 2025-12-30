@@ -165,6 +165,8 @@ export type CreateClientForm = {
   ifscCode: string;
   branchName: string;
   accountType: string;
+  ownerId?: string;
+  tags?: string[];
 };
 
 const initialForm: CreateClientForm = {
@@ -196,6 +198,8 @@ const initialForm: CreateClientForm = {
   ifscCode: "",
   branchName: "",
   accountType: "Savings",
+  ownerId: undefined,
+  tags: [],
 };
 
 export default function CreateClientPage() {
@@ -309,6 +313,20 @@ export default function CreateClientPage() {
     setIsSubmitting(true);
 
     try {
+      // Build accountDetails: if structured bank fields are provided, prefer structured object,
+      // otherwise send the free-text customFields string for backwards compatibility.
+      const accountDetailsPayload =
+        form.accountHolderName || form.bankName || form.bankAccountNumber || form.ifscCode || form.branchName || form.accountType
+          ? {
+              accountHolderName: form.accountHolderName || undefined,
+              bankName: form.bankName || undefined,
+              accountNumber: form.bankAccountNumber || undefined,
+              ifscCode: form.ifscCode || undefined,
+              branchName: form.branchName || undefined,
+              accountType: form.accountType || undefined,
+            }
+          : form.customFields || "";
+
       const clientData: CreateClientPayload = {
         businessName: form.businessName,
         companyId: user.companyId,
@@ -336,13 +354,18 @@ export default function CreateClientPage() {
           postalCode: form.postalCode || "",
           country: form.addressCountry || "India",
         },
+        // Keep older flat bank fields for compatibility
         bankAccountNumber: form.bankAccountNumber || "",
         accountHolderName: form.accountHolderName || "",
         bankName: form.bankName || "",
         ifscCode: form.ifscCode || "",
         branchName: form.branchName || "",
         accountType: form.accountType || "",
-        accountDetails: form.customFields || "",
+        // accountDetails can be string or structured object
+        accountDetails: accountDetailsPayload,
+        // ownerId and tags from the form (optional)
+        ownerId: form.ownerId || undefined,
+        tags: form.tags && form.tags.length > 0 ? form.tags : undefined,
       };
 
       const createdClientResponse = await createClient(clientData);
