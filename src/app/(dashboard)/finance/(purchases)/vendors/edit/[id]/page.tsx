@@ -93,10 +93,11 @@ export default function EditVendorPage() {
     bankAccounts:
       vendor.bankAccounts?.map((account) => ({
         id: Math.random().toString(36),
+        accountHolderName: account.accountHolderName || "",
         bankName: account.bankName,
         accountNumber: account.accountNumber,
         ifsc: account.ifsc,
-        branch: account.branch,
+        branch: account.branch || "",
         accountType: account.accountType,
       })) || [],
     attachments: vendor.attachments || [],
@@ -133,6 +134,7 @@ export default function EditVendorPage() {
           streetAddress: values.streetAddress,
         },
         bankAccounts: values.bankAccounts?.map((account) => ({
+          accountHolderName: account.accountHolderName,
           bankName: account.bankName,
           accountNumber: account.accountNumber,
           ifsc: account.ifsc,

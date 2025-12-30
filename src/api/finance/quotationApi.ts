@@ -192,15 +192,15 @@ export interface QuotationStatsResponse {
   message: string;
   data: {
     totalQuotations: number;
-    draftQuotations: number;
-    sentQuotations: number;
-    acceptedQuotations: number;
-    rejectedQuotations: number;
-    expiredQuotations: number;
-    convertedQuotations: number;
-    totalValue: number;
+    statusBreakdown: Array<{
+      _id: string;
+      count: number;
+      totalValue: number;
+    }>;
     acceptanceRate: number;
-    conversionRate: number;
+    invoiceConversionRate: number;
+    proformaConversionRate: number;
+    period: string;
   };
 }
 
@@ -242,6 +242,36 @@ export interface QuotationQueryParams {
   convertedToInvoice?: boolean;
   search?: string;
 }
+
+// Helper function to clean and validate quotation ID
+const cleanQuotationId = (id: string | undefined | null): string => {
+  console.log("cleanQuotationId called with:", id, "Type:", typeof id);
+  
+  // Check for null, undefined, or empty - BEFORE any string conversion
+  if (id === null || id === undefined) {
+    console.error("cleanQuotationId: ID is null or undefined");
+    throw new Error("Quotation ID is required");
+  }
+  
+  // Convert to string and trim
+  const idString = String(id).trim();
+  console.log("cleanQuotationId: After String() conversion:", idString);
+  
+  // Check if it became "undefined" or "null" as strings (this happens when String(undefined) is called)
+  if (idString === 'undefined' || idString === 'null' || idString === '' || idString === 'NaN') {
+    console.error("cleanQuotationId: ID converted to invalid string:", idString);
+    throw new Error(`Invalid quotation ID: ${idString}`);
+  }
+  
+  // Validate MongoDB ObjectId format (24 hex characters)
+  const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+  if (!objectIdPattern.test(idString)) {
+    console.warn(`Warning: Quotation ID "${idString}" does not match MongoDB ObjectId format. Length: ${idString.length}`);
+  }
+  
+  // Return the trimmed ID without encoding, as MongoDB ObjectIds are URL-safe
+  return idString;
+};
 
 const quotationApi = {
   // Preview quotation number
@@ -298,8 +328,9 @@ const quotationApi = {
   // Get quotation by ID
   getQuotationById: async (quotationId: string): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.get<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}`
+        `/api/v1/finance/sales/quotations/${cleanId}`
       );
       return response.data;
     } catch (error) {
@@ -313,8 +344,9 @@ const quotationApi = {
     quotationData: UpdateQuotationPayload
   ): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.put<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}`,
+        `/api/v1/finance/sales/quotations/${cleanId}`,
         quotationData
       );
       return response.data;
@@ -329,8 +361,9 @@ const quotationApi = {
     status: string
   ): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.patch<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}/status`,
+        `/api/v1/finance/sales/quotations/${cleanId}/status`,
         { status }
       );
       return response.data;
@@ -342,11 +375,14 @@ const quotationApi = {
   // Delete quotation
   deleteQuotation: async (quotationId: string): Promise<DeleteResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
+      console.log("Deleting quotation with ID:", cleanId, "Length:", cleanId.length);
       const response = await axiosInstance.delete<DeleteResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}`
+        `/api/v1/finance/sales/quotations/${cleanId}`
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Delete quotation error - ID:", quotationId, "Error:", error?.response?.data);
       throw error;
     }
   },
@@ -356,8 +392,9 @@ const quotationApi = {
     quotationId: string
   ): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.post<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}/duplicate`
+        `/api/v1/finance/sales/quotations/${cleanId}/duplicate`
       );
       return response.data;
     } catch (error) {
@@ -371,8 +408,9 @@ const quotationApi = {
     data?: ConvertToInvoicePayload
   ): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.post<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}/convert-to-invoice`,
+        `/api/v1/finance/sales/quotations/${cleanId}/convert-to-invoice`,
         data || {}
       );
       return response.data;
@@ -387,8 +425,9 @@ const quotationApi = {
     data?: ConvertToProformaInvoicePayload
   ): Promise<QuotationResponse> => {
     try {
+      const cleanId = cleanQuotationId(quotationId);
       const response = await axiosInstance.post<QuotationResponse>(
-        `/api/v1/finance/sales/quotations/${quotationId}/convert-to-proforma-invoice`,
+        `/api/v1/finance/sales/quotations/${cleanId}/convert-to-proforma-invoice`,
         data || {}
       );
       return response.data;
@@ -414,7 +453,7 @@ const quotationApi = {
   ): Promise<QuotationStatsResponse> => {
     try {
       const response = await axiosInstance.get<QuotationStatsResponse>(
-        `/api/v1/finance/sales/quotations/stats`
+        `/api/v1/finance/sales/quotations/stats?period=${period}`
       );
       return response.data;
     } catch (error) {

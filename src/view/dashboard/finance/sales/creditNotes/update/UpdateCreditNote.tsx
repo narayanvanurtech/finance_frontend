@@ -64,41 +64,79 @@ export default function UpdateCreditNote() {
       };
 
   const initialValues: CreditNoteFormValues | undefined = useMemo(
-    () =>
-      creditNote
-        ? {
-            creditNoteNo: creditNote.creditNoteNumber,
-            creditNoteDate: creditNote.creditNoteDate,
-            placeOfSupply: "",
-            stateCode: "",
-            linkedInvoice: typeof creditNote.invoiceId === "string" ? creditNote.invoiceId : creditNote.invoiceId?._id || "",
-            originalInvoiceNo: typeof creditNote.invoiceId === "string" 
-              ? ""
-              : (creditNote.invoiceId as any)?.invoiceNumber || "",
-            originalInvoiceDate: typeof creditNote.invoiceId === "string"
-              ? ""
-              : new Date((creditNote.invoiceId as any)?.date || "").toISOString().slice(0, 10),
-            reason: creditNote.reason,
-            clientId: typeof creditNote.clientId === "string" ? creditNote.clientId : creditNote.clientId?._id || "",
-            clientDetails: creditNote.clientSnapshot,
-            businessDetails: mappedBusinessDetails,
-            taxType: (creditNote.taxType === "exclusive" || creditNote.taxType === "inclusive" ? creditNote.taxType : "exclusive") as "inclusive" | "exclusive",
-            taxConfiguration: "SGST_CGST",
-            items: creditNote.items,
-            discountType: creditNote.discountType || "flat",
-            discountValue: creditNote.discountValue || 0,
-            shipping: creditNote.shipping || 0,
-            roundOff: creditNote.roundOff || false,
-            showHSN: creditNote.showHSN || false,
-            showUnit: creditNote.showUnit || false,
-            terms: creditNote.terms || "",
-            notes: creditNote.notes || "",
-            attachments: [],
-            showSignature: creditNote.showSignature || false,
-            cessList: [],
+    () => {
+      if (!creditNote) return undefined;
+
+      // Try to get placeOfSupply and stateCode from creditNote (in case API returns them but interface doesn't define them)
+      let placeOfSupply = (creditNote as any).placeOfSupply || "";
+      let stateCode = (creditNote as any).stateCode || "";
+
+      // If not in creditNote, derive from clientSnapshot
+      if (!placeOfSupply && creditNote.clientSnapshot?.address?.state) {
+        placeOfSupply = creditNote.clientSnapshot.address.state;
+      }
+
+      // If stateCode not found, derive from GSTIN (first 2 characters)
+      if (!stateCode) {
+        const gstin = creditNote.clientSnapshot?.gstin || "";
+        if (gstin && gstin.length >= 2) {
+          stateCode = gstin.substring(0, 2);
+        }
+      }
+
+      // If still not found, try to get from invoice
+      const invoiceId = typeof creditNote.invoiceId === "string" ? creditNote.invoiceId : creditNote.invoiceId?._id || "";
+      if ((!placeOfSupply || !stateCode) && invoiceId) {
+        const foundInvoice = apiInvoices.find(inv => inv._id === invoiceId);
+        if (foundInvoice?.clientDetails) {
+          const clientDetails = foundInvoice.clientDetails as any;
+          // Try to get placeOfSupply from invoice client details state (check both direct state and address.state)
+          if (!placeOfSupply) {
+            const invoiceState = clientDetails.state || (typeof clientDetails.address === 'object' && clientDetails.address?.state) || "";
+            if (invoiceState) {
+              placeOfSupply = invoiceState;
+            }
           }
-        : undefined,
-    [creditNote, mappedBusinessDetails]
+          // Try to get stateCode from invoice client details GSTIN
+          if (!stateCode && clientDetails.gstin && clientDetails.gstin.length >= 2) {
+            stateCode = clientDetails.gstin.substring(0, 2);
+          }
+        }
+      }
+
+      return {
+        creditNoteNo: creditNote.creditNoteNumber,
+        creditNoteDate: creditNote.creditNoteDate,
+        placeOfSupply: placeOfSupply,
+        stateCode: stateCode,
+        linkedInvoice: invoiceId,
+        originalInvoiceNo: typeof creditNote.invoiceId === "string" 
+          ? ""
+          : (creditNote.invoiceId as any)?.invoiceNumber || "",
+        originalInvoiceDate: typeof creditNote.invoiceId === "string"
+          ? ""
+          : new Date((creditNote.invoiceId as any)?.date || "").toISOString().slice(0, 10),
+        reason: creditNote.reason || "",
+        clientId: typeof creditNote.clientId === "string" ? creditNote.clientId : creditNote.clientId?._id || "",
+        clientDetails: creditNote.clientSnapshot,
+        businessDetails: mappedBusinessDetails,
+        taxType: (creditNote.taxType === "exclusive" || creditNote.taxType === "inclusive" ? creditNote.taxType : "exclusive") as "inclusive" | "exclusive",
+        taxConfiguration: "SGST_CGST",
+        items: creditNote.items,
+        discountType: creditNote.discountType || "flat",
+        discountValue: creditNote.discountValue || 0,
+        shipping: creditNote.shipping || 0,
+        roundOff: creditNote.roundOff || false,
+        showHSN: creditNote.showHSN || false,
+        showUnit: creditNote.showUnit || false,
+        terms: creditNote.terms || "",
+        notes: creditNote.notes || "",
+        attachments: [],
+        showSignature: creditNote.showSignature || false,
+        cessList: [],
+      };
+    },
+    [creditNote, mappedBusinessDetails, apiInvoices]
   );
 
   const invoices: Invoice[] = apiInvoices
@@ -125,7 +163,15 @@ export default function UpdateCreditNote() {
       notes: inv.notes,
       cessList: inv.cessList,
     }));
-  const reasons: string[] = [];
+  const reasons: string[] = [
+    "Goods returned",
+    "Deficiency in services",
+    "Price difference",
+    "Discount/Allowance",
+    "Post-sale discount",
+    "Cancellation of sales",
+    "Other",
+  ];
 
   if (isFetching || invoicesLoading) {
     return <div className="p-8 text-center">Loading...</div>;

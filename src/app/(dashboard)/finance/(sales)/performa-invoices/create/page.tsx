@@ -195,9 +195,16 @@ export default function CreatePerformaInvoicePage() {
           percentage: Number(phase.percentage),
         })) || [];
 
-      // Sanitize attachments - remove empty ones
+      // Sanitize attachments - keep File objects and valid attachments
       const sanitizedAttachments = Array.isArray(values.attachments)
-        ? values.attachments.filter((att) => att && Object.keys(att).length > 0)
+        ? values.attachments.filter((att) => {
+            // File objects don't have enumerable keys, so check if it's a File instance
+            if (att instanceof File) {
+              return att.size > 0 && att.name; // Valid file
+            }
+            // For other objects, check if they have properties
+            return att && (typeof att === "object" && Object.keys(att).length > 0);
+          })
         : [];
 
       // Sanitize emails - ensure they are strings (not undefined)
@@ -250,7 +257,7 @@ export default function CreatePerformaInvoicePage() {
       onSubmit={handleCreate}
       mode="create"
       mockClients={clients}
-      mockProducts={items.map((item) => ({
+      mockProducts={items.map((item: any) => ({
         ...item,
         price: item.sellingPrice,
       }))}

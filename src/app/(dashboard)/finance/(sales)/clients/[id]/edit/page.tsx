@@ -183,17 +183,25 @@ const ClientDetailsPage = () => {
               | "Overseas")
           : undefined,
         gstType: formData.gstType,
-        // send bank/account details under `accountDetails` to match backend
-        accountDetails: {
-          accountHolderName: formData.accountHolderName || undefined,
-          bankName: formData.bankName || undefined,
-          // backend expects `accountNumber`
-          accountNumber: formData.bankAccountNumber || undefined,
-          ifscCode: formData.ifscCode || undefined,
-          branchName: formData.branchName || undefined,
-          accountType: formData.accountType || undefined,
-        },
-      } as any);
+        ...(formData.accountHolderName ||
+        formData.bankName ||
+        formData.bankAccountNumber ||
+        formData.ifscCode ||
+        formData.branchName ||
+        formData.accountType
+          ? {
+              accountDetails: {
+                accountHolderName: formData.accountHolderName || undefined,
+                bankName: formData.bankName || undefined,
+                // backend expects `accountNumber`
+                accountNumber: formData.bankAccountNumber || undefined,
+                ifscCode: formData.ifscCode || undefined,
+                branchName: formData.branchName || undefined,
+                accountType: formData.accountType || undefined,
+              },
+            }
+          : {}),
+      });
 
       await getClientById(user.companyId, clientId);
 

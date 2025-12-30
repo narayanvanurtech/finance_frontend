@@ -15,11 +15,11 @@ interface QuotationStatsProps {
   stats: {
     totalQuotations?: number;
     statusBreakdown?: Array<{
-      status?: string;
+      _id?: string;
       count?: number;
-      percentage?: number;
+      totalValue?: number;
     }>;
-    conversionRate?: number;
+    acceptanceRate?: number;
     invoiceConversionRate?: number;
     proformaConversionRate?: number;
     period?: string;
@@ -102,6 +102,11 @@ const QuotationStats: React.FC<QuotationStatsProps> = ({
               <p className="text-2xl font-bold text-gray-900">
                 {stats.totalQuotations || 0}
               </p>
+              {stats?.period && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last {stats.period}
+                </p>
+              )}
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <FiFileText className="w-6 h-6 text-blue-600" />
@@ -116,14 +121,19 @@ const QuotationStats: React.FC<QuotationStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Conversion Rate
+                Acceptance Rate
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {(stats.conversionRate || 0).toFixed(1)}%
+                {(stats.acceptanceRate || 0).toFixed(1)}%
               </p>
+              {stats?.period && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last {stats.period}
+                </p>
+              )}
             </div>
             <div className="p-3 bg-green-100 rounded-lg">
-              <FiTrendingUp className="w-6 h-6 text-green-600" />
+              <FiCheckCircle className="w-6 h-6 text-green-600" />
             </div>
           </div>
         </Card>
@@ -168,30 +178,46 @@ const QuotationStats: React.FC<QuotationStatsProps> = ({
       </div>
 
       {/* Status Breakdown */}
-      {/* {stats.statusBreakdown && Array.isArray(stats.statusBreakdown) && stats.statusBreakdown.length > 0 && (
+      {stats.statusBreakdown && Array.isArray(stats.statusBreakdown) && stats.statusBreakdown.length > 0 && (
         <Card className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Breakdown ({stats.period || 'N/A'})</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Status Breakdown {stats.period && `(${stats.period})`}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.statusBreakdown
-              .filter(status => status && typeof status === 'object' && status.status)
+              .filter(status => status && typeof status === 'object' && status._id)
               .map((status, index) => {
-                const statusText = status.status || 'Unknown';
+                const statusText = status._id || 'Unknown';
+                const totalValue = status.totalValue || 0;
                 return (
-                  <div key={statusText || `status-${index}`} className="flex items-center space-x-3">
-                    {getStatusIcon(statusText)}
-                    <div>
-                      <p className={`text-sm font-medium capitalize ${getStatusColor(statusText)}`}>
-                        {statusText}
-                      </p>
-                      <p className="text-lg font-bold text-gray-900">{status.count || 0}</p>
-                      <p className="text-xs text-gray-500">{(status.percentage || 0).toFixed(1)}%</p>
+                  <div
+                    key={statusText || `status-${index}`}
+                    className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        {getStatusIcon(statusText)}
+                        <p className={`text-sm font-medium capitalize ${getStatusColor(statusText)}`}>
+                          {statusText}
+                        </p>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">
+                        {status.count || 0}
+                      </span>
                     </div>
+                    <p className="text-xs text-gray-600">
+                      Value: ₹
+                      {totalValue.toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
                   </div>
                 );
               })}
           </div>
         </Card>
-      )} */}
+      )}
     </div>
   );
 };

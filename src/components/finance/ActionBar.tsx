@@ -10,6 +10,7 @@ export type ActionBarProps = {
   onSendEmail?: () => void;
   onCancel?: () => void;
   documentType?: "invoice" | "quotation";
+  disabled?: boolean;
 };
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -20,6 +21,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onSendEmail,
   onCancel,
   documentType = "quotation",
+  disabled = false,
 }) => {
   const updateButtonText =
     mode === "edit"
@@ -47,7 +49,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
         className="btn btn-primary flex items-center gap-2"
         type="button"
         onClick={onSubmit}
-        disabled={loading}
+        disabled={loading || disabled}
       >
         {loading && <Loader2 className="animate-spin w-4 h-4" />}
         {updateButtonText}

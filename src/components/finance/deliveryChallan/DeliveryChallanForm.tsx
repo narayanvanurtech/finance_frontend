@@ -132,9 +132,12 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
 
   // Function to calculate item amount based on current tax settings
   const calculateItemAmount = (item: any) => {
-    const baseAmount =
-      (Number(item.quantity) || 0) * (Number(item.rate) || 0) -
-      (Number(item.discount) || 0);
+    // Support both qty and quantity fields
+    const quantity = Number(item.quantity || item.qty) || 0;
+    const rate = Number(item.rate) || 0;
+    const discount = Number(item.discount) || 0;
+    
+    const baseAmount = quantity * rate - discount;
 
     let amount = baseAmount;
 
@@ -174,17 +177,70 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
     if (initialValues.items && initialValues.items.length > 0) {
       const itemsWithAmounts = initialValues.items.map((item: any) => ({
         ...item,
+        // Ensure both qty and quantity fields are present for compatibility
+        qty: item.qty || item.quantity || 0,
+        quantity: item.quantity || item.qty || 0,
         amount: calculateItemAmount(item),
       }));
       setItems(itemsWithAmounts);
     }
   }, [initialValues.items]);
 
+  // Sync all form fields when initialValues changes (for edit mode)
+  useEffect(() => {
+    if (initialValues && mode === "edit" && initialValues.quotationNumber) {
+      setChallanNumber(initialValues.quotationNumber || "");
+      setReference(initialValues.notes || "");
+      setChallanType(initialValues.terms || "");
+      setQuotationTitle(initialValues.quotationTitle || "");
+      setDate(initialValues.date || "");
+      setDueDate(initialValues.dueDate || "");
+      setClientId(initialValues.clientId || "");
+      setClientDetails(initialValues.clientDetails || {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+      });
+      setTaxType(initialValues.taxType || "exclusive");
+      setCessList(initialValues.cessList || []);
+      setDiscountType((initialValues.discountType as "flat" | "percentage") || "flat");
+      setDiscountValue(initialValues.discountValue || 0);
+      setShipping(initialValues.shipping || 0);
+      setRoundOff(initialValues.roundOff || false);
+      setShowHSN(initialValues.showHSN || false);
+      setShowUnit(initialValues.showUnit || false);
+      setTerms(initialValues.terms || "");
+      setNotes(initialValues.notes || "");
+      setAttachments(initialValues.attachments || []);
+      setShowSignature(initialValues.showSignature || false);
+      setBusinessDetails(initialValues.businessDetails || {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+      });
+      setTaxConfiguration(initialValues.taxConfiguration || "SGST_CGST");
+    }
+    // Items are handled separately by the items useEffect above
+  }, [initialValues, mode]);
+
   // Handlers for items
   const handleItemChange = (idx: number, field: string, value: any) => {
     setItems((prev: any) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
+      
+      // Sync qty and quantity fields
+      if (field === "qty") {
+        updated[idx].quantity = value;
+      }
+      if (field === "quantity") {
+        updated[idx].qty = value;
+      }
+      
       // Recalculate amount for this item
       updated[idx].amount = calculateItemAmount(updated[idx]);
       return updated;
@@ -195,6 +251,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
       name: "",
       description: "",
       quantity: 1,
+      qty: 1, // Add qty field for compatibility with ItemTable
       rate: 0,
       discount: 0,
       igst: 0,
@@ -669,6 +726,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
             name: item.name,
             description: item.description,
             quantity: 1,
+            qty: 1, // Add qty field for compatibility with ItemTable
             rate: item.sellingPrice,
             discount: 0,
             igst: 0,
@@ -693,6 +751,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
               name: item.name,
               description: "",
               quantity: item.unit,
+              qty: item.unit, // Add qty field for compatibility with ItemTable
               rate: 0,
               discount: 0,
               igst: 0,

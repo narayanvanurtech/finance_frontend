@@ -12,6 +12,84 @@ import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import type { Cess } from "@/components/finance/ConfigureTax";
 
+// State Code to State Name mapping (GSTIN state codes)
+const STATE_CODE_TO_NAME: { [key: string]: string } = {
+  "01": "Jammu and Kashmir",
+  "02": "Himachal Pradesh",
+  "03": "Punjab",
+  "04": "Chandigarh",
+  "05": "Uttarakhand",
+  "06": "Haryana",
+  "07": "Delhi",
+  "08": "Rajasthan",
+  "09": "Uttar Pradesh",
+  "10": "Bihar",
+  "11": "Sikkim",
+  "12": "Arunachal Pradesh",
+  "13": "Nagaland",
+  "14": "Manipur",
+  "15": "Mizoram",
+  "16": "Tripura",
+  "17": "Meghalaya",
+  "18": "Assam",
+  "19": "West Bengal",
+  "20": "Jharkhand",
+  "21": "Odisha",
+  "22": "Chhattisgarh",
+  "23": "Madhya Pradesh",
+  "24": "Gujarat",
+  "25": "Daman & Diu",
+  "26": "Dadra and Nagar Haveli and Daman and Diu",
+  "27": "Maharashtra",
+  "28": "Andhra Pradesh",
+  "29": "Karnataka",
+  "30": "Goa",
+  "31": "Lakshadweep",
+  "32": "Kerala",
+  "33": "Tamil Nadu",
+  "34": "Puducherry",
+  "35": "Andaman and Nicobar Islands",
+  "36": "Telangana",
+  "37": "Andhra Pradesh",
+  "38": "Ladakh",
+};
+
+// Reverse mapping: State Name to State Code (with variations)
+const STATE_NAME_TO_CODE: { [key: string]: string } = {};
+Object.entries(STATE_CODE_TO_NAME).forEach(([code, name]) => {
+  STATE_NAME_TO_CODE[name.toLowerCase()] = code;
+  // Add common variations
+  if (name.includes("&")) {
+    STATE_NAME_TO_CODE[name.replace("&", "and").toLowerCase()] = code;
+    STATE_NAME_TO_CODE[name.replace("&", "And").toLowerCase()] = code;
+  }
+});
+
+// Helper function to find state code from state name (fuzzy match)
+const findStateCodeFromName = (stateName: string): string => {
+  if (!stateName) return "";
+  const normalized = stateName.trim().toLowerCase();
+  
+  // Direct match
+  if (STATE_NAME_TO_CODE[normalized]) {
+    return STATE_NAME_TO_CODE[normalized];
+  }
+  
+  // Partial match
+  for (const [code, name] of Object.entries(STATE_CODE_TO_NAME)) {
+    if (name.toLowerCase().includes(normalized) || normalized.includes(name.toLowerCase())) {
+      return code;
+    }
+  }
+  
+  return "";
+};
+
+// Helper function to find state name from state code
+const findStateNameFromCode = (code: string): string => {
+  return STATE_CODE_TO_NAME[code] || "";
+};
+
 // Types for invoices and reasons
 export type Invoice = {
   id: string;
@@ -100,6 +178,30 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
     initialValues.placeOfSupply || ""
   );
   const [stateCode, setStateCode] = useState(initialValues.stateCode || "");
+
+  // Handler for place of supply change - auto-fill state code
+  const handlePlaceOfSupplyChange = (value: string) => {
+    setPlaceOfSupply(value);
+    // Auto-fill state code when state name is entered and matches a known state
+    if (value) {
+      const code = findStateCodeFromName(value);
+      if (code && code !== stateCode) {
+        setStateCode(code);
+      }
+    }
+  };
+
+  // Handler for state code change - auto-fill place of supply
+  const handleStateCodeChange = (value: string) => {
+    setStateCode(value);
+    // Auto-fill place of supply when state code is entered and matches a known code
+    if (value && value.length === 2) {
+      const stateName = findStateNameFromCode(value);
+      if (stateName && stateName !== placeOfSupply) {
+        setPlaceOfSupply(stateName);
+      }
+    }
+  };
 
   // Linked Invoice Details state
   const [linkedInvoice, setLinkedInvoice] = useState(
@@ -312,6 +414,26 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
       contact: found.phone || "",
       email: found.email || "",
     });
+
+    // Auto-fill place of supply from client state
+    if (clientState && !placeOfSupply) {
+      setPlaceOfSupply(clientState);
+      // Also auto-fill state code
+      const code = findStateCodeFromName(clientState);
+      if (code && !stateCode) {
+        setStateCode(code);
+      }
+    }
+
+    // If place of supply is still empty, try to get from GSTIN
+    if (!placeOfSupply && found.gstin && found.gstin.length >= 2) {
+      const gstinStateCode = found.gstin.substring(0, 2);
+      const stateName = findStateNameFromCode(gstinStateCode);
+      if (stateName) {
+        setPlaceOfSupply(stateName);
+        setStateCode(gstinStateCode);
+      }
+    }
 
     const taxRate = (i: any) =>
       Number(i.taxRate || i.igst || i.cgst + i.sgst || 0);
@@ -600,7 +722,7 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
             <input
               type="text"
               value={placeOfSupply}
-              onChange={(e) => setPlaceOfSupply(e.target.value)}
+              onChange={(e) => handlePlaceOfSupplyChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Maharashtra"
             />
@@ -618,7 +740,7 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
             <input
               type="text"
               value={stateCode}
-              onChange={(e) => setStateCode(e.target.value)}
+              onChange={(e) => handleStateCodeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="27"
               maxLength={2}

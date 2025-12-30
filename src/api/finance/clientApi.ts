@@ -9,6 +9,16 @@ export interface Address {
   country?: string;
 }
 
+// Account Details interface based on backend structure
+export interface AccountDetails {
+  accountHolderName?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branchName?: string;
+  accountType?: string;
+}
+
 // Client interface based on the model
 export interface Client {
   _id: string;
@@ -79,7 +89,8 @@ export interface CreateClientPayload {
   showPhone?: boolean;
   gstType?: boolean;
   address?: Address;
-  accountDetails?: string;
+  accountDetails?: AccountDetails;
+  // Legacy fields - kept for backward compatibility but prefer accountDetails object
   bankAccountNumber?: string;
   accountHolderName?: string;
   bankName?: string;
@@ -243,14 +254,10 @@ const clientApi = {
       const formData = new FormData();
       formData.append("logo", logoFile);
 
+      // Let axios automatically set Content-Type with boundary for FormData
       const response = await axios.post<ClientResponse>(
         `/api/v1/finance/sales/client/uploadLogo/${clientId}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formData
       );
       return response.data;
     } catch (error) {

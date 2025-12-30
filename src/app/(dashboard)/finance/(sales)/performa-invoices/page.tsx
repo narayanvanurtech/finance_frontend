@@ -379,9 +379,9 @@ export default function PerformaInvoicesPage() {
   // Bulk delete handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select performa invoices that can be deleted (draft and rejected)
+      // Only select performa invoices that can be deleted (draft only)
       const deletableIds = validInvoices
-        .filter((inv) => inv?.status === "draft" || inv?.status === "rejected")
+        .filter((inv) => inv?.status === "draft")
         .map((inv) => inv._id)
         .filter(Boolean) as string[];
       setSelectedInvoices(deletableIds);
@@ -390,7 +390,11 @@ export default function PerformaInvoicesPage() {
     }
   };
 
-  const handleSelectInvoice = (invoiceId: string, checked: boolean) => {
+  const handleSelectInvoice = (invoiceId: string, checked: boolean, invoice?: PerformaInvoiceFormValues) => {
+    // Only allow selecting draft invoices
+    if (invoice && invoice.status !== "draft") {
+      return;
+    }
     if (checked) {
       setSelectedInvoices([...selectedInvoices, invoiceId]);
     } else {
@@ -401,17 +405,16 @@ export default function PerformaInvoicesPage() {
   const handleBulkDeleteClick = () => {
     if (selectedInvoices.length === 0) return;
 
-    // Check if any selected performa invoice is not deletable
+    // Check if any selected performa invoice is not deletable (only draft can be deleted)
     const nonDeletableCount = validInvoices.filter(
       (inv) =>
         selectedInvoices.includes(inv?._id || "") &&
-        inv?.status !== "draft" &&
-        inv?.status !== "rejected"
+        inv?.status !== "draft"
     ).length;
 
     if (nonDeletableCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} performa invoice(s). Only draft and rejected performa invoices can be deleted.`
+        `Cannot delete ${nonDeletableCount} performa invoice(s). Only draft performa invoices can be deleted.`
       );
       return;
     }
@@ -512,7 +515,15 @@ export default function PerformaInvoicesPage() {
               </span>
               <button
                 onClick={handleBulkDeleteClick}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                disabled={
+                  selectedInvoices.length === 0 ||
+                  validInvoices.filter(
+                    (inv) =>
+                      selectedInvoices.includes(inv?._id || "") &&
+                      inv?.status === "draft"
+                  ).length === 0
+                }
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FiTrash2 className="w-4 h-4" />
                 Delete Selected
@@ -605,13 +616,11 @@ export default function PerformaInvoicesPage() {
                             onChange={(e) =>
                               handleSelectInvoice(
                                 inv._id || "",
-                                e.target.checked
+                                e.target.checked,
+                                inv
                               )
                             }
-                            disabled={
-                              inv?.status !== "draft" &&
-                              inv?.status !== "rejected"
-                            }
+                            disabled={inv?.status !== "draft"}
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </td>
@@ -874,9 +883,8 @@ export default function PerformaInvoicesPage() {
                                   </>
                                 )}
 
-                                {/* ⭐ DELETE - Only for draft and rejected status */}
-                                {(inv?.status === "draft" ||
-                                  inv?.status === "rejected") && (
+                                {/* ⭐ DELETE - Only for draft status */}
+                                {inv?.status === "draft" && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

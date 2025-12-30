@@ -108,6 +108,8 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
       address: "",
       contact: "",
       email: "",
+      igstn: "",
+      state: "",
     }
   );
   const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
@@ -198,47 +200,69 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
 
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
-    if (mode === "edit" && initialValues) {
-      setQuotationTitle(initialValues.quotationTitle);
-      setQuotationNumber(initialValues.quotationNumber);
-      setDate(initialValues.date);
-      setDueDate(initialValues.dueDate);
-      setClientId(initialValues.clientId);
-      setClientDetails(
-        initialValues.clientDetails || {
-          name: "",
-          gstin: "",
-          address: "",
-          contact: "",
-          email: "",
-        }
-      );
-      setBusinessDetails(
-        initialValues.businessDetails || {
-          name: "",
-          gstin: "",
-          address: "",
-          contact: "",
-          email: "",
-        }
-      );
-      setTaxType(initialValues.taxType);
+    if (initialValues) {
+      setQuotationTitle(initialValues.quotationTitle || "");
+      setQuotationNumber(initialValues.quotationNumber || "");
+      setDate(initialValues.date || "");
+      setDueDate(initialValues.dueDate || "");
+      setClientId(initialValues.clientId || "");
+      
+      // Set client details with all fields
+      const clientDetailsToSet = initialValues.clientDetails || {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+        igstn: "",
+        state: "",
+      };
+      setClientDetails({
+        name: clientDetailsToSet.name || "",
+        gstin: clientDetailsToSet.gstin || "",
+        address: 
+          typeof clientDetailsToSet.address === "string"
+            ? clientDetailsToSet.address
+            : "",
+        contact: clientDetailsToSet.contact || "",
+        email: clientDetailsToSet.email || "",
+        igstn: clientDetailsToSet.igstn || "",
+        state: clientDetailsToSet.state || "",
+      });
+      
+      // Set business details with all fields
+      const businessDetailsToSet = initialValues.businessDetails || {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+      };
+      setBusinessDetails({
+        name: businessDetailsToSet.name || "",
+        gstin: businessDetailsToSet.gstin || "",
+        address: businessDetailsToSet.address || "",
+        contact: businessDetailsToSet.contact || "",
+        email: businessDetailsToSet.email || "",
+      });
+      
+      setTaxType(initialValues.taxType || "exclusive");
       setTaxConfiguration(initialValues.taxConfiguration || "SGST_CGST");
       setCessList(initialValues.cessList || []);
-      setItems(initialValues.items);
-      setDiscountType(initialValues.discountType);
-      setDiscountValue(initialValues.discountValue);
-      setShipping(initialValues.shipping);
-      setRoundOff(initialValues.roundOff);
-      setShowHSN(initialValues.showHSN);
-      setShowUnit(initialValues.showUnit);
-      setTerms(initialValues.terms);
-      setNotes(initialValues.notes);
-      setAttachments(initialValues.attachments);
-      setShowSignature(initialValues.showSignature);
-      setPhases(initialValues.phases);
+      setItems(initialValues.items || []);
+      setDiscountType(initialValues.discountType || "flat");
+      setDiscountValue(initialValues.discountValue || 0);
+      setShipping(initialValues.shipping || 0);
+      setRoundOff(initialValues.roundOff || false);
+      setShowHSN(initialValues.showHSN || false);
+      setShowUnit(initialValues.showUnit || false);
+      setTerms(initialValues.terms || "");
+      setNotes(initialValues.notes || "");
+      setAttachments(initialValues.attachments || []);
+      setShowSignature(initialValues.showSignature || false);
+      setPhases(initialValues.phases || []);
     }
-  }, [initialValues, mode]);
+  }, [initialValues]);
 
   // Add modal state for AddClientModal, AddItemModal, AddItemBulkModal
   const [showAddItemModal, setShowAddItemModal] = useState(false);
@@ -567,10 +591,12 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
       clientId,
       clientDetails: {
         name: clientDetails.name || "",
-        gstin: clientDetails.gstin,
-        address: clientDetails.address,
-        contact: clientDetails.contact,
-        email: clientDetails.email,
+        gstin: clientDetails.gstin || "",
+        address: clientDetails.address || "",
+        contact: clientDetails.contact || "",
+        email: clientDetails.email || "",
+        igstn: clientDetails.igstn || "",
+        state: clientDetails.state || "",
       },
       businessDetails: {
         name: businessDetails.name || "",
@@ -842,6 +868,12 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
         onSendEmail={onSendEmail}
         onCancel={handleCancel}
         documentType="quotation"
+        disabled={
+          mode === "edit" &&
+          (initialValues?.status === "accepted" ||
+            initialValues?.status === "rejected" ||
+            initialValues?.status === "converted")
+        }
       />
       <AddClientModal
         open={showAddClient}
@@ -870,8 +902,10 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
               name: form.businessName,
               gstin: form.gstin,
               address: form.street,
-              contact: form.alias || form.businessName,
+              contact: form.phone || form.alias || form.businessName,
               email: form.email,
+              igstn: (form as any).igstn || "",
+              state: form.addressState || "",
             });
             setClientId(response.result._id);
             setShowAddClient(false);

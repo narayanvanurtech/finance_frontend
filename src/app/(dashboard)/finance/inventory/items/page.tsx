@@ -10,6 +10,7 @@ import {
   useDeleteItem,
   useBulkDeleteItems,
 } from "@/hooks/useItemQueries";
+import StockAdjustmentModal from "@/components/finance/StockAdjustmentModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -29,6 +30,7 @@ import {
   TrendingUp,
   AlertCircle,
   RefreshCw,
+  PackagePlus,
 } from "lucide-react";
 import { FileText, FilePlus2, ShoppingCart } from "lucide-react";
 import {
@@ -62,6 +64,7 @@ function AllItemsContent() {
 
   // Local state
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterSubcategory, setFilterSubcategory] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
@@ -81,67 +84,80 @@ function AllItemsContent() {
   } | null>(null);
   // Bulk delete confirmation
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  // Stock adjustment modal
+  const [showStockModal, setShowStockModal] = useState(false);
+  const [selectedItemForStock, setSelectedItemForStock] = useState<Item | null>(
+    null
+  );
 
-  // Build filters object
-  const filters = useMemo(() => {
-    const f: any = {};
+  // Build query params object with flattened filters
+  const queryParams = useMemo(() => {
+    const params: any = {
+      page: currentPage,
+      limit: pageSize,
+      sortBy,
+      sortOrder,
+    };
 
     // Handle category filtering
     if (categoryId) {
-      f.categoryId = categoryId;
+      params.categoryId = categoryId;
     } else if (filterCategory !== "all") {
       const category = categories.find((cat) => cat.name === filterCategory);
-      if (category) f.categoryId = category._id;
+      if (category) params.categoryId = category._id;
     }
 
     // Handle subcategory filtering
     if (subcategoryId) {
-      f.subcategoryId = subcategoryId;
+      params.subcategoryId = subcategoryId;
     } else if (filterSubcategory !== "all") {
       const subcategory = subcategories.find(
         (sub) => sub.name === filterSubcategory
       );
-      if (subcategory) f.subcategoryId = subcategory._id;
+      if (subcategory) params.subcategoryId = subcategory._id;
     }
 
     // Handle item type filtering
     if (filterType !== "all") {
-      f.type = filterType;
+      params.type = filterType;
     }
 
     // Handle stock status filtering
     if (filterStockStatus === "lowStock") {
-      f.lowStock = "true";
+      params.lowStock = "true";
     } else if (filterStockStatus === "outOfStock") {
-      f.outOfStock = "true";
+      params.outOfStock = "true";
     }
 
-    // Handle search
-    if (searchTerm.trim()) {
-      f.search = searchTerm.trim();
+    // Handle search (use debounced value)
+    if (debouncedSearchTerm && debouncedSearchTerm.trim()) {
+      params.search = debouncedSearchTerm.trim();
+      // Also try 'query' parameter in case backend expects that
+      params.query = debouncedSearchTerm.trim();
     }
 
-    return f;
+    return params;
   }, [
+    currentPage,
+    pageSize,
+    sortBy,
+    sortOrder,
     categoryId,
     filterCategory,
     subcategoryId,
     filterSubcategory,
     filterType,
     filterStockStatus,
-    searchTerm,
+    debouncedSearchTerm,
     categories,
     subcategories,
   ]);
 
-  // React Query hooks
-  const { data, isLoading, error, refetch } = useItems(user?.companyId || "", {
-    page: currentPage,
-    limit: pageSize,
-    sortBy,
-    sortOrder,
-    filters,
-  });
+  // React Query hooks - ensure query refetches when params change
+  const { data, isLoading, error, refetch } = useItems(
+    user?.companyId || "",
+    queryParams
+  );
 
   const deleteItemMutation = useDeleteItem(user?.companyId || "");
   const bulkDeleteMutation = useBulkDeleteItems(user?.companyId || "");
@@ -158,6 +174,16 @@ function AllItemsContent() {
     }
   }, [user?.companyId, fetchCategories, fetchSubcategories]);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page when search changes
+    }, 600); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Get filter context info
   const filterCategoryName = categoryId
     ? categories.find((cat) => cat._id === categoryId)?.name
@@ -173,13 +199,13 @@ function AllItemsContent() {
 
   // Selection handlers
   const allSelected =
-    items.length > 0 && items.every((item) => selectedItems.includes(item._id));
+    items.length > 0 && items.every((item: Item) => selectedItems.includes(item._id));
 
   const handleSelectAll = () => {
     if (allSelected) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(items.map((item) => item._id));
+      setSelectedItems(items.map((item: Item) => item._id));
     }
   };
 
@@ -219,7 +245,7 @@ function AllItemsContent() {
 
   // Open confirmation dialog for an item
   const promptDeleteItem = (itemId: string) => {
-    const item = items.find((i) => i._id === itemId);
+    const item = items.find((i: Item) => i._id === itemId);
     setItemToDelete({ id: itemId, name: item?.name || "Item" });
     setShowDeleteModal(true);
   };
@@ -249,7 +275,7 @@ function AllItemsContent() {
   };
 
   const handleBulkInvoice = () => {
-    const itemsToInvoice = items.filter((item) =>
+    const itemsToInvoice = items.filter((item: Item) =>
       selectedItems.includes(item._id)
     );
     if (itemsToInvoice.length === 0) {
@@ -272,9 +298,24 @@ function AllItemsContent() {
     setSelectedItems([]);
   };
 
+  // Stock adjustment handlers
+  const handleOpenStockModal = (item: Item) => {
+    setSelectedItemForStock(item);
+    setShowStockModal(true);
+  };
+
+  const handleCloseStockModal = () => {
+    setShowStockModal(false);
+    setSelectedItemForStock(null);
+  };
+
+  const handleStockAdjustmentSuccess = () => {
+    refetch();
+  };
+
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1);
+    // Page will reset when debouncedSearchTerm updates
   };
 
   // Statistics calculation
@@ -282,16 +323,16 @@ function AllItemsContent() {
     return {
       totalItems: pagination?.totalItems || items.length,
       totalValue: items.reduce(
-        (sum, item) => sum + (Number(item.sellingPrice) || 0),
+        (sum: number, item: Item) => sum + (Number(item.sellingPrice) || 0),
         0
       ),
       lowStockItems: items.filter(
-        (item) =>
+        (item: Item) =>
           item.trackInventory &&
           (item.currentStock || 0) <= (item.lowStockThreshold || 0)
       ).length,
       outOfStockItems: items.filter(
-        (item) => item.trackInventory && (item.currentStock || 0) === 0
+        (item: Item) => item.trackInventory && (item.currentStock || 0) === 0
       ).length,
     };
   }, [items, pagination]);
@@ -966,6 +1007,7 @@ function AllItemsContent() {
             onSelectAll={handleSelectAll}
             allSelected={allSelected}
             onDeleteItem={promptDeleteItem}
+            onAdjustStock={handleOpenStockModal}
             loading={loading}
             getNoResultsMessage={getNoResultsMessage}
           />
@@ -975,6 +1017,7 @@ function AllItemsContent() {
             selectedItems={selectedItems}
             onSelectItem={handleSelectItem}
             onDeleteItem={promptDeleteItem}
+            onAdjustStock={handleOpenStockModal}
             loading={loading}
             getNoResultsMessage={getNoResultsMessage}
           />
@@ -1139,6 +1182,15 @@ function AllItemsContent() {
           disableConfirm={(bulkDeleteMutation as any).isLoading}
           disableCancel={(bulkDeleteMutation as any).isLoading}
         />
+
+        {/* Stock Adjustment Modal */}
+        <StockAdjustmentModal
+          open={showStockModal}
+          onClose={handleCloseStockModal}
+          item={selectedItemForStock}
+          companyId={user?.companyId || ""}
+          onSuccess={handleStockAdjustmentSuccess}
+        />
       </div>
     </div>
   );
@@ -1152,6 +1204,7 @@ function ItemsTable({
   onSelectAll,
   allSelected,
   onDeleteItem,
+  onAdjustStock,
   loading,
   getNoResultsMessage,
 }: {
@@ -1161,6 +1214,7 @@ function ItemsTable({
   onSelectAll: () => void;
   allSelected: boolean;
   onDeleteItem: (id: string) => void;
+  onAdjustStock?: (item: Item) => void;
   loading: boolean;
   getNoResultsMessage: () => {
     title: string;
@@ -1176,7 +1230,7 @@ function ItemsTable({
         <table className="min-w-full">
           <thead className="bg-[var(--color-muted)]">
             <tr>
-              {Array(8)
+              {Array(9)
                 .fill(0)
                 .map((_, idx) => (
                   <th key={idx} className="px-4 py-3">
@@ -1190,7 +1244,7 @@ function ItemsTable({
               .fill(0)
               .map((_, idx) => (
                 <tr key={idx}>
-                  {Array(8)
+                  {Array(9)
                     .fill(0)
                     .map((_, cellIdx) => (
                       <td key={cellIdx} className="px-4 py-3">
@@ -1234,6 +1288,9 @@ function ItemsTable({
               Unit
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase tracking-wider">
+              Stock
+            </th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase tracking-wider">
               Status
             </th>
             <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase tracking-wider">
@@ -1244,7 +1301,7 @@ function ItemsTable({
         <tbody className="bg-[var(--color-card)] divide-y divide-[var(--color-border)]">
           {items.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-4 py-12 text-center">
+              <td colSpan={9} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center">
                   <Package className="w-12 h-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -1338,6 +1395,30 @@ function ItemsTable({
                   {item.unit || "-"}
                 </td>
                 <td className="px-4 py-4">
+                  {item.trackInventory !== false ? (
+                    <div className="space-y-1">
+                      <div className="font-semibold text-gray-900">
+                        {item.currentStock !== undefined && item.currentStock !== null
+                          ? item.currentStock.toLocaleString()
+                          : "0"}{" "}
+                        {item.unit || "units"}
+                      </div>
+                      {item.lowStockThreshold !== undefined &&
+                        item.currentStock !== undefined &&
+                        item.currentStock <= item.lowStockThreshold && (
+                          <div className="text-xs text-yellow-600 font-medium">
+                            Low Stock
+                          </div>
+                        )}
+                      {item.currentStock !== undefined && item.currentStock === 0 && (
+                        <div className="text-xs text-red-600 font-medium">Out of Stock</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">Not Tracked</span>
+                  )}
+                </td>
+                <td className="px-4 py-4">
                   <span
                     className={`inline-flex px-2 py-1 text-xs rounded-full ${
                       !item.isArchived
@@ -1364,7 +1445,7 @@ function ItemsTable({
                       </button>
                     </PopoverTrigger>
 
-                    <PopoverContent align="end" className="w-40 p-2">
+                    <PopoverContent align="end" className="w-48 p-2">
                       <Link
                         href={`/finance/inventory/items/edit/${item._id}`}
                         onClick={(e) => e.stopPropagation()}
@@ -1373,6 +1454,19 @@ function ItemsTable({
                         <Edit className="w-4 h-4" />
                         Edit
                       </Link>
+
+                      {item.trackInventory && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAdjustStock?.(item);
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded w-full text-left"
+                        >
+                          <PackagePlus className="w-4 h-4" />
+                          Adjust Stock
+                        </button>
+                      )}
 
                       <button
                         onClick={(e) => {
@@ -1402,6 +1496,7 @@ function ItemsGrid({
   selectedItems,
   onSelectItem,
   onDeleteItem,
+  onAdjustStock,
   loading,
   getNoResultsMessage,
 }: {
@@ -1409,6 +1504,7 @@ function ItemsGrid({
   selectedItems: string[];
   onSelectItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
+  onAdjustStock?: (item: Item) => void;
   loading: boolean;
   getNoResultsMessage: () => {
     title: string;
@@ -1506,6 +1602,19 @@ function ItemsGrid({
                       <Edit className="w-4 h-4" />
                       <span>Edit</span>
                     </Link>
+                    {item.trackInventory && onAdjustStock && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAdjustStock(item);
+                        }}
+                        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 text-sm text-left"
+                      >
+                        <PackagePlus className="w-4 h-4" />
+                        <span>Adjust Stock</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {

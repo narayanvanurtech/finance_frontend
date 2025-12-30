@@ -51,6 +51,7 @@ export default function CreateItemPage() {
   const [companyId, setCompanyId] = useState<string>("");
   const [form, setForm] = useState({
     name: "",
+    sku: "",
     description: "",
     type: "Good",
     category: "",
@@ -73,6 +74,12 @@ export default function CreateItemPage() {
     costPrice: "",
     purchaseDescription: "",
     preferredVendor: "",
+    trackInventory: false,
+    openingStock: "",
+    currentStock: "",
+    lowStockThreshold: "",
+    highStockThreshold: "",
+    expiryDate: "",
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ [k: string]: string }>({});
@@ -209,6 +216,9 @@ export default function CreateItemPage() {
       } else {
         setImagePreview(null);
       }
+    } else if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setForm({ ...form, [name]: checked });
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -246,6 +256,7 @@ export default function CreateItemPage() {
         const itemData: any = {
           companyId: companyId,
           name: form.name,
+          sku: form.sku,
           description: form.description,
           type: form.type === "Good" ? "goods" : "service",
           category: categoryObj?._id || "",
@@ -264,7 +275,17 @@ export default function CreateItemPage() {
           salesDescription: form.salesDescription,
           costPrice: parseFloat(form.costPrice) || 0,
           purchaseDescription: form.purchaseDescription,
+          trackInventory: form.trackInventory,
+          openingStock: parseFloat(form.openingStock) || 0,
+          currentStock: parseFloat(form.currentStock) || 0,
+          lowStockThreshold: parseFloat(form.lowStockThreshold) || 0,
+          highStockThreshold: parseFloat(form.highStockThreshold) || 0,
         };
+
+        // Add expiryDate only if provided
+        if (form.expiryDate) {
+          itemData.expiryDate = form.expiryDate;
+        }
 
         // Only add preferredVendor if it's selected
         if (vendorObj?._id) {
@@ -274,12 +295,14 @@ export default function CreateItemPage() {
         const response = await createItem(itemData);
 
         // Upload image if present
-        if (form.image && response?.data?._id) {
+        if (form.image && response?.result?._id) {
           try {
-            await uploadItemImage({
-              itemId: response.data._id,
+            const uploadResponse = await uploadItemImage({
+              itemId: response.result._id,
               file: form.image,
             });
+            // If backend returns imageUrl in upload response, we could update the item
+            // For now, the separate upload endpoint handles it
           } catch (imageError) {
             console.error("Failed to upload image:", imageError);
             // Don't block the flow if image upload fails
@@ -289,6 +312,7 @@ export default function CreateItemPage() {
         // Reset form on success
         setForm({
           name: "",
+          sku: "",
           description: "",
           type: "Good",
           category: "",
@@ -309,6 +333,12 @@ export default function CreateItemPage() {
           costPrice: "",
           purchaseDescription: "",
           preferredVendor: "",
+          trackInventory: false,
+          openingStock: "",
+          currentStock: "",
+          lowStockThreshold: "",
+          highStockThreshold: "",
+          expiryDate: "",
         });
         setImagePreview(null);
 
@@ -423,6 +453,18 @@ export default function CreateItemPage() {
                     {errors.name}
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  SKU
+                </label>
+                <Input
+                  type="text"
+                  name="sku"
+                  value={form.sku}
+                  onChange={handleChange}
+                  placeholder="e.g. DELL-INS-2025"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">
@@ -626,6 +668,95 @@ export default function CreateItemPage() {
             />
           </div>
         </Card>
+
+        {/* Inventory Tracking Card */}
+        {form.type === "Good" && (
+          <Card className="p-6 mb-6">
+            <h2 className="font-semibold text-lg mb-4">Inventory Management</h2>
+            <div className="mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="trackInventory"
+                  checked={form.trackInventory}
+                  onChange={handleChange}
+                  className="accent-[var(--color-primary)]"
+                />
+                <span className="text-sm font-medium">
+                  Track inventory for this item
+                </span>
+              </label>
+            </div>
+
+            {form.trackInventory && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Opening Stock
+                  </label>
+                  <Input
+                    type="number"
+                    name="openingStock"
+                    value={form.openingStock}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="e.g. 100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Current Stock
+                  </label>
+                  <Input
+                    type="number"
+                    name="currentStock"
+                    value={form.currentStock}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="e.g. 75"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    Low Stock Threshold
+                  </label>
+                  <Input
+                    type="number"
+                    name="lowStockThreshold"
+                    value={form.lowStockThreshold}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="e.g. 10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">
+                    High Stock Threshold
+                  </label>
+                  <Input
+                    type="number"
+                    name="highStockThreshold"
+                    value={form.highStockThreshold}
+                    onChange={handleChange}
+                    min="0"
+                    placeholder="e.g. 1000"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold mb-1">
+                    Expiry Date
+                  </label>
+                  <Input
+                    type="date"
+                    name="expiryDate"
+                    value={form.expiryDate}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Dimensions Card */}
         <div className="grid grid-cols-1  gap-6 mb-6">

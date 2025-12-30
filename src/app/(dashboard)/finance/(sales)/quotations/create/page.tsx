@@ -196,8 +196,7 @@ export default function CreateQuotationPage() {
   const handleConvertToInvoice = async () => {
     try {
       setLoading(true);
-      // You need the quotationId to duplicate as performa invoice
-      // Here, we assume quotationNumber is the id (update if you use _id)
+      
       await duplicatePerformaInvoice(quotationNumber);
       toast.success("Converted to Performa Invoice successfully");
       router.push("/finance/performa-invoices");

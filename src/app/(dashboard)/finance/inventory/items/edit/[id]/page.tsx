@@ -77,6 +77,7 @@ export default function EditItemPage() {
 
   const [form, setForm] = useState({
     name: "",
+    sku: "",
     description: "",
     type: "Good",
     category: "",
@@ -136,8 +137,8 @@ export default function EditItemPage() {
     isLoading: itemLoading,
     error: itemError,
   } = useItemById(companyId, itemId);
-
-  const currentItem = itemData?.data;
+  console.log("itemData", itemData);
+  const currentItem = itemData?.result;
 
   const {
     mutateAsync: updateItem,
@@ -218,6 +219,7 @@ export default function EditItemPage() {
 
       setForm({
         name: currentItem.name || "",
+        sku: (currentItem as any).sku || "",
         description: currentItem.description || "",
         type: currentItem.type === "goods" ? "Good" : "Service",
         category: categoryName || "",
@@ -390,6 +392,7 @@ export default function EditItemPage() {
         const updateData: any = {
           companyId,
           name: form.name,
+          sku: form.sku,
           description: form.description,
           type: form.type === "Good" ? "goods" : "service",
           category: categoryObj?._id || "",
@@ -413,8 +416,12 @@ export default function EditItemPage() {
           currentStock: parseFloat(form.currentStock) || 0,
           lowStockThreshold: parseFloat(form.lowStockThreshold) || 0,
           highStockThreshold: parseFloat(form.highStockThreshold) || 0,
-          expiryDate: form.expiryDate || undefined,
         };
+
+        // Add expiryDate only if provided
+        if (form.expiryDate) {
+          updateData.expiryDate = form.expiryDate;
+        }
 
         // Only add preferredVendor if it's selected
         if (vendorObj?._id) {
@@ -623,6 +630,18 @@ export default function EditItemPage() {
                     {errors.name}
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">
+                  SKU
+                </label>
+                <Input
+                  type="text"
+                  name="sku"
+                  value={form.sku}
+                  onChange={handleChange}
+                  placeholder="e.g. DELL-INS-2025"
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">

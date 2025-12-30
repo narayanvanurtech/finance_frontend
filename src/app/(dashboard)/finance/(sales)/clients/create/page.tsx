@@ -309,6 +309,24 @@ export default function CreateClientPage() {
     setIsSubmitting(true);
 
     try {
+      // Build accountDetails object if any bank details are provided
+      const accountDetails =
+        form.bankAccountNumber ||
+        form.accountHolderName ||
+        form.bankName ||
+        form.ifscCode ||
+        form.branchName ||
+        form.accountType
+          ? {
+              accountHolderName: form.accountHolderName || undefined,
+              bankName: form.bankName || undefined,
+              accountNumber: form.bankAccountNumber || undefined,
+              ifscCode: form.ifscCode || undefined,
+              branchName: form.branchName || undefined,
+              accountType: form.accountType || undefined,
+            }
+          : undefined;
+
       const clientData: CreateClientPayload = {
         businessName: form.businessName,
         companyId: user.companyId,
@@ -336,13 +354,7 @@ export default function CreateClientPage() {
           postalCode: form.postalCode || "",
           country: form.addressCountry || "India",
         },
-        bankAccountNumber: form.bankAccountNumber || "",
-        accountHolderName: form.accountHolderName || "",
-        bankName: form.bankName || "",
-        ifscCode: form.ifscCode || "",
-        branchName: form.branchName || "",
-        accountType: form.accountType || "",
-        accountDetails: form.customFields || "",
+        accountDetails: accountDetails,
       };
 
       const createdClientResponse = await createClient(clientData);
