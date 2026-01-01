@@ -114,11 +114,12 @@ const ClientDetailsPage = () => {
   useEffect(() => {
     if (currentClient) {
       // Support both flat and nested `accountDetails` shapes from the API
-      const accountDetails = 
-        typeof currentClient.accountDetails === "object" && currentClient.accountDetails !== null
+      const accountDetails =
+        typeof currentClient.accountDetails === "object" &&
+        currentClient.accountDetails !== null
           ? currentClient.accountDetails
           : null;
-      
+
       setFormData({
         businessName: currentClient.businessName || "",
         clientType: currentClient.clientType || "",
@@ -139,28 +140,21 @@ const ClientDetailsPage = () => {
           currentClient.accountHolderName ||
           accountDetails?.accountHolderName ||
           "",
-        bankName:
-          currentClient.bankName ||
-          accountDetails?.bankName ||
-          "",
+        bankName: currentClient.bankName || accountDetails?.bankName || "",
         // API may provide `accountNumber` inside accountDetails -> map to bankAccountNumber
         bankAccountNumber:
           currentClient.bankAccountNumber ||
           accountDetails?.accountNumber ||
           "",
-        ifscCode:
-          currentClient.ifscCode ||
-          accountDetails?.ifscCode ||
-          "",
+        ifscCode: currentClient.ifscCode || accountDetails?.ifscCode || "",
         branchName:
-          currentClient.branchName ||
-          accountDetails?.branchName ||
-          "",
+          currentClient.branchName || accountDetails?.branchName || "",
         accountType:
-          currentClient.accountType ||
-          accountDetails?.accountType ||
-          "",
+          currentClient.accountType || accountDetails?.accountType || "",
       });
+
+
+      setLogoPreview(currentClient.logoUrl as any)
     }
   }, [currentClient]);
 
@@ -177,7 +171,6 @@ const ClientDetailsPage = () => {
   const handleEdit = () => {
     router.push(`/finance/clients/${clientId}/edit`);
   };
-
 
   const handleSave = async () => {
     if (!user?.companyId || !clientId) return;
