@@ -27,12 +27,16 @@ export type Item = {
   name: string;
   description: string;
   qty: number;
+  quantity?: number;
   rate: number;
   discount: number;
   discountType?: "flat" | "percentage";
+  taxType?: "cgst_sgst" | "igst" | "nil";
+  taxRate?: number;
   igst?: number;
   sgst?: number;
   cgst?: number;
+  cess?: Array<{ name: string; rate: number }>;
   amount: number;
   hsn: string;
   unit: string;
@@ -212,6 +216,16 @@ const ItemTable: React.FC<ItemTableProps> = ({
               <th className="px-3 py-2 text-center min-w-[80px]">Qty</th>
               <th className="px-3 py-2 text-center min-w-[100px]">Rate</th>
               <th className="px-3 py-2 text-right min-w-[140px]">Discount</th>
+              {taxType === "exclusive" && (
+                <>
+                  <th className="px-3 py-2 text-center min-w-[140px]">
+                    Tax Type
+                  </th>
+                  <th className="px-3 py-2 text-center min-w-[100px]">
+                    Tax Rate (%)
+                  </th>
+                </>
+              )}
               {taxType === "exclusive" && taxConfiguration === "IGST" && (
                 <th className="px-3 py-2 text-center min-w-[120px]">
                   IGST (%)
@@ -330,6 +344,42 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     />
                   </div>
                 </td>
+
+                {/* Tax Type & Tax Rate (only for exclusive tax) */}
+                {taxType === "exclusive" && (
+                  <>
+                    <td className="px-3 py-3 align-top">
+                      <Select
+                        value={item.taxType || "cgst_sgst"}
+                        onValueChange={(value) =>
+                          handleItemChange(idx, "taxType", value)
+                        }
+                      >
+                        <SelectTrigger className="w-full h-10">
+                          <SelectValue placeholder="Tax type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cgst_sgst">CGST+SGST</SelectItem>
+                          <SelectItem value="igst">IGST</SelectItem>
+                          <SelectItem value="nil">NIL</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-3 py-3 align-top">
+                      <Input
+                        type="number"
+                        className="w-full text-center h-10"
+                        value={item.taxRate || 0}
+                        min={0}
+                        max={100}
+                        onChange={(e) =>
+                          handleItemChange(idx, "taxRate", Number(e.target.value))
+                        }
+                        placeholder="18"
+                      />
+                    </td>
+                  </>
+                )}
 
                 {/* IGST */}
                 {taxType === "exclusive" && taxConfiguration === "IGST" && (

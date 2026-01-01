@@ -10,6 +10,8 @@ import {
   useUpdatePurchase,
   useAddAttachment,
 } from "@/hooks/usePurchaseExpenseQueries";
+import { useVendorStore } from "@/financeStore/useVendorStore";
+import { useBussinessStore } from "@/financeStore/useBussinessStore";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FiArrowLeft } from "react-icons/fi";
@@ -19,6 +21,10 @@ export default function EditExpensePage() {
   const params = useParams();
   const router = useRouter();
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  // Fetch vendors and business details
+  const { vendors, fetchVendors } = useVendorStore();
+  const { details: businessDetails } = useBussinessStore();
 
   // Fetch purchase data - only if purchaseId exists
   const {
@@ -34,6 +40,11 @@ export default function EditExpensePage() {
   const [initialValues, setInitialValues] = useState<ExpenseFormValues | null>(
     null
   );
+
+  // Fetch vendors on mount
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
 
   // Debug logging
   useEffect(() => {
@@ -88,6 +99,25 @@ export default function EditExpensePage() {
         contact: vendorInfo.phone || vendorInfo.contact || "",
       };
 
+      // Map business details from store or API
+      const mappedBusinessDetails = businessDetails || (
+        typeof purchase.companyId === "object" ? {
+          businessName: purchase.companyId.businessName || purchase.companyId.companyName,
+          gstNumber: purchase.companyId.gstNumber || purchase.companyId.gstin,
+          website: purchase.companyId.website || purchase.companyId.address,
+          phone: purchase.companyId.phone || purchase.companyId.contact,
+        } : null
+      );
+
+      // Map phases from API response
+      const mappedPhases = (purchase.phases || []).map((phase: any) => ({
+        title: phase.title || "",
+        percentage: parseFloat(phase.percentage || 0),
+        dueDate: phase.dueDate
+          ? new Date(phase.dueDate).toISOString().split("T")[0]
+          : new Date().toISOString().split("T")[0],
+      }));
+
       // Transform API data to form values
       const formValues: ExpenseFormValues = {
         expenseNo: purchase.billNumber || "",
@@ -101,40 +131,61 @@ export default function EditExpensePage() {
             ? purchase.vendorId._id
             : purchase.vendorId || "",
         vendorDetails: vendorDetails,
-        businessDetails:
-          typeof purchase.companyId === "object" ? purchase.companyId : null,
-        items: (purchase.items || []).map((item: any) => ({
-          ...item,
-          qty: parseFloat(item.quantity || item.qty || 1),
-          quantity: parseFloat(item.quantity || item.qty || 1),
-          rate: parseFloat(item.rate || 0),
-          discount: parseFloat(item.discount || 0),
-          discountType: item.discountType || "flat",
-          taxRate: parseFloat(item.taxRate || 0),
-          igst: parseFloat(item.igst || 0),
-          sgst: parseFloat(item.sgst || 0),
-          cgst: parseFloat(item.cgst || 0),
-          hsn: item.hsn || "",
-          unit: item.unit || "pcs",
-          amount: parseFloat(item.amount || 0),
-        })),
-        discountType: purchase.discountType || "percentage",
-        discountValue: purchase.discountValue || 0,
-        shipping: purchase.shipping || 0,
-        roundOff: purchase.roundOff ?? true,
-        showHSN: purchase.showHSN ?? true,
-        showUnit: purchase.showUnit ?? true,
+        businessDetails: mappedBusinessDetails,
+        items: (purchase.items || []).map((item: any) => {
+          // Calculate SGST and CGST from taxRate if taxType is cgst_sgst
+          let sgst = parseFloat(item.sgst || 0);
+          let cgst = parseFloat(item.cgst || 0);
+          let igst = parseFloat(item.igst || 0);
+          
+          if (item.taxType === "cgst_sgst" && item.taxRate && (!sgst && !cgst)) {
+            const halfTax = parseFloat(item.taxRate) / 2;
+            sgst = halfTax;
+            cgst = halfTax;
+          } else if (item.taxType === "igst" && item.taxRate && !igst) {
+            igst = parseFloat(item.taxRate);
+          }
+
+          return {
+            name: item.name || "",
+            description: item.description || "",
+            qty: parseFloat(item.quantity || item.qty || 1),
+            quantity: parseFloat(item.quantity || item.qty || 1),
+            rate: parseFloat(item.rate || 0),
+            discount: parseFloat(item.discount || 0),
+            discountType: item.discountType || "flat",
+            taxType: item.taxType || "cgst_sgst",
+            taxRate: parseFloat(item.taxRate || 0),
+            igst: igst,
+            sgst: sgst,
+            cgst: cgst,
+            cess: Array.isArray(item.cess) ? item.cess : [],
+            hsn: item.hsn || "",
+            unit: item.unit || "pcs",
+            amount: parseFloat(item.amount || 0),
+          };
+        }),
+        discountType: purchase.discountType || "flat",
+        discountValue: parseFloat(purchase.discountValue || 0),
+        shipping: parseFloat(purchase.shipping || 0),
+        roundOff: purchase.roundOff ?? false,
+        showHSN: purchase.showHSN ?? false,
+        showUnit: purchase.showUnit ?? false,
         terms: purchase.terms || "",
         notes: purchase.notes || "",
         attachments: [],
         showSignature: purchase.showSignature ?? false,
         expenseCategory: purchase.purchaseType || "goods",
         paymentMode: purchase.paymentStatus || "pending",
+        phases: mappedPhases,
+        taxType: purchase.taxType || "exclusive",
       };
 
       console.log("📦 Mapped Vendor Details:", vendorDetails);
       console.log("📦 Raw Items from API:", purchase.items);
       console.log("📦 Mapped Items:", formValues.items);
+      console.log("📦 Mapped Phases:", mappedPhases);
+      console.log("📦 Tax Type:", purchase.taxType);
       setInitialValues(formValues);
     }
   }, [purchaseData]);
@@ -144,7 +195,7 @@ export default function EditExpensePage() {
     const payload = {
       vendorId: values.vendorId,
       billDate: values.purchaseDate,
-      taxType: "inclusive" as const,
+      taxType: (values.taxType || "exclusive") as "inclusive" | "exclusive",
       discountType: values.discountType as "flat" | "percentage",
       discountValue: values.discountValue || 0,
       shipping: values.shipping || 0,
@@ -154,21 +205,41 @@ export default function EditExpensePage() {
       showSignature: values.showSignature,
       purchaseType: (values.expenseCategory || "goods") as "goods" | "services",
       priority: "medium" as const,
-      items: values.items.map((item: any) => ({
-        name: item.name,
-        hsn: item.hsn || "",
-        unit: item.unit || "pcs",
-        quantity: parseFloat(item.quantity || item.qty || 1),
-        rate: parseFloat(item.rate || 0),
-        discount: parseFloat(item.discount || 0),
-        discountType: (item.discountType || "flat") as "flat" | "percentage",
-        taxType: item.taxType || "none",
-        taxRate: parseFloat(item.taxRate || 0),
-      })),
-      phases: [],
+      items: values.items.map((item: any) => {
+        // Calculate taxRate based on item configuration
+        let taxRate = 0;
+        let taxType: "cgst_sgst" | "igst" | "nil" = "nil";
+        
+        if (item.taxType === "igst" && item.igst) {
+          taxType = "igst";
+          taxRate = Number(item.igst) || 0;
+        } else if (item.taxType === "cgst_sgst" || (item.sgst && item.cgst)) {
+          taxType = "cgst_sgst";
+          taxRate = (Number(item.sgst) || 0) + (Number(item.cgst) || 0);
+        } else if (item.taxRate) {
+          taxRate = Number(item.taxRate);
+          taxType = item.taxType || "cgst_sgst";
+        }
+
+        return {
+          name: item.name,
+          hsn: item.hsn || "",
+          unit: item.unit || "pcs",
+          quantity: parseFloat(item.quantity || item.qty || 1),
+          rate: parseFloat(item.rate || 0),
+          discount: parseFloat(item.discount || 0),
+          discountType: (item.discountType || "flat") as "flat" | "percentage",
+          taxType: taxType,
+          taxRate: taxRate,
+          cess: item.cess && Array.isArray(item.cess) ? item.cess : [],
+        };
+      }),
+      phases: values.phases && values.phases.length > 0 ? values.phases : undefined,
       terms: values.terms || "",
       notes: values.notes || "",
     };
+
+    console.log("📤 Update Payload:", payload);
 
     updatePurchase(
       { purchaseId, data: payload },
@@ -251,7 +322,7 @@ export default function EditExpensePage() {
         onSubmit={handleUpdate}
         mode="edit"
         loading={isUpdating || isUploadingAttachment}
-        mockVendors={[]}
+        mockVendors={vendors}
         mockProducts={[]}
       />
     </div>

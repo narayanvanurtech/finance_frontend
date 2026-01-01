@@ -31,15 +31,15 @@ export default function CreateExpensePage() {
     fetchVendors();
   }, [fetchVendors]);
 
-  if (!businessStoreDetails) {
-    return <div>Loading business details...</div>;
-  }
+  // if (!businessStoreDetails) {
+  //   return <div>Loading business details...</div>;
+  // }
 
   const mappedBusinessDetails = {
-    name: businessStoreDetails.businessName,
-    gstin: businessStoreDetails.gstNumber || "",
-    address: businessStoreDetails.website || "",
-    contact: businessStoreDetails.phone,
+    name: businessStoreDetails?.businessName,
+    gstin: businessStoreDetails?.gstNumber || "",
+    address: businessStoreDetails?.website || "",
+    contact: businessStoreDetails?.phone,
     email: "",
   };
 
@@ -62,8 +62,16 @@ export default function CreateExpensePage() {
         name: "",
         description: "",
         qty: 1,
+        quantity: 1,
         rate: 0,
         discount: 0,
+        discountType: "flat",
+        taxType: "cgst_sgst",
+        taxRate: 0,
+        igst: 0,
+        sgst: 0,
+        cgst: 0,
+        cess: [],
         amount: 0,
         hsn: "",
         unit: "pcs",
@@ -81,6 +89,8 @@ export default function CreateExpensePage() {
     showSignature: false,
     expenseCategory: "",
     paymentMode: "",
+    phases: [],
+    taxType: "exclusive",
   };
 
   const handleCreate = async (values: ExpenseFormValues) => {
@@ -88,7 +98,7 @@ export default function CreateExpensePage() {
     const purchaseData = {
       vendorId: values.vendorId,
       billDate: values.purchaseDate,
-      taxType: "inclusive" as const,
+      taxType: (values.taxType || "exclusive") as "inclusive" | "exclusive",
       discountType: values.discountType as "flat" | "percentage",
       discountValue: values.discountValue,
       shipping: values.shipping,
@@ -98,15 +108,36 @@ export default function CreateExpensePage() {
       showSignature: values.showSignature,
       purchaseType: "goods" as const,
       priority: "medium" as const,
-      items: values.items.map((item) => ({
-        name: item.name,
-        hsn: item.hsn,
-        unit: item.unit,
-        quantity: item.qty,
-        rate: item.rate,
-        discount: item.discount,
-        discountType: "flat" as const,
-      })),
+      items: values.items.map((item) => {
+        // Calculate taxRate based on item configuration
+        let taxRate = 0;
+        let taxType: "cgst_sgst" | "igst" | "nil" = "nil";
+        
+        if (item.taxType === "igst" && item.igst) {
+          taxType = "igst";
+          taxRate = Number(item.igst) || 0;
+        } else if (item.taxType === "cgst_sgst" || (item.sgst && item.cgst)) {
+          taxType = "cgst_sgst";
+          taxRate = (Number(item.sgst) || 0) + (Number(item.cgst) || 0);
+        } else if (item.taxRate) {
+          taxRate = Number(item.taxRate);
+          taxType = item.taxType || "cgst_sgst";
+        }
+
+        return {
+          name: item.name,
+          hsn: item.hsn || "",
+          unit: item.unit || "pcs",
+          quantity: Number(item.qty) || Number(item.quantity) || 1,
+          rate: Number(item.rate) || 0,
+          discount: Number(item.discount) || 0,
+          discountType: (item.discountType as "flat" | "percentage") || "flat",
+          taxType: taxType,
+          taxRate: taxRate,
+          cess: item.cess && Array.isArray(item.cess) ? item.cess : [],
+        };
+      }),
+      phases: values.phases && values.phases.length > 0 ? values.phases : undefined,
       terms: values.terms,
       notes: values.notes,
     };

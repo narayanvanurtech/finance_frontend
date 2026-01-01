@@ -134,13 +134,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             value={status}
             onChange={(e) => setStatus(e.target.value)}
           >
-            <option value="Draft">Draft</option>
-            <option value="Pending Approval">Pending Approval</option>
-            <option value="Approved">Approved</option>
-            <option value="Sent">Sent to Vendor</option>
-            <option value="Partially Received">Partially Received</option>
-            <option value="Received">Received</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="draft">Draft</option>
+            <option value="sent">Sent to Vendor</option>
+            <option value="acknowledged">Acknowledged</option>
+            <option value="partial_delivery">Partial Delivery</option>
+            <option value="complete">Complete</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
         <div>
@@ -150,10 +149,9 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
           >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Urgent">Urgent</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
           </select>
         </div>
         <div>
