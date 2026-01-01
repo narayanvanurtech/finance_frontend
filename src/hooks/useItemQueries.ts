@@ -11,8 +11,11 @@ export const itemKeys = {
   all: ["items"] as const,
 
   lists: () => [...itemKeys.all, "list"] as const,
-  list: (companyId: string, params?: any) =>
-    [...itemKeys.lists(), companyId, params] as const,
+  list: (companyId: string, params?: any) => {
+    // Serialize params to ensure React Query detects changes properly
+    const serializedParams = params ? JSON.stringify(params) : null;
+    return [...itemKeys.lists(), companyId, serializedParams] as const;
+  },
 
   details: () => [...itemKeys.all, "detail"] as const,
   detail: (companyId: string, itemId: string) =>
@@ -26,12 +29,48 @@ export const itemKeys = {
 // -----------------------------------------------------
 
 // GET ALL ITEMS
-export const useItems = (companyId: string, params?: any) =>
-  useQuery({
+export const useItems = (companyId: string, params?: any) => {
+  // Check if search term exists
+  const hasSearch = params?.search && params.search.trim();
+  // Check if low stock filter is active
+  const isLowStock = params?.lowStock === "true";
+  // Check if only category filter is active (no other complex filters)
+  const hasOnlyCategory = params?.categoryId && !hasSearch && !isLowStock && !params?.subcategoryId && !params?.type && !params?.outOfStock;
+  
+  return useQuery({
     queryKey: itemKeys.list(companyId, params),
-    queryFn: () => itemApi.getAllItems(companyId, params),
+    queryFn: () => {
+      if (hasOnlyCategory) {
+        // Use dedicated items by category endpoint when only category filter is active
+        
+        if (params?.page || params?.limit || params?.sortBy || params?.sortOrder) {
+        
+          return itemApi.getAllItems(companyId, params);
+        }
+      
+        return itemApi.getItemsByCategory(companyId, params.categoryId);
+      } else if (isLowStock) {
+       
+        if (params?.page || params?.limit || params?.categoryId || params?.subcategoryId || params?.type || params?.search) {
+        
+          return itemApi.getAllItems(companyId, params);
+        }
+        // Otherwise use dedicated endpoint
+        return itemApi.getLowStockItems(companyId);
+      } else if (hasSearch) {
+        
+        return itemApi.searchItems(companyId, params);
+      } else {
+        // Use getAllItems for regular filtering (without search)
+        return itemApi.getAllItems(companyId, params);
+      }
+    },
     enabled: !!companyId, // ⭐ VERY IMPORTANT
+    // Ensure query refetches when params change
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
+};
 
 // GET ITEM BY ID
 export const useItemById = (companyId: string, itemId: string) =>
@@ -65,9 +104,6 @@ export const useSearchItems = (companyId: string, params: { search: string }) =>
     enabled: !!companyId && !!params?.search,
   });
 
-// Backwards-compatible hook: many components call `useGetItems()` without
-// passing a companyId. Provide a wrapper that reads the current user's
-// companyId from the auth store and delegates to `useItems`.
 export const useGetItems = (params?: any) => {
   const user = useAuthStore((s) => s.user);
   const companyId = user?.companyId || "";
@@ -147,7 +183,7 @@ export const useUpdateStock = (companyId: string, itemId: string) => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { quantity: number; type: "add" | "remove" }) =>
+    mutationFn: (data: { adjustment: number; adjustmentType: "increase" | "decrease"; reason?: string }) =>
       itemApi.updateStock(companyId, itemId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: itemKeys.lists() });

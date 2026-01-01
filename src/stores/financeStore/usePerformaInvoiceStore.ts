@@ -9,6 +9,69 @@ import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
 
+// Helper function to format address from nested structure
+const formatAddress = (address: any): string => {
+  if (!address) return "";
+  
+  // If address is already a string, return it
+  if (typeof address === "string") {
+    return address;
+  }
+  
+  // If address is an object with nested structure
+  if (typeof address === "object" && address.street) {
+    const parts = [
+      address.street,
+      address.city,
+      address.state,
+      address.postalCode,
+      address.country,
+    ].filter(Boolean);
+    return parts.join(", ");
+  }
+  
+  return "";
+};
+
+// Helper function to extract clientDetails from clientId object
+const extractClientDetails = (clientId: any, existingClientDetails?: any) => {
+  // Helper to check if value is meaningful (not empty)
+  const hasValue = (val: any) => val && val !== null && val !== undefined && val.toString().trim() !== "";
+  
+  // If clientId is object, extract from it
+  if (clientId && typeof clientId === "object") {
+    const extractedName = clientId.businessName || clientId.name || "";
+    const extractedGstin = clientId.gstin || "";
+    const extractedAddress = formatAddress(clientId.address) || "";
+    const extractedPhone = clientId.phone || "";
+    const extractedEmail = clientId.email || "";
+    const extractedState = clientId.address?.state || "";
+    
+    console.log("🔧 extractClientDetails - clientId data:", {
+      businessName: clientId.businessName,
+      name: clientId.name,
+      extractedName,
+      existingClientDetails
+    });
+    
+    // Use existingClientDetails if it has value, otherwise use clientId
+    const result = {
+      name: hasValue(existingClientDetails?.name) ? existingClientDetails.name : extractedName,
+      gstin: hasValue(existingClientDetails?.gstin) ? existingClientDetails.gstin : extractedGstin,
+      address: hasValue(existingClientDetails?.address) ? existingClientDetails.address : extractedAddress,
+      contact: hasValue(existingClientDetails?.contact) ? existingClientDetails.contact : extractedPhone,
+      email: hasValue(existingClientDetails?.email) ? existingClientDetails.email : extractedEmail,
+      state: hasValue(existingClientDetails?.state) ? existingClientDetails.state : extractedState,
+    };
+    
+    console.log("✅ extractClientDetails result:", result);
+    return result;
+  }
+  
+  // If clientId is not object, return existingClientDetails or empty
+  return existingClientDetails || { name: "", gstin: "", address: "", contact: "", email: "", state: "" };
+};
+
 interface PaginationData {
   total: number;
   page: number;
@@ -111,8 +174,8 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               typeof invoice.clientId === "string"
                 ? invoice.clientId
                 : (invoice.clientId as any)?._id || "",
-            clientDetails: invoice.clientDetails,
-            businessDetails: invoice.businessDetails,
+            clientDetails: invoice.clientDetails || {},
+            businessDetails: invoice.businessDetails || {},
             taxType: taxTypeValue,
             cessList: invoice.cessList || [],
             items: invoice.items.map((item: any) => ({
@@ -139,6 +202,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             notes: invoice.notes || "",
             attachments: invoice.attachments || [],
             showSignature: invoice.showSignature || false,
+            phases: invoice.phases || [],
           };
 
           // Make API call
@@ -174,13 +238,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               date: (response.data as any)?.date || "",
               dueDate: (response.data as any)?.dueDate || "",
               clientId: (response.data as any)?.clientId || "",
-              clientDetails: (response.data as any)?.clientDetails || {
-                name: "",
-                gstin: "",
-                address: "",
-                contact: "",
-                email: "",
-              },
+              clientDetails: extractClientDetails(
+                (response.data as any)?.clientId,
+                (response.data as any)?.clientDetails
+              ),
               businessDetails: (response.data as any)?.businessDetails || {
                 name: "",
                 gstin: "",
@@ -428,22 +489,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               dueDate: invoice.dueDate || "",
               validUntil: invoice.validUntil || "",
               clientId: invoice.clientId || "",
-              clientDetails: invoice.clientDetails || {
-                name:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-                gstin: "",
-                address: "",
-                contact:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.phone
-                    : "",
-                email:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-              },
+              clientDetails: extractClientDetails(
+                invoice.clientId,
+                invoice.clientDetails
+              ),
               businessDetails: invoice.businessDetails || {
                 name: "",
                 gstin: "",
@@ -628,22 +677,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               validUntil: invoice.validUntil || "",
               // Keep clientId as object to preserve client data for display
               clientId: invoice.clientId || "",
-              clientDetails: invoice.clientDetails || {
-                name:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-                gstin: "",
-                address: "",
-                contact:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.phone
-                    : "",
-                email:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-              },
+              clientDetails: extractClientDetails(
+                invoice.clientId,
+                invoice.clientDetails
+              ),
               businessDetails: invoice.businessDetails || {
                 name: "",
                 gstin: "",
@@ -746,22 +783,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               dueDate: invoice.dueDate || "",
               validUntil: invoice.validUntil || "",
               clientId: invoice.clientId || "",
-              clientDetails: invoice.clientDetails || {
-                name:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-                gstin: "",
-                address: "",
-                contact:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.phone
-                    : "",
-                email:
-                  typeof invoice.clientId === "object"
-                    ? invoice.clientId.email
-                    : "",
-              },
+              clientDetails: extractClientDetails(
+                invoice.clientId,
+                invoice.clientDetails
+              ),
               businessDetails: invoice.businessDetails || {
                 name: "",
                 gstin: "",
@@ -897,13 +922,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               performaInvoiceTitle:
                 invoiceData.invoiceTitle || invoiceData.performaInvoiceTitle,
               clientId: extractedClientId,
-              clientDetails: invoiceData.clientDetails || {
-                name: "",
-                gstin: "",
-                address: "",
-                contact: "",
-                email: "",
-              },
+              clientDetails: extractClientDetails(
+                invoiceData.clientId,
+                invoiceData.clientDetails
+              ),
               businessDetails: hasValidBusinessDetails
                 ? invoiceData.businessDetails
                 : fallbackBusinessDetails,

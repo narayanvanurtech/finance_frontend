@@ -69,6 +69,13 @@ export interface PerformaInvoice {
         phone?: string;
         id?: string;
         businessName?: string;
+        address?: {
+          street?: string;
+          city?: string;
+          state?: string;
+          postalCode?: string;
+          country?: string;
+        };
       };
   clientDetails?: ClientDetails;
   businessDetails?: BusinessDetails;
@@ -180,13 +187,17 @@ export interface PerformaInvoiceStatsResponse {
   success: boolean;
   message: string;
   data: {
-    totalInvoices: number;
-    draftInvoices: number;
-    sentInvoices: number;
-    acceptedInvoices: number;
-    convertedInvoices: number;
-    totalValue: number;
-    averageInvoiceValue: number;
+    totalPerformaInvoices: number;
+    statusBreakdown: Array<{
+      _id: string;
+      count: number;
+      totalValue: number;
+    }>;
+    acceptanceRate: number;
+    conversionRate: number;
+    paymentRate: number;
+    totalPaymentReceived: number;
+    period: string;
   };
 }
 

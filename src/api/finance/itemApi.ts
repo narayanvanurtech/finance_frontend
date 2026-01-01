@@ -66,14 +66,15 @@ export interface CreateItemPayload {
 export interface UpdateItemPayload extends Partial<CreateItemPayload> {}
 
 export interface UpdateStockPayload {
-  quantity: number;
-  type: "add" | "remove";
+  adjustment: number;
+  adjustmentType: "increase" | "decrease";
+  reason?: string;
 }
 
 export interface ItemResponse {
   success: boolean;
   message: string;
-  data: Item;
+  result: Item;
 }
 
 export interface ItemsResponse {
@@ -199,15 +200,22 @@ export const getItemsByCategory = async (
 // SEARCH ITEMS
 export const searchItems = async (
   companyId: string,
-  params: { search: string }
+  params: any
 ) => {
   if (!params.search || params.search.trim() === "") {
     throw new Error("Search term is required");
   }
 
+  // Transform search to q for API compatibility
+  const apiParams = {
+    ...params,
+    q: params.search,
+  };
+  delete apiParams.search;
+
   const res = await axiosInstance.get(
     `/api/v1/finance/inventory/item/searchItems/${companyId}`,
-    { params }
+    { params: apiParams }
   );
   return res.data;
 };

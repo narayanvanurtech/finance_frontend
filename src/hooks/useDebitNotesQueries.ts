@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import debitNotesApi, {
   CreateDebitNotePayload,
   UpdateDebitNotePayload,
+  ApproveDebitNotePayload,
+  ResolveDebitNotePayload,
+  DisputeDebitNotePayload,
 } from "@/api/finance/debitNotesApi";
 
 // Query Keys
@@ -200,14 +203,149 @@ export const useBulkDeleteDebitNotes = () => {
 };
 
 // =====================================================
+// APPROVE DEBIT NOTE
+// =====================================================
+export const useApproveDebitNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      debitNoteId,
+      data,
+    }: {
+      debitNoteId: string;
+      data: ApproveDebitNotePayload;
+    }) => {
+      const companyId = localStorage.getItem("currentCompanyId") || undefined;
+      return debitNotesApi.approveDebitNote(debitNoteId, data, companyId);
+    },
+
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: debitNoteKeys.detail(vars.debitNoteId),
+      });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.stats() });
+
+      toast.success(response.message || "Debit note approved successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to approve debit note"
+      );
+    },
+  });
+};
+
+// =====================================================
+// RESOLVE DEBIT NOTE
+// =====================================================
+export const useResolveDebitNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      debitNoteId,
+      data,
+    }: {
+      debitNoteId: string;
+      data: ResolveDebitNotePayload;
+    }) => {
+      const companyId = localStorage.getItem("currentCompanyId") || undefined;
+      return debitNotesApi.resolveDebitNote(debitNoteId, data, companyId);
+    },
+
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: debitNoteKeys.detail(vars.debitNoteId),
+      });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.stats() });
+
+      toast.success(response.message || "Debit note resolved successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to resolve debit note"
+      );
+    },
+  });
+};
+
+// =====================================================
+// DISPUTE DEBIT NOTE
+// =====================================================
+export const useDisputeDebitNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      debitNoteId,
+      data,
+    }: {
+      debitNoteId: string;
+      data: DisputeDebitNotePayload;
+    }) => {
+      const companyId = localStorage.getItem("currentCompanyId") || undefined;
+      return debitNotesApi.disputeDebitNote(debitNoteId, data, companyId);
+    },
+
+    onSuccess: (response, vars) => {
+      queryClient.invalidateQueries({
+        queryKey: debitNoteKeys.detail(vars.debitNoteId),
+      });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.stats() });
+
+      toast.success(response.message || "Debit note disputed successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to dispute debit note"
+      );
+    },
+  });
+};
+
+// =====================================================
+// DUPLICATE DEBIT NOTE
+// =====================================================
+export const useDuplicateDebitNote = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (debitNoteId: string) => {
+      const companyId = localStorage.getItem("currentCompanyId") || undefined;
+      return debitNotesApi.duplicateDebitNote(debitNoteId, companyId);
+    },
+
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: debitNoteKeys.stats() });
+
+      toast.success(response.message || "Debit note duplicated successfully");
+    },
+
+    onError: (error: any) => {
+      toast.error(
+        error?.response?.data?.message || "Failed to duplicate debit note"
+      );
+    },
+  });
+};
+
+// =====================================================
 // COMBINED HOOK FOR LIST PAGES
 // =====================================================
 export const useDebitNotesList = (filters?: any) => {
   const query = useGetDebitNotes(filters);
 
   return {
-    debitNotes: query.data?.result?.debitNotes || [],
-    pagination: query.data?.result?.pagination,
+    debitNotes: query.data?.data || [],
+    pagination: query.data?.pagination,
     ...query,
   };
 };

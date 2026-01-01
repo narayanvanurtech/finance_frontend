@@ -7,19 +7,24 @@ import {
   FiFileText,
   FiCheckCircle,
   FiDollarSign,
+  FiPercent,
+  FiArrowRight,
+  FiCreditCard,
 } from "react-icons/fi";
 
 interface PerformaInvoiceStatsProps {
   stats: {
     totalInvoices?: number;
     statusBreakdown?: Array<{
-      status?: string;
+      _id?: string;
       count?: number;
-      percentage?: number;
+      totalValue?: number;
     }>;
     totalRevenue?: number;
-    acceptedAmount?: number;
-    pendingAmount?: number;
+    acceptanceRate?: number;
+    conversionRate?: number;
+    paymentRate?: number;
+    totalPaymentReceived?: number;
     period?: string;
   };
   loading?: boolean;
@@ -45,6 +50,15 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
     );
   }
 
+  // Calculate total from status breakdown for display
+  const totalValue = stats?.totalRevenue || 
+    (stats?.statusBreakdown?.reduce((sum, item) => sum + (item.totalValue || 0), 0) || 0);
+
+  // Format status name for display
+  const formatStatusName = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   return (
     <div className="space-y-6 mb-6">
       {/* Main Stats Cards */}
@@ -58,6 +72,11 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
               <p className="text-2xl font-bold text-gray-900">
                 {stats?.totalInvoices || 0}
               </p>
+              {stats?.period && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Last {stats.period}
+                </p>
+              )}
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
               <FiFileText className="w-6 h-6 text-blue-600" />
@@ -71,7 +90,7 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
               <p className="text-sm font-medium text-gray-600">Total Value</p>
               <p className="text-2xl font-bold text-gray-900">
                 ₹
-                {(stats.totalRevenue || 0).toLocaleString("en-IN", {
+                {totalValue.toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -87,14 +106,10 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Accepted Amount
+                Acceptance Rate
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                ₹
-                {(stats.acceptedAmount || 0).toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {(stats?.acceptanceRate || 0).toFixed(1)}%
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-lg">
@@ -107,11 +122,66 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">
-                Pending Amount
+                Conversion Rate
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {(stats?.conversionRate || 0).toFixed(1)}%
+              </p>
+            </div>
+            <div className="p-3 bg-indigo-100 rounded-lg">
+              <FiArrowRight className="w-6 h-6 text-indigo-600" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Secondary Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Payment Rate
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {(stats?.paymentRate || 0).toFixed(1)}%
+              </p>
+            </div>
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <FiPercent className="w-6 h-6 text-yellow-600" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Total Payment Received
               </p>
               <p className="text-2xl font-bold text-gray-900">
                 ₹
-                {(stats.pendingAmount || 0).toLocaleString("en-IN", {
+                {(stats?.totalPaymentReceived || 0).toLocaleString("en-IN", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+            <div className="p-3 bg-teal-100 rounded-lg">
+              <FiCreditCard className="w-6 h-6 text-teal-600" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Outstanding Amount
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                ₹
+                {(totalValue - (stats?.totalPaymentReceived || 0)).toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -123,6 +193,39 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
           </div>
         </Card>
       </div>
+
+      {/* Status Breakdown */}
+      {stats?.statusBreakdown && stats.statusBreakdown.length > 0 && (
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Status Breakdown
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stats.statusBreakdown.map((item, index) => (
+              <div
+                key={index}
+                className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium text-gray-700">
+                    {formatStatusName(item._id || "Unknown")}
+                  </p>
+                  <span className="text-sm font-bold text-gray-900">
+                    {item.count || 0}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Value: ₹
+                  {(item.totalValue || 0).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 };

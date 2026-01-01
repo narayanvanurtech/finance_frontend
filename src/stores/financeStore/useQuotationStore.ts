@@ -234,8 +234,27 @@ export const useQuotationStore = create<QuotationStore>()((set, get) => ({
     try {
       const res = await quotationApi.updateQuotationStatus(id, status);
 
+      // Ensure we have valid response data
+      if (!res?.data) {
+        throw new Error("Invalid response from server");
+      }
+
+      // Update quotations array - handle both _id and id
       set((state) => ({
-        quotations: state.quotations.map((q) => (q._id === id ? res.data : q)),
+        quotations: state.quotations.map((q) => {
+          const quotationId = q._id || q.id;
+          if (quotationId === id) {
+            // Merge the updated data with the existing quotation to preserve all fields
+            return { ...q, ...res.data, status: res.data.status || status };
+          }
+          return q;
+        }),
+        // Also update currentQuotation if it matches
+        currentQuotation:
+          (state.currentQuotation?._id === id ||
+            state.currentQuotation?.id === id)
+            ? { ...state.currentQuotation, ...res.data, status: res.data.status || status }
+            : state.currentQuotation,
         loading: false,
       }));
 

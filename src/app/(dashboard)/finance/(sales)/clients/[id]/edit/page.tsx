@@ -178,7 +178,6 @@ const ClientDetailsPage = () => {
     router.push(`/finance/clients/${clientId}/edit`);
   };
 
-  console.log("asfsdafdsfsdaffsfs", formData.clientType);
 
   const handleSave = async () => {
     if (!user?.companyId || !clientId) return;

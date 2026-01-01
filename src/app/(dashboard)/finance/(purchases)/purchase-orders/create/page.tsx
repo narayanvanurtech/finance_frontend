@@ -32,15 +32,15 @@ export default function CreatePurchaseOrderPage() {
   const items = itemsData?.result?.items || [];
   const businessStoreDetails = details;
 
-  if (!businessStoreDetails) {
-    return <div>Loading business details...</div>;
-  }
+  // if (!businessStoreDetails) {
+  //   return <div>Loading business details...</div>;
+  // }
 
   const mappedBusinessDetails = {
-    name: businessStoreDetails.businessName,
-    gstin: businessStoreDetails.gstNumber || "",
-    address: businessStoreDetails.website || "",
-    contact: businessStoreDetails.phone,
+    name: businessStoreDetails?.businessName,
+    gstin: businessStoreDetails?.gstNumber || "",
+    address: businessStoreDetails?.website || "",
+    contact: businessStoreDetails?.phone,
     email: "",
   };
 

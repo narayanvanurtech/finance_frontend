@@ -334,14 +334,10 @@ const clientApi = {
       const formData = new FormData();
       formData.append("logo", logoFile);
 
+      // Let axios automatically set Content-Type with boundary for FormData
       const response = await axios.post<ClientResponse>(
         `/api/v1/finance/sales/client/uploadLogo/${clientId}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
+        formData
       );
       return response.data;
     } catch (error) {

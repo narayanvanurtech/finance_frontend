@@ -163,6 +163,68 @@ const PerformaInvoiceForm: React.FC<any> = ({
   // Debug log
   console.log("📊 PerformaInvoiceForm businessDetails:", businessDetails);
 
+  // Enrich clientDetails from clients store if missing fields
+  useEffect(() => {
+    // Get clientId as string
+    let clientIdString = "";
+    if (typeof clientId === "string") {
+      clientIdString = clientId;
+    } else if (clientId && typeof clientId === "object") {
+      clientIdString = clientId._id || clientId.id || "";
+    }
+
+    // If no clientId or clients not loaded, nothing to do
+    if (!clientIdString || clientIdString === "new" || clients.length === 0) {
+      return;
+    }
+
+    // If clientDetails already has meaningful values, don't do anything
+    const hasValue = (val: any) => val && val !== null && val !== undefined && val.toString().trim() !== "";
+    if (hasValue(clientDetails?.name) && hasValue(clientDetails?.gstin) && hasValue(clientDetails?.address)) {
+      return;
+    }
+    
+    console.log("🔍 Looking for client in store. clientId:", clientIdString, "clients count:", clients.length);
+
+    // Find client in store
+    const foundClient = clients.find(
+      (c: any) => String(c._id) === clientIdString || String(c.id) === clientIdString
+    );
+
+      if (foundClient) {
+        // Format address from nested structure
+      const formatAddress = (address: any): string => {
+        if (!address) return "";
+        if (typeof address === "string") return address;
+        if (typeof address === "object" && address.street) {
+          const parts = [
+            address.street,
+            address.city,
+            address.state,
+            address.postalCode,
+            address.country,
+          ].filter(Boolean);
+          return parts.join(", ");
+        }
+        return "";
+      };
+
+        const hasValue = (val: any) => val && val !== null && val !== undefined && val.toString().trim() !== "";
+        setClientDetails((prev: any) => {
+          const updated = {
+            name: hasValue(prev?.name) ? prev.name : (foundClient.businessName || ""),
+            gstin: hasValue(prev?.gstin) ? prev.gstin : (foundClient.gstin || ""),
+            address: hasValue(prev?.address) ? prev.address : (formatAddress(foundClient.address) || ""),
+            contact: hasValue(prev?.contact) ? prev.contact : (foundClient.phone || ""),
+            email: hasValue(prev?.email) ? prev.email : (foundClient.email || ""),
+            state: hasValue(prev?.state) ? prev.state : (foundClient.address?.state || ""),
+          };
+          console.log("📝 Updating clientDetails:", { prev, foundClient, updated });
+          return updated;
+        });
+    }
+  }, [clientId, clients.length]); // Only depend on clientId and clients array length
+
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
     if (mode === "edit" && initialValues) {
@@ -268,14 +330,30 @@ const PerformaInvoiceForm: React.FC<any> = ({
       (c: any) => String(c._id) === value || String(c.id) === value
     );
     if (found) {
+      // Format address from nested structure
+      const formatAddress = (address: any): string => {
+        if (!address) return "";
+        if (typeof address === "string") return address;
+        if (typeof address === "object" && address.street) {
+          const parts = [
+            address.street,
+            address.city,
+            address.state,
+            address.postalCode,
+            address.country,
+          ].filter(Boolean);
+          return parts.join(", ");
+        }
+        return "";
+      };
+
       setClientDetails({
         name: found.businessName || "",
         gstin: found.gstin || "",
-        address: `${found.address?.street || ""} ${found.address?.city || ""} ${
-          found.address?.state || ""
-        } ${found.address?.postalCode || ""}`.trim(),
+        address: formatAddress(found.address),
         contact: found.phone || "",
         email: found.email || "",
+        state: found.address?.state || "",
       });
     }
   };
@@ -554,6 +632,12 @@ const PerformaInvoiceForm: React.FC<any> = ({
         loading={loading}
         onPrintDownload={handlePrintDownload}
         onCancel={handleCancel}
+        disabled={
+          mode === "edit" &&
+          (initialValues?.status === "sent" ||
+            initialValues?.status === "rejected" ||
+            initialValues?.status === "accepted")
+        }
       />
       <AddClientModal
         open={showAddClient}

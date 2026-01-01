@@ -181,14 +181,28 @@ const ClientDetailsPage = () => {
              | "Consumer"
              | "Overseas")
          : undefined,
-       gstType: formData.gstType,
-       accountHolderName: formData.accountHolderName || undefined,
-       bankName: formData.bankName || undefined,
-       bankAccountNumber: formData.bankAccountNumber || undefined,
-       ifscCode: formData.ifscCode || undefined,
-       branchName: formData.branchName || undefined,
-       accountType: formData.accountType || undefined,
-     });
+      gstType: formData.gstType,
+      // send bank/account details under `accountDetails` to match backend
+      // Only include accountDetails if at least one field has a value
+      ...(formData.accountHolderName ||
+      formData.bankName ||
+      formData.bankAccountNumber ||
+      formData.ifscCode ||
+      formData.branchName ||
+      formData.accountType
+        ? {
+            accountDetails: {
+              accountHolderName: formData.accountHolderName || undefined,
+              bankName: formData.bankName || undefined,
+              // backend expects `accountNumber`
+              accountNumber: formData.bankAccountNumber || undefined,
+              ifscCode: formData.ifscCode || undefined,
+              branchName: formData.branchName || undefined,
+              accountType: formData.accountType || undefined,
+            },
+          }
+        : {}),
+    });
 
      await getClientById(user.companyId, clientId);
 

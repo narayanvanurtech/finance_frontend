@@ -1,13 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import DebitNotesForm, {
   DebitNoteFormValues,
   Invoice,
 } from "@/finance/debitNotes/DebitNotesForm";
 
 import { useParams, useRouter } from "next/navigation";
-import { useGetVendors } from "@/hooks/useVendorQueries";
+import { useGetVendorsWithPurchases } from "@/hooks/useVendorQueries";
 import { useGetItems } from "@/hooks/useItemQueries";
 import {
   useGetDebitNoteById,
@@ -18,12 +18,14 @@ import { UpdateDebitNotePayload } from "@/api/finance/debitNotesApi";
 export default function EditDebitNotePage() {
   const params = useParams();
   const router = useRouter();
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
 
   // Get debit note ID from URL
   const debitNoteId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   // Fetch data using React Query
-  const { data: vendorsData, isLoading: vendorsLoading } = useGetVendors();
+  const { data: vendorsData, isLoading: vendorsLoading } =
+    useGetVendorsWithPurchases(1, 100);
   const { data: itemsData, isLoading: itemsLoading } = useGetItems();
   const {
     data: debitNoteData,
@@ -32,10 +34,41 @@ export default function EditDebitNotePage() {
   } = useGetDebitNoteById(debitNoteId);
   const updateDebitNoteMutation = useUpdateDebitNote();
 
+  console.log("sdfdsfsdfsdfdsfdsfdsfsd", debitNoteData);
+
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];
   const items = itemsData?.result?.items || [];
-  const debitNote = debitNoteData?.result;
+
+  // Get purchase orders for the selected vendor
+  const selectedVendor = vendors.find(
+    (vendor) => vendor._id === selectedVendorId
+  );
+
+  // Map purchases to the format expected by the form
+  const purchaseOrders =
+    selectedVendor?.purchases?.map((purchase) => ({
+      _id: purchase._id,
+      purchaseOrderNumber: purchase.billNumber,
+      purchaseOrderDate: purchase.billDate,
+      vendorId: purchase.vendorId,
+      paymentStatus: purchase.paymentStatus,
+      totalPaidAmount: purchase.totalPaidAmount,
+      priority: purchase.priority,
+    })) || [];
+
+  const debitNote = debitNoteData?.data;
+
+  // Set the selected vendor ID from the debit note data
+  React.useEffect(() => {
+    if (debitNote?.vendorId) {
+      const vendorId =
+        typeof debitNote.vendorId === "string"
+          ? debitNote.vendorId
+          : debitNote.vendorId._id;
+      setSelectedVendorId(vendorId);
+    }
+  }, [debitNote]);
 
   const mappedBusinessDetails = {
     name: "Your Business Name",
@@ -79,16 +112,16 @@ export default function EditDebitNotePage() {
     debitNoteDate: debitNote.debitNoteDate.split("T")[0],
     linkedInvoice: debitNote.originalBillNumber,
     reason: debitNote.reason,
-    purchaseId: debitNote.purchaseId || "",
+    purchaseId: debitNote.purchaseId?._id || "",
     originalBillNumber: debitNote.originalBillNumber || "",
     debitType: debitNote.debitType || "",
     vendorId: debitNote.vendorId?._id || debitNote.vendorId,
-    vendorDetails: debitNote.vendorDetails || {
-      name: "",
-      gstin: "",
-      address: "",
-      contact: "",
-      email: "",
+    vendorDetails:  {
+      name: debitNote.vendorId?.name,
+      gstin: debitNote.vendorId?.gstin,
+      address: debitNote.vendorId?.address,
+      contact: debitNote.vendorId?.phone,
+      email: debitNote.vendorId?.email,
     },
     businessDetails: mappedBusinessDetails,
     items: debitNote.items.map((item) => ({
@@ -125,6 +158,7 @@ export default function EditDebitNotePage() {
     try {
       // Transform form values to API payload
       const payload: UpdateDebitNotePayload = {
+        vendorId: values.vendorId,
         reason: values.reason,
         purchaseId: values.purchaseId,
         debitNoteDate: values.debitNoteDate,
@@ -164,7 +198,7 @@ export default function EditDebitNotePage() {
         debitNoteId,
         data: payload,
       });
-      router.push("/user/finance/debit-notes");
+      router.push("/finance/debit-notes");
     } catch (error) {
       console.error("Error updating debit note:", error);
     }
@@ -179,6 +213,8 @@ export default function EditDebitNotePage() {
       mockProducts={items}
       invoices={invoices}
       reasons={reasons}
+      purchaseOrders={purchaseOrders}
+      onVendorChange={setSelectedVendorId}
       loading={updateDebitNoteMutation.isPending}
     />
   );

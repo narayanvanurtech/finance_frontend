@@ -28,6 +28,56 @@ interface Address {
   streetAddress?: string;
 }
 
+interface PurchaseStats {
+  totalPurchases: number;
+  totalPurchaseAmount: number;
+  totalPaidAmount: number;
+  totalPendingAmount: number;
+  pendingPurchases: number;
+  partialPurchases: number;
+  paidPurchases: number;
+  overduePurchases: number;
+}
+
+interface Purchase {
+  _id: string;
+  vendorId: string;
+  billNumber: string;
+  billDate: string;
+  paymentStatus: "pending" | "partial" | "paid";
+  totalPaidAmount: number;
+  priority: "low" | "medium" | "high";
+}
+
+interface VendorWithPurchases {
+  _id: string;
+  companyId: string;
+  name: string;
+  displayName?: string;
+  vendorType?: string;
+  industry?: string;
+  email?: string;
+  showEmail: boolean;
+  phone?: string;
+  contact?: string;
+  showPhone: boolean;
+  gstin?: string;
+  gstType?: string;
+  panNumber?: string;
+  taxTreatment?: string;
+  address?: Address;
+  vendorNo?: string;
+  bankAccounts?: BankAccount[];
+  attachments?: Attachment[];
+  isDeleted: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  purchaseStats: PurchaseStats;
+  purchases: Purchase[];
+}
+
 interface Vendor {
   _id: string;
   companyId: Company;
@@ -156,6 +206,16 @@ interface BulkDeleteResponse {
   message: string;
   result: {
     deletedCount: number;
+  };
+}
+
+interface GetVendorsWithPurchasesResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  result: {
+    vendors: VendorWithPurchases[];
+    pagination: PaginationInfo;
   };
 }
 
@@ -299,6 +359,24 @@ const vendorApi = {
       throw new Error("Error deleting vendors");
     }
   },
+
+  // Get vendors with their purchase statistics and recent purchases
+  getVendorsWithPurchases: async (
+    page: number = 1,
+    limit: number = 10
+  ): Promise<GetVendorsWithPurchasesResponse> => {
+    try {
+      const response = await axiosInstance.get(
+        `/api/v1/finance/purchases/vendor/vendorsWithPurchases?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
+      throw new Error("Error fetching vendors with purchases");
+    }
+  },
 };
 
 export default vendorApi;
@@ -316,4 +394,8 @@ export type {
   BankAccount,
   Attachment,
   Address,
+  PurchaseStats,
+  Purchase,
+  VendorWithPurchases,
+  GetVendorsWithPurchasesResponse,
 };

@@ -99,13 +99,24 @@ export default function VendorsPage() {
                             <FiMoreHorizontal className="text-xl text-gray-500" />
                           </button>
                           {deleteId === vendor._id && (
-                            <div className="absolute right-0 z-50 mt-2 w-32 origin-top-right rounded-md bg-white border border-gray-200 shadow-lg focus:outline-none">
+                            <div className="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-white border border-gray-200 shadow-lg focus:outline-none">
                               <button
                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 onClick={() => {
                                   setDeleteId(null);
                                   router.push(
-                                    `/dashboard/vendors/edit/${vendor._id}`
+                                    `/user/finance/vendors/${vendor._id}`
+                                  );
+                                }}
+                              >
+                                View Purchases
+                              </button>
+                              <button
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => {
+                                  setDeleteId(null);
+                                  router.push(
+                                    `/user/finance/vendors/edit/${vendor._id}`
                                   );
                                 }}
                               >

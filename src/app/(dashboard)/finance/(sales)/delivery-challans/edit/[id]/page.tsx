@@ -7,11 +7,16 @@ import DeliveryChallanForm, {
 import { useDeliveryChallanStore } from "@/stores/financeStore/useDeliveryChallanStore";
 import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
+import { useItems } from "@/hooks/useItemQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 export default function EditDeliveryChallanPage() {
   const params = useParams();
   const router = useRouter();
   const { clients } = useClientStore();
+  const { user } = useAuthStore();
+  const { data: itemsData } = useItems(user?.companyId || "");
+  const items = itemsData?.result?.items || [];
   const { singleChallan, fetchChallanById, updateChallan } =
     useDeliveryChallanStore();
   const [loading, setLoading] = useState(true);
@@ -124,6 +129,7 @@ export default function EditDeliveryChallanPage() {
               hsn: item.hsn || "",
               unit: item.unit || "pcs",
               quantity: item.quantity || 0,
+              qty: item.quantity || item.qty || 0, // Add qty field for ItemTable compatibility
               rate: item.rate || 0,
               discount: item.discount || 0,
               discountType: item.discountType || "flat",
@@ -245,6 +251,8 @@ export default function EditDeliveryChallanPage() {
       onSubmit={handleUpdate}
       mode="edit"
       loading={loading}
+      mockClients={clients}
+      mockProducts={items}
     />
   );
 }

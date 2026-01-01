@@ -87,7 +87,80 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
               filters
             );
             console.log("✅ API Response:", res);
-            set({ payments: res.data, loading: false });
+            
+            // Check if response has data
+            if (res && res.data && Array.isArray(res.data)) {
+              // Verify if filters were actually applied by checking result count
+              // If only search filter is present and API returned results, trust it
+              // Otherwise, if we have other filters, verify the results match
+              const hasNonSearchFilters = Object.keys(filters).some(
+                key => key !== 'search' && filters[key as keyof typeof filters]
+              );
+              
+              if (hasNonSearchFilters) {
+                // Double-check: API might not support all filters, so apply client-side as well
+                let filtered = res.data;
+                
+                // Apply client-side filters on API response to ensure accuracy
+                if (filters.status) {
+                  const statusLower = filters.status.toLowerCase();
+                  filtered = filtered.filter(
+                    (p: any) => p.status?.toLowerCase() === statusLower
+                  );
+                }
+
+                if (filters.paymentType) {
+                  const typeLower = filters.paymentType.toLowerCase();
+                  filtered = filtered.filter(
+                    (p: any) => p.paymentType?.toLowerCase() === typeLower
+                  );
+                }
+
+                if (filters.paymentMethod) {
+                  const methodLower = filters.paymentMethod.toLowerCase();
+                  filtered = filtered.filter((p: any) =>
+                    p.paymentRecords?.some(
+                      (r: any) => r.paymentMethod?.toLowerCase() === methodLower
+                    )
+                  );
+                }
+
+                if (filters.minAmount !== undefined) {
+                  filtered = filtered.filter(
+                    (p: any) => (p.totalAmount || 0) >= filters.minAmount!
+                  );
+                }
+
+                if (filters.maxAmount !== undefined) {
+                  filtered = filtered.filter(
+                    (p: any) => (p.totalAmount || 0) <= filters.maxAmount!
+                  );
+                }
+
+                if (filters.dateFrom) {
+                  const fromDate = new Date(filters.dateFrom);
+                  filtered = filtered.filter(
+                    (p: any) => p.receiptDate && new Date(p.receiptDate) >= fromDate
+                  );
+                }
+
+                if (filters.dateTo) {
+                  const toDate = new Date(filters.dateTo);
+                  toDate.setHours(23, 59, 59, 999);
+                  filtered = filtered.filter(
+                    (p: any) => p.receiptDate && new Date(p.receiptDate) <= toDate
+                  );
+                }
+
+                console.log(`🔧 Applied client-side filters: ${filtered.length} payments`);
+                set({ payments: filtered, loading: false });
+              } else {
+                // Only search filter, trust API response
+                set({ payments: res.data, loading: false });
+              }
+            } else {
+              throw new Error("Invalid API response format");
+            }
           } catch (apiError: any) {
             // If API doesn't support filtering, do client-side filtering
             console.log(
@@ -99,7 +172,7 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
             );
 
             // Apply client-side filters
-            let filtered = allPayments.data;
+            let filtered = allPayments.data || [];
 
             if (filters.search) {
               const searchLower = filters.search.toLowerCase().trim();
@@ -156,15 +229,15 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
             if (filters.dateFrom) {
               const fromDate = new Date(filters.dateFrom);
               filtered = filtered.filter(
-                (p: any) => new Date(p.receiptDate) >= fromDate
+                (p: any) => p.receiptDate && new Date(p.receiptDate) >= fromDate
               );
             }
 
             if (filters.dateTo) {
               const toDate = new Date(filters.dateTo);
-              toDate.setHours(23, 59, 59, 999); // Include full day
+              toDate.setHours(23, 59, 59, 999);
               filtered = filtered.filter(
-                (p: any) => new Date(p.receiptDate) <= toDate
+                (p: any) => p.receiptDate && new Date(p.receiptDate) <= toDate
               );
             }
 

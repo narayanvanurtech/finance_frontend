@@ -5,11 +5,13 @@ import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import PremiumTemplate from "@/components/finance/PremiumTemplate";
 import ClassicTemplate from "@/components/finance/ClassicTemplate";
+import EliteTemplate from "@/components/finance/EliteTemplate";
 import { useParams, useRouter } from "next/navigation";
 import salesOrderApi from "@/api/finance/salesOrderApi";
 import { toast } from "sonner";
 
 const templates = [
+  { label: "Elite", value: "elite" },
   { label: "Premium", value: "premium" },
   { label: "Classic", value: "classic" },
 ];
@@ -20,7 +22,7 @@ export default function SalesOrderPreviewPage() {
   const orderId = params.id as string;
   console.log("Sales Order ID from params:", orderId);
 
-  const [selectedTemplate, setSelectedTemplate] = useState("premium");
+  const [selectedTemplate, setSelectedTemplate] = useState("elite");
   const [orderData, setOrderData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -167,6 +169,16 @@ export default function SalesOrderPreviewPage() {
     if (!orderData) return null;
 
     const phases = orderData.phases || [];
+
+    if (selectedTemplate === "elite") {
+      return (
+        <EliteTemplate
+          quotation={orderData}
+          phases={phases}
+          showPhases={true}
+        />
+      );
+    }
 
     if (selectedTemplate === "premium") {
       return <PremiumTemplate quotation={orderData} phases={phases} />;

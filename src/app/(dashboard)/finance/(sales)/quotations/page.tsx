@@ -132,10 +132,12 @@ export default function QuotationListPage() {
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     quotation: Quotation | null;
+    quotationId: string | null; // Store ID separately to avoid issues
     loading: boolean;
   }>({
     open: false,
     quotation: null,
+    quotationId: null,
     loading: false,
   });
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState({
@@ -287,30 +289,95 @@ export default function QuotationListPage() {
 
   // Handle delete quotation
   const handleDeleteClick = (quotation: Quotation) => {
+    // Extract ID immediately to ensure we have it
+    const quotationId = quotation?._id || quotation?.id;
+    
+    console.log("Delete clicked for quotation:", quotation);
+    console.log("Quotation _id:", quotation?._id, "Type:", typeof quotation?._id);
+    console.log("Quotation id:", quotation?.id, "Type:", typeof quotation?.id);
+    console.log("Extracted quotationId:", quotationId);
+    
+    if (!quotationId) {
+      console.error("Cannot delete: Quotation ID is missing", quotation);
+      toast.error("Cannot delete: Quotation ID not found");
+      return;
+    }
+    
+    // Store both quotation object and ID separately
     setDeleteDialog({
       open: true,
       quotation,
+      quotationId: String(quotationId).trim(),
       loading: false,
     });
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteDialog.quotation) return;
+    // Use the stored quotationId directly - more reliable than extracting from object
+    const quotationId = deleteDialog.quotationId;
+    
+    if (!quotationId || quotationId.trim() === '') {
+      console.error("Delete confirm: No quotationId in dialog state");
+      toast.error("Quotation ID is missing. Please refresh the page and try again.");
+      setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
+      return;
+    }
+
+    const cleanId = quotationId.trim();
+    
+    // Validate MongoDB ObjectId format (24 hex characters)
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdPattern.test(cleanId)) {
+      console.error("Invalid ObjectId format:", cleanId, "Length:", cleanId.length);
+      toast.error("Invalid quotation ID format. Please refresh the page and try again.");
+      return;
+    }
+
+    console.log("Deleting quotation with ID:", cleanId);
 
     setDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
-      await deleteQuotation(deleteDialog.quotation._id);
-      setDeleteDialog({ open: false, quotation: null, loading: false });
-      // Refresh stats after deletion
+      await deleteQuotation(cleanId);
+      setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
+      
+      // Remove from selected quotations if it was selected
+      setSelectedQuotations((prev) => prev.filter((id) => id !== cleanId));
+      
+      // Refresh the list
+      const hasActiveFilters = Object.values(currentFilters).some(
+        (value) => value && value.length > 0
+      );
+
+      if (hasActiveFilters) {
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
+
+        if (currentFilters.search) params.search = currentFilters.search;
+        if (currentFilters.status) params.status = currentFilters.status;
+        if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
+        if (currentFilters.sortOrder) params.sortOrder = currentFilters.sortOrder;
+        if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
+        if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
+
+        await searchQuotations(params);
+      } else {
+        await fetchQuotations(currentPage, itemsPerPage);
+      }
+      
       loadStats();
-    } catch (error) {
-      console.error("Failed to delete quotation:", error);
+    } catch (error: any) {
+      console.error("Delete failed:", error);
+      console.error("Error details:", error?.response?.data);
+      const errorMessage = error?.response?.data?.message || "Failed to delete quotation";
+      toast.error(errorMessage);
       setDeleteDialog((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const handleDeleteCancel = () => {
-    setDeleteDialog({ open: false, quotation: null, loading: false });
+    setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
   };
 
   const handleDuplicate = async (quotationId: string) => {
@@ -326,10 +393,83 @@ export default function QuotationListPage() {
 
   const handleStatusChange = async (quotationId: string, status: string) => {
     try {
+      // Find the quotation to check current status
+      const quotation = quotations.find(
+        (q) => q?._id === quotationId || q?.id === quotationId
+      );
+
+      // Prevent unnecessary API call if status hasn't changed
+      if (quotation?.status === status) {
+        return;
+      }
+
+      // Update status - store will update local state immediately for optimistic UI update
       await updateQuotationStatus(quotationId, status);
+      
+      // Refresh stats to reflect the status change
       loadStats();
+      
+      // Optionally refresh quotations list after a delay to ensure backend consistency
+      // The store update should be enough for immediate UI feedback
+      setTimeout(async () => {
+        try {
+          const hasActiveFilters = Object.values(currentFilters).some(
+            (value) => value && value.length > 0
+          );
+
+          if (hasActiveFilters) {
+            const params: any = {
+              page: currentPage,
+              limit: itemsPerPage,
+            };
+
+            if (currentFilters.search) params.search = currentFilters.search;
+            if (currentFilters.status) params.status = currentFilters.status;
+            if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
+            if (currentFilters.sortOrder)
+              params.sortOrder = currentFilters.sortOrder;
+            if (currentFilters.dateFrom)
+              params.dateFrom = currentFilters.dateFrom;
+            if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
+
+            await searchQuotations(params);
+          } else {
+            await fetchQuotations(currentPage, itemsPerPage);
+          }
+        } catch (refreshError) {
+          console.error("Failed to refresh quotations:", refreshError);
+        }
+      }, 500); // Small delay to let backend process, but store update is immediate
     } catch (error) {
       console.error("Failed to update quotation status:", error);
+      // Refresh to get current state in case of error
+      try {
+        const hasActiveFilters = Object.values(currentFilters).some(
+          (value) => value && value.length > 0
+        );
+
+        if (hasActiveFilters) {
+          const params: any = {
+            page: currentPage,
+            limit: itemsPerPage,
+          };
+
+          if (currentFilters.search) params.search = currentFilters.search;
+          if (currentFilters.status) params.status = currentFilters.status;
+          if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
+          if (currentFilters.sortOrder)
+            params.sortOrder = currentFilters.sortOrder;
+          if (currentFilters.dateFrom)
+            params.dateFrom = currentFilters.dateFrom;
+          if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
+
+          await searchQuotations(params);
+        } else {
+          await fetchQuotations(currentPage, itemsPerPage);
+        }
+      } catch (refreshError) {
+        console.error("Failed to refresh after error:", refreshError);
+      }
     }
   };
 
@@ -359,9 +499,9 @@ export default function QuotationListPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select quotations that can be deleted (draft and rejected)
+      // Only select quotations that can be deleted (draft only)
       const deletableIds = quotations
-        .filter((q) => q?.status === "draft" || q?.status === "rejected")
+        .filter((q) => q?.status === "draft")
         .map((q) => q?._id || q?.id || "")
         .filter(Boolean);
       setSelectedQuotations(deletableIds);
@@ -370,7 +510,11 @@ export default function QuotationListPage() {
     }
   };
 
-  const handleSelectQuotation = (quotationId: string, checked: boolean) => {
+  const handleSelectQuotation = (quotationId: string, checked: boolean, quotation?: Quotation) => {
+    // Only allow selecting draft quotations
+    if (quotation && quotation.status !== "draft") {
+      return;
+    }
     if (checked) {
       setSelectedQuotations((prev) => [...prev, quotationId]);
     } else {
@@ -381,17 +525,16 @@ export default function QuotationListPage() {
   const handleBulkDelete = () => {
     if (selectedQuotations.length === 0) return;
 
-    // Check if any selected quotation is not deletable
+    // Check if any selected quotation is not deletable (only draft can be deleted)
     const nonDeletableCount = quotations.filter(
       (q) =>
         selectedQuotations.includes(q?._id || q?.id || "") &&
-        q?.status !== "draft" &&
-        q?.status !== "rejected"
+        q?.status !== "draft"
     ).length;
 
     if (nonDeletableCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} quotation(s). Only draft and rejected quotations can be deleted.`
+        `Cannot delete ${nonDeletableCount} quotation(s). Only draft quotations can be deleted.`
       );
       return;
     }
@@ -402,9 +545,42 @@ export default function QuotationListPage() {
   const confirmBulkDelete = async () => {
     setBulkDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
-      await Promise.all(selectedQuotations.map((id) => deleteQuotation(id)));
+      // Filter out any invalid/empty IDs before deleting
+      const validIds = selectedQuotations.filter((id) => id && id.trim().length > 0);
+      
+      if (validIds.length === 0) {
+        toast.error("No valid quotation IDs to delete");
+        setBulkDeleteDialog((prev) => ({ ...prev, loading: false }));
+        return;
+      }
+
+      await Promise.all(validIds.map((id) => deleteQuotation(id.trim())));
       setSelectedQuotations([]);
       setBulkDeleteDialog({ open: false, loading: false });
+      
+      // Refresh the list
+      const hasActiveFilters = Object.values(currentFilters).some(
+        (value) => value && value.length > 0
+      );
+
+      if (hasActiveFilters) {
+        const params: any = {
+          page: currentPage,
+          limit: itemsPerPage,
+        };
+
+        if (currentFilters.search) params.search = currentFilters.search;
+        if (currentFilters.status) params.status = currentFilters.status;
+        if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
+        if (currentFilters.sortOrder) params.sortOrder = currentFilters.sortOrder;
+        if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
+        if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
+
+        await searchQuotations(params);
+      } else {
+        await fetchQuotations(currentPage, itemsPerPage);
+      }
+      
       loadStats();
     } catch (error) {
       console.error("Failed to delete quotations:", error);
@@ -499,7 +675,15 @@ export default function QuotationListPage() {
             </button>
             <button
               onClick={handleBulkDelete}
-              className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 flex items-center gap-2"
+              disabled={
+                selectedQuotations.length === 0 ||
+                quotations.filter(
+                  (q) =>
+                    selectedQuotations.includes(q?._id || q?.id || "") &&
+                    q?.status === "draft"
+                ).length === 0
+              }
+              className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FiTrash2 className="w-4 h-4" />
               Delete Selected
@@ -582,12 +766,11 @@ export default function QuotationListPage() {
                         onChange={(e) =>
                           handleSelectQuotation(
                             q?._id || q?.id || "",
-                            e.target.checked
+                            e.target.checked,
+                            q
                           )
                         }
-                        disabled={
-                          q?.status !== "draft" && q?.status !== "rejected"
-                        }
+                        disabled={q?.status !== "draft"}
                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </td>
@@ -892,11 +1075,17 @@ export default function QuotationListPage() {
                                 </button>
                               </>
                             )}
-                            {(q?.status === "draft" ||
-                              q?.status === "rejected") && (
+                            {q?.status === "draft" && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  // Extract ID directly from the quotation object
+                                  const id = q?._id || q?.id;
+                                  if (!id) {
+                                    console.error("Cannot delete: No ID found in quotation", q);
+                                    toast.error("Cannot delete: Quotation ID not found");
+                                    return;
+                                  }
                                   handleDeleteClick(q);
                                   setOpenPopoverId(null);
                                 }}
