@@ -206,14 +206,23 @@ export interface InvoiceStatsResponse {
   message: string;
   data: {
     totalInvoices: number;
-    draftInvoices: number;
-    sentInvoices: number;
-    paidInvoices: number;
-    pendingInvoices: number;
-    overdueInvoices: number;
-    totalValue: number;
-    totalRevenue: number;
-    averageInvoiceValue: number;
+    statusBreakdown?: Array<{
+      _id: string;
+      count: number;
+      totalValue: number;
+    }>;
+    paymentBreakdown?: Array<{
+      _id: string;
+      count: number;
+      totalValue: number;
+      totalPaid?: number;
+    }>;
+    overdueInvoices?: number;
+    overdueAmount?: number;
+    totalValue?: number;
+    totalRevenue?: number;
+    averageInvoiceValue?: number;
+    period?: string;
   };
 }
 

@@ -269,7 +269,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   <Input
                     type="number"
                     className="w-full text-center h-10"
-                    value={item.qty}
+                    value={item.qty ?? item.quantity ?? 1}
                     min={1}
                     onChange={(e) =>
                       handleItemChange(idx, "qty", Number(e.target.value))

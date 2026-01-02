@@ -13,6 +13,9 @@ import {
   FiSend,
   FiCheckCircle,
   FiXCircle,
+  FiClock,
+  FiDollarSign,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -24,6 +27,29 @@ import InvoiceFilters, {
 } from "@/components/finance/invoice/InvoiceFilters";
 import type { InvoiceFormValues } from "@/components/finance/invoice/InvoiceForm";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
+
+// Valid status transitions
+const validTransitions = {
+  draft: ["sent", "draft", "cancelled"],
+  sent: ["paid", "partially_paid", "overdue", "cancelled", "draft"],
+  paid: ["paid"],
+  partially_paid: ["paid", "partially_paid", "overdue", "cancelled"],
+  overdue: ["paid", "partially_paid", "overdue", "cancelled"],
+  cancelled: ["cancelled", "draft"],
+};
+
+// Helper to check if a status transition is valid
+const isValidTransition = (currentStatus: string, newStatus: string): boolean => {
+  const normalizedCurrent = currentStatus || "draft";
+  const allowedTransitions = validTransitions[normalizedCurrent as keyof typeof validTransitions];
+  return allowedTransitions ? allowedTransitions.includes(newStatus) : false;
+};
+
+// Helper to get valid next statuses for a given current status
+const getValidNextStatuses = (currentStatus: string): string[] => {
+  const normalizedCurrent = currentStatus || "draft";
+  return validTransitions[normalizedCurrent as keyof typeof validTransitions] || [];
+};
 
 // Helper to get client initials
 const getInitials = (name: string) => {
@@ -86,10 +112,107 @@ export default function InvoicesPage() {
     totalRevenue: number;
     paidAmount: number;
     pendingAmount: number;
+    overdueInvoices?: number;
+    overdueAmount?: number;
     period: string;
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
+
+  // Load statistics
+  const loadStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const statsData = await getInvoiceStats("30");
+      
+      const statusBreakdown = Array.isArray(statsData?.statusBreakdown)
+        ? statsData.statusBreakdown.map((item: any) => ({
+            status: item._id || item.status || "unknown",
+            count: item.count || 0,
+            percentage:
+              statsData?.totalInvoices > 0
+                ? Math.round((item.count / statsData.totalInvoices) * 100)
+                : 0,
+          }))
+        : [];
+
+      // Calculate totalRevenue from statusBreakdown, paymentBreakdown, or use totalValue
+      const totalRevenue =
+        typeof statsData?.totalRevenue === "number"
+          ? statsData.totalRevenue
+          : typeof statsData?.totalValue === "number"
+          ? statsData.totalValue
+          : Array.isArray(statsData?.statusBreakdown) && statsData.statusBreakdown.length > 0
+          ? statsData.statusBreakdown.reduce(
+              (sum: number, item: any) => sum + (item.totalValue || 0),
+              0
+            )
+          : Array.isArray(statsData?.paymentBreakdown)
+          ? statsData.paymentBreakdown.reduce(
+              (sum: number, item: any) => sum + (item.totalValue || 0),
+              0
+            )
+          : 0;
+
+      // Calculate paidAmount from paymentBreakdown where _id is "paid"
+      const paidAmount = Array.isArray(statsData?.paymentBreakdown)
+        ? statsData.paymentBreakdown
+            .filter((item: any) => item._id === "paid")
+            .reduce((sum: number, item: any) => sum + (item.totalPaid || 0), 0)
+        : 0;
+
+      // Calculate pendingAmount from paymentBreakdown where _id is "unpaid", "partial", or "overdue"
+      const pendingAmount = Array.isArray(statsData?.paymentBreakdown)
+        ? statsData.paymentBreakdown
+            .filter(
+              (item: any) =>
+                item._id === "unpaid" || item._id === "partial" || item._id === "overdue"
+            )
+            .reduce(
+              (sum: number, item: any) => sum + (item.totalValue || 0),
+              0
+            )
+        : 0;
+
+      // Extract overdue information from API response
+      const overdueInvoices = typeof statsData?.overdueInvoices === "number"
+        ? statsData.overdueInvoices
+        : 0;
+      
+      const overdueAmount = typeof statsData?.overdueAmount === "number"
+        ? statsData.overdueAmount
+        : 0;
+
+      // Ensure we have a valid stats object with default values
+      const safeStats = {
+        totalInvoices: statsData?.totalInvoices || 0,
+        statusBreakdown,
+        totalRevenue,
+        paidAmount,
+        pendingAmount,
+        overdueInvoices,
+        overdueAmount,
+        period: statsData?.period || "30 days",
+      };
+      
+      setStats(safeStats);
+    } catch (error) {
+      console.error("Failed to load stats:", error);
+      // Set default stats on error
+      setStats({
+        totalInvoices: 0,
+        statusBreakdown: [],
+        totalRevenue: 0,
+        paidAmount: 0,
+        pendingAmount: 0,
+        overdueInvoices: 0,
+        overdueAmount: 0,
+        period: "30 days",
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [getInvoiceStats]);
 
   useEffect(() => {
     const loadInvoices = async () => {
@@ -138,47 +261,8 @@ export default function InvoicesPage() {
     currentPage,
     itemsPerPage,
     currentFilters,
+    loadStats,
   ]);
-
-  // Load statistics
-  const loadStats = async () => {
-    setStatsLoading(true);
-    try {
-      const statsData = await getInvoiceStats("30");
-      // Ensure we have a valid stats object with default values
-      const safeStats = {
-        totalInvoices: statsData?.totalInvoices || 0,
-        statusBreakdown: Array.isArray(statsData?.statusBreakdown)
-          ? statsData.statusBreakdown
-          : [],
-        totalRevenue:
-          typeof statsData?.totalRevenue === "number"
-            ? statsData.totalRevenue
-            : 0,
-        paidAmount:
-          typeof statsData?.paidAmount === "number" ? statsData.paidAmount : 0,
-        pendingAmount:
-          typeof statsData?.pendingAmount === "number"
-            ? statsData.pendingAmount
-            : 0,
-        period: statsData?.period || "30 days",
-      };
-      setStats(safeStats);
-    } catch (error) {
-      console.error("Failed to load stats:", error);
-      // Set default stats on error
-      setStats({
-        totalInvoices: 0,
-        statusBreakdown: [],
-        totalRevenue: 0,
-        paidAmount: 0,
-        pendingAmount: 0,
-        period: "30 days",
-      });
-    } finally {
-      setStatsLoading(false);
-    }
-  };
 
   // Handle search and filters
   const handleSearch = useCallback((filters: SearchFilters) => {
@@ -208,14 +292,27 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleStatusChange = async (invoiceId: string, status: string) => {
+  const handleStatusChange = async (invoiceId: string, newStatus: string, currentStatus?: string) => {
     try {
-      await updateInvoiceStatus(invoiceId, status);
+      // Find the invoice to get its current status
+      const invoice = invoices.find((inv) => (inv as any)._id === invoiceId);
+      const invoiceStatus = currentStatus || invoice?.status || "draft";
+      
+      // Validate the transition
+      if (!isValidTransition(invoiceStatus, newStatus)) {
+        toast.error(
+          `Invalid status transition: Cannot change from "${invoiceStatus}" to "${newStatus}"`
+        );
+        return;
+      }
+
+      await updateInvoiceStatus(invoiceId, newStatus);
       setOpenPopoverId(null);
       // Refresh stats after status change
       loadStats();
     } catch (error) {
       console.error("Failed to update invoice status:", error);
+      toast.error("Failed to update invoice status");
     }
   };
 
@@ -252,26 +349,30 @@ export default function InvoicesPage() {
     router.push(`/finance/invoices/edit/${invoiceId}`);
   };
 
-  // Bulk delete handlers
+  // Bulk delete handlers - Only for draft invoices
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select invoices that can be deleted (draft and rejected)
-      const deletableIds = invoices
+      // Only select draft invoices
+      const draftIds = invoices
         .filter(
           (inv) =>
-            inv?.status === "draft" ||
-            !inv?.status ||
-            inv?.status === "rejected"
+            inv?.status === "draft" || !inv?.status
         )
         .map((inv) => (inv as any)._id)
         .filter(Boolean);
-      setSelectedInvoices(deletableIds);
+      setSelectedInvoices(draftIds);
     } else {
       setSelectedInvoices([]);
     }
   };
 
   const handleSelectInvoice = (invoiceId: string, checked: boolean) => {
+    // Only allow selecting draft invoices
+    const invoice = invoices.find((inv) => (inv as any)._id === invoiceId);
+    if (invoice && invoice?.status !== "draft" && invoice?.status) {
+      return; // Don't allow selecting non-draft invoices
+    }
+    
     if (checked) {
       setSelectedInvoices([...selectedInvoices, invoiceId]);
     } else {
@@ -282,18 +383,17 @@ export default function InvoicesPage() {
   const handleBulkDeleteClick = () => {
     if (selectedInvoices.length === 0) return;
 
-    // Check if any selected invoice is not deletable
-    const nonDeletableCount = invoices.filter(
+    // Check if any selected invoice is not a draft
+    const nonDraftCount = invoices.filter(
       (inv) =>
         selectedInvoices.includes((inv as any)._id) &&
         inv?.status !== "draft" &&
-        inv?.status &&
-        inv?.status !== "rejected"
+        inv?.status
     ).length;
 
-    if (nonDeletableCount > 0) {
+    if (nonDraftCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} invoice(s). Only draft and rejected invoices can be deleted.`
+        `Cannot delete ${nonDraftCount} invoice(s). Only draft invoices can be deleted.`
       );
       return;
     }
@@ -352,12 +452,14 @@ export default function InvoicesPage() {
         {/* Stats Section */}
         <InvoiceStats
           stats={
-            stats || {
+            stats ?? {
               totalInvoices: 0,
               statusBreakdown: [],
               totalRevenue: 0,
               paidAmount: 0,
               pendingAmount: 0,
+              overdueInvoices: 0,
+              overdueAmount: 0,
               period: "30 days",
             }
           }
@@ -411,8 +513,17 @@ export default function InvoicesPage() {
                       <input
                         type="checkbox"
                         checked={
-                          selectedInvoices.length === invoices.length &&
-                          invoices.length > 0
+                          (() => {
+                            const draftInvoices = invoices.filter(
+                              (inv) => inv?.status === "draft" || !inv?.status
+                            );
+                            return (
+                              draftInvoices.length > 0 &&
+                              draftInvoices.every((inv) =>
+                                selectedInvoices.includes((inv as any)._id)
+                              )
+                            );
+                          })()
                         }
                         onChange={(e) => handleSelectAll(e.target.checked)}
                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
@@ -480,9 +591,10 @@ export default function InvoicesPage() {
                               )
                             }
                             disabled={
-                              inv?.status !== "draft" &&
-                              inv?.status &&
-                              inv?.status !== "rejected"
+                              // Only enable for draft invoices, explicitly disable for paid, cancelled, and all other statuses
+                              inv?.status === "paid" || 
+                              (inv?.status as string) === "cancelled" ||
+                              (inv?.status !== "draft" && inv?.status !== undefined)
                             }
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
@@ -627,24 +739,36 @@ export default function InvoicesPage() {
                           </div>
                         </td>
 
-                        {/* ⭐ STATUS BADGE just like quotation */}
+                        {/* ⭐ STATUS BADGE */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col gap-1">
-                            {inv?.status === "accepted" && (
+                            {inv?.status === "paid" && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">
-                                <FiCheckCircle /> Accepted
+                                <FiCheckCircle /> Paid
                               </span>
                             )}
 
-                            {inv?.status === "rejected" && (
+                            {(inv?.status as string) === "partially_paid" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">
+                                <FiDollarSign /> Partially Paid
+                              </span>
+                            )}
+
+                            {(inv?.status as string) === "overdue" && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700">
-                                <FiXCircle /> Rejected
+                                <FiAlertCircle /> Overdue
                               </span>
                             )}
 
                             {inv?.status === "sent" && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
                                 <FiSend /> Sent
+                              </span>
+                            )}
+
+                            {(inv?.status as string) === "cancelled" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600">
+                                <FiXCircle /> Cancelled
                               </span>
                             )}
 
@@ -706,60 +830,50 @@ export default function InvoicesPage() {
                                   Duplicate
                                 </button>
 
-                                {/* ⭐ SEND */}
-                                {(inv?.status === "draft" || !inv?.status) && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStatusChange(inv._id!, "sent");
-                                      setOpenPopoverId(null);
-                                    }}
-                                    className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 text-sm text-left"
-                                    aria-label="Send Invoice"
-                                  >
-                                    Send
-                                  </button>
-                                )}
+                                {/* Status transition buttons based on valid transitions */}
+                                {(() => {
+                                  const currentStatus = inv?.status || "draft";
+                                  const validNextStatuses = getValidNextStatuses(currentStatus);
+                                  const statusLabels: Record<string, string> = {
+                                    sent: "Send",
+                                    paid: "Mark as Paid",
+                                    partially_paid: "Mark as Partially Paid",
+                                    overdue: "Mark as Overdue",
+                                    cancelled: "Cancel",
+                                    draft: "Mark as Draft",
+                                  };
+                                  const statusColors: Record<string, string> = {
+                                    sent: "text-blue-600",
+                                    paid: "text-green-600",
+                                    partially_paid: "text-yellow-600",
+                                    overdue: "text-red-600",
+                                    cancelled: "text-gray-600",
+                                    draft: "text-gray-600",
+                                  };
 
-                                {/* ⭐ ACCEPT / REJECT */}
-                                {inv?.status === "sent" && (
-                                  <>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChange(
-                                          inv._id!,
-                                          "accepted"
-                                        );
-                                        setOpenPopoverId(null);
-                                      }}
-                                      className="px-3 py-2 rounded hover:bg-gray-100 text-green-600 text-sm text-left"
-                                      aria-label="Accept Invoice"
-                                    >
-                                      Accept
-                                    </button>
+                                  // Filter out the current status and show only transitions
+                                  return validNextStatuses
+                                    .filter((status) => status !== currentStatus)
+                                    .map((status) => (
+                                      <button
+                                        key={status}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(inv._id!, status, currentStatus);
+                                          setOpenPopoverId(null);
+                                        }}
+                                        className={`px-3 py-2 rounded hover:bg-gray-100 ${statusColors[status] || "text-gray-700"} text-sm text-left`}
+                                        aria-label={`Change status to ${status}`}
+                                      >
+                                        {statusLabels[status] || status}
+                                      </button>
+                                    ));
+                                })()}
 
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChange(
-                                          inv._id!,
-                                          "rejected"
-                                        );
-                                        setOpenPopoverId(null);
-                                      }}
-                                      className="px-3 py-2 rounded hover:bg-gray-100 text-red-600 text-sm text-left"
-                                      aria-label="Reject Invoice"
-                                    >
-                                      Reject
-                                    </button>
-                                  </>
-                                )}
-
-                                {/* ⭐ DELETE - Only for draft and rejected status */}
+                                {/* ⭐ DELETE - Only for draft and cancelled status */}
                                 {(inv?.status === "draft" ||
                                   !inv?.status ||
-                                  inv?.status === "rejected") && (
+                                  (inv?.status as string) === "cancelled") && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

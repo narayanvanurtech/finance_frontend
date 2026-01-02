@@ -15,7 +15,7 @@ import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 export default function EditInvoicePage() {
   const params = useParams();
   const router = useRouter();
-  const { clients } = useClientStore();
+  const { clients, fetchClients } = useClientStore();
   const { user } = useAuthStore();
   const { data: itemsData } = useItems(user?.companyId || "");
   const items = itemsData?.result?.items || [];
@@ -28,6 +28,14 @@ export default function EditInvoicePage() {
 
   // Get invoice ID from URL (id param)
   const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  // Fetch clients when component mounts (only once)
+  useEffect(() => {
+    if (user?.companyId) {
+      fetchClients(user.companyId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.companyId]);
 
   useEffect(() => {
     const loadInvoice = async () => {
@@ -69,6 +77,163 @@ export default function EditInvoicePage() {
               return "SGST_CGST";
             };
 
+            // Extract client details from clientId object if clientDetails missing
+            const extractClientDetailsFromClientId = () => {
+              if (invoice.clientDetails) {
+                // Extract state from clientDetails.address if it's an object
+                const clientState = 
+                  (invoice.clientDetails as any).state ||
+                  (typeof invoice.clientDetails.address === "object" && invoice.clientDetails.address !== null
+                    ? (invoice.clientDetails.address as any)?.state
+                    : "") || "";
+
+                return {
+                  name: invoice.clientDetails.name || "",
+                  gstin: invoice.clientDetails.gstin || "",
+                  address:
+                    typeof invoice.clientDetails.address === "string"
+                      ? invoice.clientDetails.address
+                      : (invoice.clientDetails.address as any)?.street ||
+                        (invoice.clientDetails.address as any)?.address ||
+                        "",
+                  contact: invoice.clientDetails.contact || "",
+                  email: invoice.clientDetails.email || "",
+                  state: clientState,
+                };
+              }
+
+              // If clientDetails missing, extract from clientId object
+              if (invoice.clientId && typeof invoice.clientId === "object") {
+                const clientIdObj = invoice.clientId as any;
+                const clientAddress = clientIdObj.address || {};
+                
+                // Extract state from clientId.address
+                const clientState = 
+                  clientAddress.state || 
+                  clientIdObj.state || 
+                  "";
+
+                // Build address string from address object
+                const addressParts = [];
+                if (clientAddress.street) addressParts.push(clientAddress.street);
+                if (clientAddress.city) addressParts.push(clientAddress.city);
+                if (clientAddress.state) addressParts.push(clientAddress.state);
+                if (clientAddress.postalCode) addressParts.push(clientAddress.postalCode);
+                if (clientAddress.country) addressParts.push(clientAddress.country);
+                const addressString = addressParts.join(", ");
+
+                // Try to find client in client store for more details
+                const clientInStore = clients.find(
+                  (c: any) => 
+                    c._id === clientIdObj._id || 
+                    c._id === clientIdObj.id ||
+                    String(c._id) === String(clientIdObj._id) ||
+                    String(c._id) === String(clientIdObj.id)
+                );
+
+                // Get state from client store if available
+                const storeState = clientInStore 
+                  ? ((clientInStore.address as any)?.state || (clientInStore as any).state || "")
+                  : "";
+
+                // Extract company name from multiple possible sources
+                const companyName = 
+                  clientInStore?.businessName || 
+                  (clientInStore as any)?.companyName ||
+                  (clientInStore as any)?.name ||
+                  clientIdObj.businessName || 
+                  clientIdObj.companyName ||
+                  clientIdObj.name ||
+                  "";
+
+                console.log("🔍 Client Details Extraction:", {
+                  clientIdObj: {
+                    _id: clientIdObj._id,
+                    id: clientIdObj.id,
+                    businessName: clientIdObj.businessName,
+                    companyName: clientIdObj.companyName,
+                    name: clientIdObj.name,
+                    allKeys: Object.keys(clientIdObj),
+                  },
+                  clientInStore: clientInStore ? {
+                    _id: clientInStore._id,
+                    businessName: clientInStore.businessName,
+                    companyName: (clientInStore as any).companyName,
+                    name: (clientInStore as any).name,
+                  } : null,
+                  clientsLength: clients.length,
+                  extractedCompanyName: companyName,
+                });
+
+                return {
+                  name: companyName,
+                  gstin: clientInStore?.gstin || clientIdObj.gstin || "",
+                  address: clientInStore?.address 
+                    ? (typeof clientInStore.address === "string" 
+                        ? clientInStore.address 
+                        : clientInStore.address?.street || "")
+                    : addressString,
+                  contact: clientInStore?.phone || clientIdObj.phone || "",
+                  email: clientInStore?.email || clientIdObj.email || "",
+                  state: storeState || clientState,
+                };
+              }
+
+              return {
+                name: "",
+                gstin: "",
+                address: "",
+                contact: "",
+                email: "",
+                state: "",
+              };
+            };
+
+            // Map items - Backend sends quantity, taxType, taxRate, and amount fields
+            const mappedItems = (invoice.items || []).map((item: any) => {
+              // Get taxRate from backend
+              const taxRate = Number(item.taxRate) || 0;
+              const taxType = item.taxType || "cgst_sgst";
+              
+              // Calculate igst/sgst/cgst from taxAmount fields or taxRate
+              let igst = 0;
+              let sgst = 0;
+              let cgst = 0;
+              
+              if (taxType === "igst") {
+                igst = Number(item.igstAmount) || taxRate;
+              } else {
+                // Split between SGST and CGST
+                sgst = Number(item.sgstAmount) || taxRate / 2;
+                cgst = Number(item.cgstAmount) || taxRate / 2;
+              }
+              
+              return {
+                ...item,
+                // Backend sends 'quantity', form needs 'qty'
+                qty: item.quantity || item.qty || 1,
+                quantity: item.quantity || item.qty || 1,
+                name: item.name || "",
+                description: item.description || "",
+                rate: Number(item.rate) || 0,
+                discount: Number(item.discount) || 0,
+                amount: Number(item.amount) || 0,
+                hsn: item.hsn || "",
+                unit: item.unit || "pcs",
+                // Map tax fields
+                igst: igst,
+                sgst: sgst,
+                cgst: cgst,
+                taxRate: taxRate,
+                taxType: taxType,
+              };
+            });
+
+            // Map client details - extract from clientId object if clientDetails missing
+            const mappedClientDetails = extractClientDetailsFromClientId();
+
+           
+
             const formValues: InvoiceFormValues = {
               type: (invoice as any).type || "invoice",
               invoiceTitle: invoice.invoiceTitle || "",
@@ -82,36 +247,64 @@ export default function EditInvoicePage() {
               clientId:
                 typeof invoice.clientId === "string"
                   ? invoice.clientId
-                  : (invoice.clientId as any)?._id || "",
-              clientDetails: invoice.clientDetails || {
-                name: "",
-                gstin: "",
-                address: "",
-                contact: "",
-                email: "",
-              },
+                  : (invoice.clientId as any)?._id || (invoice.clientId as any)?.id || "",
+              clientDetails: mappedClientDetails,
               businessDetails,
               taxType: (invoice.taxType || "exclusive") as
                 | "inclusive"
                 | "exclusive",
               taxConfiguration: determineTaxConfiguration(),
-              items: invoice.items || [],
+              items: mappedItems,
               discountType: invoice.discountType || "flat",
               discountValue: invoice.discountValue || 0,
               shipping: invoice.shipping || 0,
               roundOff: invoice.roundOff || false,
               showHSN: invoice.showHSN || false,
               showUnit: invoice.showUnit || false,
-              terms: invoice.terms || "",
-              notes: invoice.notes || "",
+              // Handle terms - preserve actual value from backend (even if empty string)
+              terms: (() => {
+                // Check invoice.terms first, then alternative fields
+                const termsValue = invoice.terms !== undefined 
+                  ? invoice.terms 
+                  : (invoice as any).paymentTerms !== undefined
+                  ? (invoice as any).paymentTerms
+                  : "";
+                // Convert to string and preserve empty strings
+                return termsValue !== undefined && termsValue !== null ? String(termsValue) : "";
+              })(),
+              // Handle notes - preserve actual value from backend (even if empty string)
+              notes: (() => {
+                // Check invoice.notes first, then alternative fields
+                const notesValue = invoice.notes !== undefined
+                  ? invoice.notes
+                  : (invoice as any).note !== undefined
+                  ? (invoice as any).note
+                  : "";
+                // Convert to string and preserve empty strings
+                return notesValue !== undefined && notesValue !== null ? String(notesValue) : "";
+              })(),
               attachments: invoice.attachments as any,
               showSignature: invoice.showSignature || false,
-              phases: invoice.phases || [],
+              // Handle phases - check all possible locations and formats
+              phases: (() => {
+                // Check multiple possible field names
+                const phasesData = invoice.phases ?? (invoice as any).paymentPhases ?? (invoice as any).phasesData ?? null;
+                if (phasesData && Array.isArray(phasesData) && phasesData.length > 0) {
+                  return phasesData.map((phase: any) => ({
+                    title: phase.title || phase.name || "",
+                    percentage: Number(phase.percentage || phase.percent || 0),
+                    dueDate: phase.dueDate || phase.date || "",
+                  }));
+                }
+                // Even if empty array, return empty array
+                return Array.isArray(phasesData) ? phasesData : [];
+              })(),
               status: (invoice as any).status || "draft",
               cessList: (invoice as any).cessList || [],
               _id: (invoice as any)._id,
             };
 
+           
             setInitialValues(formValues);
           }
         }
@@ -125,6 +318,7 @@ export default function EditInvoicePage() {
     };
 
     loadInvoice();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId, fetchInvoiceById, businessStoreDetails, router]);
 
   if (loading) {
@@ -275,7 +469,7 @@ export default function EditInvoicePage() {
           showInInvoice: cess.showInInvoice || false,
         })) || [];
 
-      // ✅ Create final payload
+      // ✅ Create final payload - explicitly include all fields
       const sanitizedValues: InvoiceFormValues = {
         ...values,
         type: values.type || "invoice",
@@ -292,11 +486,12 @@ export default function EditInvoicePage() {
         roundOff: values.roundOff || false,
         showHSN: values.showHSN || false,
         showUnit: values.showUnit || false,
+        // ✅ Explicitly include terms and notes (even if empty strings)
+        terms: values.terms !== undefined && values.terms !== null ? String(values.terms) : "",
+        notes: values.notes !== undefined && values.notes !== null ? String(values.notes) : "",
         showSignature: values.showSignature || false,
       };
 
-      console.log("✅ Invoice validation passed!");
-      console.log("Sanitized values:", sanitizedValues);
 
       // Use the invoice's backend ID (_id)
       const invoiceIdentifier = (initialValues as any)._id;

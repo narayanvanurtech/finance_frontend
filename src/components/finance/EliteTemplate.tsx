@@ -824,16 +824,16 @@ function EliteTemplate({
                   {item.qty} {item.unit}
                 </Text>
                 <Text style={[styles.cellText, styles.colRate]}>
-                  ₹{item.rate.toFixed(2)}
+                  ₹{(item.rate || 0).toFixed(2)}
                 </Text>
                 <Text style={[styles.cellText, styles.colTax]}>
-                  {item.igst}%
+                  {item.igst || 0}%
                 </Text>
                 <Text style={[styles.cellText, styles.colDiscount]}>
-                  ₹{item.discount.toFixed(2)}
+                  ₹{(item.discount || 0).toFixed(2)}
                 </Text>
                 <Text style={[styles.cellText, styles.colAmount]}>
-                  ₹{item.amount.toFixed(2)}
+                  ₹{(item.amount || 0).toFixed(2)}
                 </Text>
               </View>
             ))}

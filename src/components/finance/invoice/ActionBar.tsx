@@ -9,6 +9,7 @@ export type ActionBarProps = {
   onPrintDownload?: () => void;
   onSendEmail?: () => void;
   onCancel?: () => void;
+  disabled?: boolean;
 };
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -18,6 +19,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onPrintDownload,
   onSendEmail,
   onCancel,
+  disabled,
 }) => {
   return (
     <section className="flex flex-wrap gap-4 justify-end mt-8 sticky bottom-0 py-4 px-2 border-gray-100 z-10 rounded-b-xl">
@@ -38,7 +40,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
         className="btn btn-primary flex items-center gap-2"
         type="button"
         onClick={onSubmit}
-        disabled={loading}
+        disabled={loading || disabled}
       >
         {loading && <Loader2 className="animate-spin w-4 h-4" />}
         {mode === "edit" ? "Update Invoice" : "Create Invoice"}

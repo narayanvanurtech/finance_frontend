@@ -158,6 +158,7 @@ export default function EditDeliveryChallanPage() {
         showSignature: singleChallan.showSignature || false,
         cessList: singleChallan.cessList || [],
         phases: singleChallan.phases || [],
+        status: singleChallan.status || "draft", // Add status field
       };
 
       console.log("Setting initial values:", formValues);

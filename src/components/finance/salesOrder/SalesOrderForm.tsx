@@ -11,6 +11,7 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import type { Cess as ConfigureTaxCess } from "@/components/finance/ConfigureTax";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
+import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 
 // Cess type compatible with ItemTable
 type Cess = {
@@ -38,6 +39,7 @@ export type SalesOrderFormValues = {
     address: string;
     contact: string;
     email: string;
+    state?: string;
   };
   taxType: "inclusive" | "exclusive";
   taxConfiguration?: "IGST" | "SGST_CGST";
@@ -63,6 +65,7 @@ type SalesOrderFormProps = {
   loading?: boolean;
   mockClients?: any[];
   mockProducts?: any[];
+  disabled?: boolean;
 };
 
 const SalesOrderForm: React.FC<any> = ({
@@ -73,10 +76,16 @@ const SalesOrderForm: React.FC<any> = ({
   mockProducts,
   onSuccess,
   loading,
+  disabled,
 }) => {
   const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
   const clients = useClientStore((state) => state.clients);
+
+  console.log("🎯 SalesOrderForm - Initial Values:", initialValues);
+  console.log("🎯 Business Details:", initialValues.businessDetails);
+  console.log("🎯 Round Off Initial:", initialValues.roundOff);
+
   const [orderTitle, setOrderTitle] = useState(initialValues.orderTitle);
   const [orderNumber] = useState(initialValues.orderNumber);
   const [orderDate, setOrderDate] = useState(initialValues.orderDate);
@@ -86,7 +95,36 @@ const SalesOrderForm: React.FC<any> = ({
   const [clientDetails, setClientDetails] = useState(
     initialValues.clientDetails
   );
-  const [businessDetails] = useState(initialValues.businessDetails);
+  const businessStoreDetails = useBussinessStore((s) => s.details);
+
+  // Prefer business details from initial values (API) if present, otherwise fallback to global business store
+  const computeInitialBusinessDetails = () => {
+    const iv = initialValues.businessDetails || {};
+    const hasIv = !!(
+      iv.name ||
+      iv.gstin ||
+      iv.address ||
+      iv.contact ||
+      iv.email
+    );
+    if (hasIv) return iv;
+    if (businessStoreDetails) {
+      return {
+        name: businessStoreDetails.businessName || "",
+        gstin: businessStoreDetails.gstNumber || "",
+        address: businessStoreDetails.website || "",
+        contact: businessStoreDetails.phone || "",
+        email: "",
+        state:
+          businessStoreDetails.state || businessStoreDetails.igstnState || "",
+      } as any;
+    }
+    return iv;
+  };
+
+  const [businessDetails, setBusinessDetails] = useState(
+    computeInitialBusinessDetails()
+  );
   const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
     (initialValues.taxType as "inclusive" | "exclusive") || "exclusive"
   );
@@ -114,6 +152,9 @@ const SalesOrderForm: React.FC<any> = ({
     initialValues.cessList || []
   );
   const [type] = useState(initialValues.type);
+
+  console.log("🔍 Round Off State:", roundOff);
+  console.log("🔍 Business Details State:", businessDetails);
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
@@ -396,7 +437,8 @@ const SalesOrderForm: React.FC<any> = ({
       newErrors.items = "At least one item is required";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
-    onSubmit({
+
+    const formValues = {
       type,
       orderTitle,
       orderNumber,
@@ -419,7 +461,15 @@ const SalesOrderForm: React.FC<any> = ({
       attachments,
       showSignature,
       cessList,
-    });
+    };
+
+    console.log("📤 Form Submit Values:", formValues);
+    console.log("🔍 Business Details:", businessDetails);
+    console.log("🔍 Client Details:", clientDetails);
+    console.log("🔍 Round Off:", roundOff);
+    console.log("🔍 Tax Type:", taxType);
+
+    onSubmit(formValues);
     if (onSuccess) onSuccess();
   };
   return (
@@ -460,6 +510,7 @@ const SalesOrderForm: React.FC<any> = ({
             <YourDetailsSection
               businessDetails={businessDetails}
               hideSelector
+              setBusinessDetails={setBusinessDetails}
             />
           </div>
 
@@ -530,6 +581,7 @@ const SalesOrderForm: React.FC<any> = ({
           mode={mode}
           onSubmit={handleFormSubmit}
           loading={loading}
+          disabled={disabled}
           onPrintDownload={handlePrintDownload}
           onSendEmail={handleSendEmail}
           onCancel={handleCancel}

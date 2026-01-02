@@ -197,19 +197,28 @@ const ClientSection: React.FC<ClientSectionProps> = ({
               </div>
             </div>
             {/* Billing Address section: show country if available */}
-            {typeof clientDetails.address === "object" &&
-              clientDetails.address.country && (
-                <div className="space-y-1">
-                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Billing Address
-                  </div>
-                  <div className="text-sm font-semibold text-gray-800">
-                    {clientDetails.address.country === "India" && (
-                      <span className="font-semibold text-gray-800">IN</span>
-                    )}
-                  </div>
-                </div>
-              )}
+            {(() => {
+              if (!clientDetails) return null;
+              const address = clientDetails.address;
+              if (typeof address === "object" && address !== null && !Array.isArray(address)) {
+                const addressObj = address as Address;
+                if (addressObj.country) {
+                  return (
+                    <div className="space-y-1">
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Billing Address
+                      </div>
+                      <div className="text-sm font-semibold text-gray-800">
+                        {addressObj.country === "India" && (
+                          <span className="font-semibold text-gray-800">IN</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
             <div className="space-y-1">
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                 Contact Person

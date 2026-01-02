@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
+import type { Item } from "@/api/finance/itemApi";
 
 const generateInvoiceNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -288,10 +289,6 @@ export default function CreateInvoicePage() {
         showSignature: values.showSignature || false,
       };
 
-      console.log("✅ Invoice validation passed!");
-      console.log("Sanitized values:", sanitizedValues);
-
-      // Call the store's createInvoice which makes the API call
       await createInvoice(sanitizedValues);
       toast.success("Invoice created successfully!");
       router.push("/finance/invoices");
@@ -313,7 +310,7 @@ export default function CreateInvoicePage() {
       onSubmit={handleCreate}
       mode="create"
       mockClients={clients}
-      mockProducts={items.map((item) => ({
+      mockProducts={items.map((item: Item) => ({
         ...item,
         price: item.sellingPrice,
       }))}

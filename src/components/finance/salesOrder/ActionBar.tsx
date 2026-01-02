@@ -6,6 +6,7 @@ export type ActionBarProps = {
   mode?: "create" | "edit";
   onSubmit: () => void;
   loading?: boolean;
+  disabled?: boolean;
   onPrintDownload?: () => void;
   onSendEmail?: () => void;
   onCancel?: () => void;
@@ -16,6 +17,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   mode,
   onSubmit,
   loading,
+  disabled,
   onPrintDownload,
   onSendEmail,
   onCancel,
@@ -39,7 +41,12 @@ const ActionBar: React.FC<ActionBarProps> = ({
         className="btn btn-primary flex items-center gap-2"
         type="button"
         onClick={onSubmit}
-        disabled={loading}
+        disabled={loading || disabled}
+        title={
+          disabled
+            ? "Cannot update orders with status: cancelled, delivered, or shipped"
+            : ""
+        }
       >
         {loading && <Loader2 className="animate-spin w-4 h-4" />}
         {mode === "edit" ? "Update Sales Order" : "Create Sales Order"}

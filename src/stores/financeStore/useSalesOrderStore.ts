@@ -411,7 +411,20 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
       ): Promise<SalesOrder> => {
         const state = get();
 
-        const companyId = state?.companyId;
+        // Prefer explicitly set companyId in store
+        let companyId = state?.companyId;
+
+        // If not present, try to infer companyId from the order in store
+        if (!companyId) {
+          const foundOrder =
+            state.salesOrders?.find((o: any) => o._id === orderId) ||
+            state.currentSalesOrder;
+          if (foundOrder) {
+            const cid = (foundOrder as any).companyId;
+            if (typeof cid === "string") companyId = cid;
+            else if (cid && typeof cid === "object") companyId = (cid as any)._id || (cid as any).id;
+          }
+        }
 
         if (!companyId) {
           toast.error("Company ID is required");

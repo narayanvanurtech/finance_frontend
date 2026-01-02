@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import PremiumTemplate from "@/components/finance/PremiumTemplate";
 import ClassicTemplate from "@/components/finance/ClassicTemplate";
+import EliteTemplate from "@/components/finance/EliteTemplate";
 
 export default function PaymentReceivedPreviewPage() {
   const params = useParams();
@@ -22,6 +23,7 @@ export default function PaymentReceivedPreviewPage() {
   const getPayment = usePaymentReceivedStore((s) => s.getPayment);
 
   const templates = [
+    { label: "Elite", value: "elite" },
     { label: "Premium", value: "premium" },
     { label: "Classic", value: "classic" },
   ];
@@ -89,10 +91,22 @@ export default function PaymentReceivedPreviewPage() {
   const getDoc = () => {
     if (!paymentData) return null;
 
+    const phases = paymentData.phases || [];
+
+    if (selectedTemplate === "elite") {
+      return (
+        <EliteTemplate
+          documentType="invoice"
+          quotation={paymentData}
+          phases={phases}
+        />
+      );
+    }
+
     return selectedTemplate === "premium" ? (
-      <PremiumTemplate quotation={paymentData} phases={[]} />
+      <PremiumTemplate quotation={paymentData} phases={phases} />
     ) : (
-      <ClassicTemplate quotation={paymentData} phases={[]} />
+      <ClassicTemplate quotation={paymentData} phases={phases} />
     );
   };
 
@@ -198,7 +212,7 @@ export default function PaymentReceivedPreviewPage() {
                 <PDFDownloadLink
                   key={selectedTemplate}
                   document={getDoc()!}
-                  fileName={`payment-receipt-${paymentData.invoiceNumber}.pdf`}
+                  fileName={`payment-receipt-${paymentData.invoiceNumber}-${selectedTemplate}.pdf`}
                 >
                   {({ loading }) => (
                     <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
@@ -268,6 +282,12 @@ export default function PaymentReceivedPreviewPage() {
                 />
               </svg>
               <span className="font-medium">PDF Preview</span>
+              <span className="text-xs text-gray-400">
+                (
+                {selectedTemplate.charAt(0).toUpperCase() +
+                  selectedTemplate.slice(1)}{" "}
+                Template)
+              </span>
             </div>
             <span className="text-xs text-gray-500">
               Use browser zoom or PDF toolbar to adjust view

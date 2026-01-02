@@ -219,7 +219,7 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   const [clientId, setClientId] = useState(initialValues.clientId);
   const [showAddClient, setShowAddClient] = useState(false);
   const [clientDetails, setClientDetails] = useState(
-    initialValues.clientDetails
+    initialValues.clientDetails || { name: "", gstin: "", address: "", contact: "", email: "", igstn: "", state: "" }
   );
   const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
     (initialValues.taxType as "inclusive" | "exclusive") || "exclusive"
@@ -413,6 +413,8 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
           : found.address?.street || "",
       contact: found.phone || "",
       email: found.email || "",
+      igstn: found.gstin || "",
+      state: clientState,
     });
 
     // Auto-fill place of supply from client state

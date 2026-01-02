@@ -22,7 +22,7 @@ export type AdditionalInputsProps = {
   handleAttachment: (e: React.ChangeEvent<HTMLInputElement>) => void;
   showSignature: boolean;
   setShowSignature: React.Dispatch<React.SetStateAction<boolean>>;
-  // New props for attachment management
+ 
   purchaseOrderId?: string;
   existingAttachments?: string[];
   onAddAttachment?: (file: File) => Promise<void>;
@@ -53,17 +53,25 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePadData, setSignaturePadData] = useState<string | null>(null);
   const [signaturePadModalOpen, setSignaturePadModalOpen] = useState(false);
-  const [showTerms, setShowTerms] = useState(!!terms);
-  const [showNotes, setShowNotes] = useState(!!notes);
+  const [showTerms, setShowTerms] = useState(true);
+  const [showNotes, setShowNotes] = useState(true);
   const [signatureError, setSignatureError] = useState<string>("");
+  
+  React.useEffect(() => {
+    console.log("🔍 AdditionalInputs - Received props:", {
+      mode,
+      terms,
+      notes,
+      termsType: typeof terms,
+      notesType: typeof notes,
+      termsLength: terms?.length || 0,
+      notesLength: notes?.length || 0,
+      showTerms,
+      showNotes,
+    });
+  }, [mode, terms, notes, showTerms, showNotes]);
 
-  // Hide field if cleared
-  React.useEffect(() => {
-    if (!terms) setShowTerms(false);
-  }, [terms]);
-  React.useEffect(() => {
-    if (!notes) setShowNotes(false);
-  }, [notes]);
+  // Terms and Notes are always visible now
 
   // Validate signature file
   const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

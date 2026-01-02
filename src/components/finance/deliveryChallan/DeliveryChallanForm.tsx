@@ -25,6 +25,10 @@ export type DeliveryChallanFormValues = {
     address: string;
     contact: string;
     email: string;
+    bankName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    branch?: string;
   };
   businessDetails: {
     name: string;
@@ -48,6 +52,20 @@ export type DeliveryChallanFormValues = {
   showSignature: boolean;
   cessList: Cess[];
   phases?: any[];
+  transportDetails?: {
+    vehicleNumber?: string;
+    transportMode?: string;
+    eWayBillNo?: string;
+    lrNumber?: string;
+    dispatchThrough?: string;
+    destination?: string;
+    returnable?: boolean;
+    returnDate?: string;
+    purpose?: string;
+  };
+  reference?: string;
+  challanType?: string;
+  status?: string; // Add status field
 };
 
 export type DeliveryChallanFormProps = {
@@ -76,8 +94,12 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const [challanNumber, setChallanNumber] = useState(
     initialValues?.quotationNumber || ""
   );
-  const [reference, setReference] = useState(initialValues?.notes || "");
-  const [challanType, setChallanType] = useState(initialValues?.terms || "");
+  const [reference, setReference] = useState(
+    initialValues?.reference || initialValues?.notes || ""
+  );
+  const [challanType, setChallanType] = useState(
+    initialValues?.challanType || initialValues?.terms || ""
+  );
   const [quotationTitle, setQuotationTitle] = useState(
     initialValues?.quotationTitle || ""
   );
@@ -136,7 +158,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
     const quantity = Number(item.quantity || item.qty) || 0;
     const rate = Number(item.rate) || 0;
     const discount = Number(item.discount) || 0;
-    
+
     const baseAmount = quantity * rate - discount;
 
     let amount = baseAmount;
@@ -190,22 +212,26 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   useEffect(() => {
     if (initialValues && mode === "edit" && initialValues.quotationNumber) {
       setChallanNumber(initialValues.quotationNumber || "");
-      setReference(initialValues.notes || "");
-      setChallanType(initialValues.terms || "");
+      setReference(initialValues.reference || "");
+      setChallanType(initialValues.challanType || "");
       setQuotationTitle(initialValues.quotationTitle || "");
       setDate(initialValues.date || "");
       setDueDate(initialValues.dueDate || "");
       setClientId(initialValues.clientId || "");
-      setClientDetails(initialValues.clientDetails || {
-        name: "",
-        gstin: "",
-        address: "",
-        contact: "",
-        email: "",
-      });
+      setClientDetails(
+        initialValues.clientDetails || {
+          name: "",
+          gstin: "",
+          address: "",
+          contact: "",
+          email: "",
+        }
+      );
       setTaxType(initialValues.taxType || "exclusive");
       setCessList(initialValues.cessList || []);
-      setDiscountType((initialValues.discountType as "flat" | "percentage") || "flat");
+      setDiscountType(
+        (initialValues.discountType as "flat" | "percentage") || "flat"
+      );
       setDiscountValue(initialValues.discountValue || 0);
       setShipping(initialValues.shipping || 0);
       setRoundOff(initialValues.roundOff || false);
@@ -215,13 +241,15 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
       setNotes(initialValues.notes || "");
       setAttachments(initialValues.attachments || []);
       setShowSignature(initialValues.showSignature || false);
-      setBusinessDetails(initialValues.businessDetails || {
-        name: "",
-        gstin: "",
-        address: "",
-        contact: "",
-        email: "",
-      });
+      setBusinessDetails(
+        initialValues.businessDetails || {
+          name: "",
+          gstin: "",
+          address: "",
+          contact: "",
+          email: "",
+        }
+      );
       setTaxConfiguration(initialValues.taxConfiguration || "SGST_CGST");
     }
     // Items are handled separately by the items useEffect above
@@ -232,7 +260,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
     setItems((prev: any) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
-      
+
       // Sync qty and quantity fields
       if (field === "qty") {
         updated[idx].quantity = value;
@@ -240,7 +268,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
       if (field === "quantity") {
         updated[idx].qty = value;
       }
-      
+
       // Recalculate amount for this item
       updated[idx].amount = calculateItemAmount(updated[idx]);
       return updated;
@@ -409,14 +437,36 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
       roundOff,
       showHSN,
       showUnit,
-      terms: challanType,
-      notes: reference,
+      terms: terms, // Send actual terms value instead of challanType
+      notes: notes, // Send actual notes value instead of reference
       attachments,
       showSignature,
       phases: [],
+      // Transport Details
+      transportDetails: {
+        vehicleNumber,
+        transportMode,
+        eWayBillNo,
+        lrNumber,
+        dispatchThrough,
+        destination,
+        returnable,
+        returnDate: returnable ? returnDate : undefined,
+        purpose,
+      },
+      // Additional fields
+      reference, // Keep reference as separate field
+      challanType, // Keep challanType as separate field
     });
     if (onSuccess) onSuccess();
   };
+
+  // Check if challan is in a non-editable status
+  const challanStatus = initialValues?.status?.toLowerCase() || "";
+  const isStatusDisabled = challanStatus === "delivered" || challanStatus === "cancelled";
+  const disabledReason = isStatusDisabled 
+    ? `Cannot update ${challanStatus} delivery challans`
+    : undefined;
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -701,6 +751,8 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
         onSendEmail={handleSendEmail}
         onCancel={handleCancel}
         documentType="invoice"
+        disabled={isStatusDisabled}
+        disabledReason={disabledReason}
       />
 
       <AddClientModal

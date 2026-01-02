@@ -63,35 +63,31 @@ export const useInvoiceStore = create<InvoiceStore>()(
             taxTypeValue = "inclusive";
           }
 
-          // Determine item tax type
-          const itemTaxType = invoice.taxType.toLowerCase().includes("igst")
-            ? "igst"
-            : "cgst_sgst";
+          // Helper function to normalize date to YYYY-MM-DD format
+          const normalizeDate = (dateString: string): string => {
+            if (!dateString) return "";
+            // If already in YYYY-MM-DD format, return as is
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+              return dateString;
+            }
+            // Otherwise, try to parse and format
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString; // Return original if invalid
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          };
 
           // Transform form values to API payload
+          // Match the successful Postman payload structure
           const payload = {
             companyId,
-            invoiceTitle: invoice.invoiceTitle,
-            invoiceNumber: invoice.invoiceNumber,
-            date: invoice.date,
-            dueDate: invoice.dueDate,
             clientId: invoice.clientId,
-            clientDetails: invoice.clientDetails,
-            businessDetails: invoice.businessDetails,
+            invoiceTitle: invoice.invoiceTitle,
+            date: normalizeDate(invoice.date),
+            dueDate: normalizeDate(invoice.dueDate),
             taxType: taxTypeValue,
-            cessList: invoice.cessList || [],
-            items: invoice.items.map((item: any) => ({
-              name: item.name,
-              description: item.description || "",
-              hsn: item.hsn || "",
-              unit: item.unit || "pcs",
-              quantity: item.qty || 1,
-              rate: item.rate || 0,
-              discount: item.discount || 0,
-              discountType: "flat" as const,
-              taxType: itemTaxType as "igst" | "cgst_sgst",
-              taxRate: 18,
-            })),
             discountType: (invoice.discountType || "flat") as
               | "flat"
               | "percentage",
@@ -100,11 +96,96 @@ export const useInvoiceStore = create<InvoiceStore>()(
             roundOff: invoice.roundOff || false,
             showHSN: invoice.showHSN || false,
             showUnit: invoice.showUnit || false,
+            items: invoice.items.map((item: any) => {
+              // Get per-item taxType, defaulting based on taxConfiguration if not set
+              let itemTaxType: "igst" | "cgst_sgst" = "cgst_sgst";
+              if (item.taxType) {
+                itemTaxType = item.taxType === "igst" ? "igst" : "cgst_sgst";
+              } else {
+                // Fallback to global taxConfiguration if item doesn't have taxType
+                const globalTaxConfig = invoice.taxConfiguration || "SGST_CGST";
+                itemTaxType = globalTaxConfig === "IGST" ? "igst" : "cgst_sgst";
+              }
+
+              // Get per-item taxRate, calculating from igst/cgst/sgst if needed
+              let itemTaxRate = 0;
+              if (item.taxRate !== undefined && item.taxRate !== null) {
+                itemTaxRate = Number(item.taxRate);
+              } else if (item.igst !== undefined && item.igst !== null) {
+                itemTaxRate = Number(item.igst);
+              } else if (
+                item.cgst !== undefined &&
+                item.sgst !== undefined &&
+                (item.cgst !== null || item.sgst !== null)
+              ) {
+                itemTaxRate = Number(item.cgst || 0) + Number(item.sgst || 0);
+              }
+
+              // Get per-item discountType
+              const itemDiscountType =
+                item.discountType || invoice.discountType || "flat";
+
+              return {
+                name: item.name,
+                description: item.description || "",
+                hsn: item.hsn || "",
+                unit: item.unit || "pcs",
+                quantity: item.quantity || item.qty || 1,
+                rate: item.rate || 0,
+                discount: item.discount || 0,
+                discountType: itemDiscountType as "flat" | "percentage",
+                taxType: itemTaxType,
+                taxRate: itemTaxRate,
+              };
+            }),
+            // ✅ Add clientDetails if available
+            clientDetails: invoice.clientDetails
+              ? {
+                  name: invoice.clientDetails.name || "",
+                  gstin: invoice.clientDetails.gstin || "",
+                  address:
+                    typeof invoice.clientDetails.address === "string"
+                      ? invoice.clientDetails.address
+                      : (invoice.clientDetails.address as any)?.street ||
+                        (invoice.clientDetails.address as any)?.address ||
+                        "",
+                  contact: invoice.clientDetails.contact || "",
+                  email: invoice.clientDetails.email || "",
+                }
+              : undefined,
+            // ✅ Add businessDetails if available
+            businessDetails: invoice.businessDetails
+              ? {
+                  name: invoice.businessDetails.name || "",
+                  gstin: invoice.businessDetails.gstin || "",
+                  address: invoice.businessDetails.address || "",
+                  contact: invoice.businessDetails.contact || "",
+                  email: invoice.businessDetails.email || "",
+                }
+              : undefined,
+            // ✅ Add phases if available
+            phases: invoice.phases && invoice.phases.length > 0
+              ? invoice.phases.map((phase: any) => ({
+                  title: phase.title || "",
+                  percentage: Number(phase.percentage) || 0,
+                  dueDate: phase.dueDate || "",
+                }))
+              : undefined,
+            // ✅ Add cessList if available
+            cessList:
+              invoice.cessList && invoice.cessList.length > 0
+                ? invoice.cessList.map((cess: any) => ({
+                    name: cess.name || "",
+                    value: Number(cess.value) || 0,
+                    showInInvoice: cess.showInInvoice || false,
+                  }))
+                : undefined,
             terms: invoice.terms || "",
             notes: invoice.notes || "",
-            attachments: invoice.attachments || [],
             showSignature: invoice.showSignature || false,
           };
+
+          console.log("📦 Create Invoice Payload:", JSON.stringify(payload, null, 2));
 
           // Make API call
           const response = await invoiceApi.createInvoice(payload);
@@ -167,6 +248,8 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
       updateInvoice: async (invoiceId, updated) => {
         try {
+          
+
           // Update in API with the invoice ID
           await invoiceApi.updateInvoice(invoiceId, updated as any);
 

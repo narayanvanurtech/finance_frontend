@@ -250,11 +250,11 @@ const salesOrderApi = {
           ).toString()
         : "";
 
-      const response = await axiosInstance.get<SalesOrdersResponse>(
-        `/api/v1/finance/sales/sales-orders/getAll/${companyId}${
-          queryString ? `?${queryString}` : ""
-        }`
-      );
+      const url = queryString
+        ? `/api/v1/finance/sales/sales-orders/getAll?${queryString}`
+        : `/api/v1/finance/sales/sales-orders/getAll`;
+
+      const response = await axiosInstance.get<SalesOrdersResponse>(url);
       return response.data;
     } catch (error) {
       throw error;
@@ -268,7 +268,7 @@ const salesOrderApi = {
   ): Promise<SalesOrderResponse> => {
     try {
       const response = await axiosInstance.get<SalesOrderResponse>(
-        `/api/v1/finance/sales/sales-orders/getById/${orderId}/${companyId}`
+        `/api/v1/finance/sales/sales-orders/${orderId}`
       );
       return response.data;
     } catch (error) {
@@ -284,7 +284,7 @@ const salesOrderApi = {
   ): Promise<SalesOrderResponse> => {
     try {
       const response = await axiosInstance.put<SalesOrderResponse>(
-        `/api/v1/finance/sales/sales-orders/update/${orderId}/${companyId}`,
+        `/api/v1/finance/sales/sales-orders/${orderId}`,
         orderData
       );
       return response.data;
@@ -293,14 +293,17 @@ const salesOrderApi = {
     }
   },
 
-  // Convert quotation to invoice
+  // Convert sales order to invoice
   convertToInvoice: async (
     orderId: string,
     companyId?: string,
     data?: ConvertToInvoicePayload
   ): Promise<SalesOrderResponse> => {
     try {
-      const url = `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice/${companyId}`;
+      // Build URL with companyId as query parameter (not path parameter)
+      const baseUrl = `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice`;
+      const url = companyId ? `${baseUrl}?companyId=${companyId}` : baseUrl;
+
       console.log(
         "salesOrderApi.convertToInvoice -> POST",
         url,
@@ -345,7 +348,7 @@ const salesOrderApi = {
   ): Promise<SalesOrderResponse> => {
     try {
       const response = await axiosInstance.patch<SalesOrderResponse>(
-        `/api/v1/finance/sales/sales-orders/${orderId}/status/${companyId}`,
+        `/api/v1/finance/sales/sales-orders/${orderId}/status`,
         { status }
       );
       return response.data;
@@ -361,7 +364,7 @@ const salesOrderApi = {
   ): Promise<DeleteResponse> => {
     try {
       const response = await axiosInstance.delete<DeleteResponse>(
-        `/api/v1/finance/sales/sales-orders/delete/${orderId}/${companyId}`
+        `/api/v1/finance/sales/sales-orders/${orderId}`
       );
       return response.data;
     } catch (error) {
@@ -376,7 +379,7 @@ const salesOrderApi = {
   ): Promise<SalesOrderResponse> => {
     try {
       const response = await axiosInstance.post<SalesOrderResponse>(
-        `/api/v1/finance/sales/sales-orders/${orderId}/duplicate/${companyId}`
+        `/api/v1/finance/sales/sales-orders/${orderId}/duplicate`
       );
       return response.data;
     } catch (error) {
@@ -403,7 +406,7 @@ const salesOrderApi = {
   ): Promise<SalesOrderStatsResponse> => {
     try {
       const response = await axiosInstance.get<SalesOrderStatsResponse>(
-        `/api/v1/finance/sales/sales-orders/stats/${companyId}?period=${period}`
+        `/api/v1/finance/sales/sales-orders/stats?period=${period}`
       );
       return response.data;
     } catch (error) {
@@ -419,12 +422,6 @@ const salesOrderApi = {
     data?: any
   ): Promise<DeleteResponse> => {
     try {
-      // Prefer endpoint with companyId in path when provided to match backend routes
-      const url = companyId
-        ? `/api/v1/finance/sales/sales-orders/${companyId}/bulk-action`
-        : "/api/v1/finance/sales/sales-orders/bulk-action";
-
-      // Include multiple possible id keys to match backend expectations
       const payload = {
         action,
         orderIds,
@@ -433,7 +430,10 @@ const salesOrderApi = {
         ...data,
       };
 
-      const response = await axiosInstance.post<DeleteResponse>(url, payload);
+      const response = await axiosInstance.post<DeleteResponse>(
+        "/api/v1/finance/sales/sales-orders/bulk-action",
+        payload
+      );
       return response.data;
     } catch (error) {
       throw error;

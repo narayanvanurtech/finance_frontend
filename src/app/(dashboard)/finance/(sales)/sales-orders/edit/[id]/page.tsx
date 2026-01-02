@@ -9,6 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useItems } from "@/hooks/useItemQueries";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
+import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
 
 export default function EditSalesOrderPage() {
@@ -16,13 +17,15 @@ export default function EditSalesOrderPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { clients } = useClientStore();
-const { data: itemsData } = useItems("");
+  const businessDetails = useBussinessStore((s) => s.details);
+  const { data: itemsData } = useItems("");
   const items = itemsData?.result?.items || [];
   const { currentSalesOrder, fetchSalesOrderById, updateSalesOrder } =
     useSalesOrderStore();
   const [loading, setLoading] = useState(false);
   const [initialValues, setInitialValues] =
     useState<SalesOrderFormValues | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string>("");
 
   // Get sales order ID from URL
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -33,13 +36,44 @@ const { data: itemsData } = useItems("");
       if (orderId && user?.companyId) {
         try {
           const order = await fetchSalesOrderById(orderId, user.companyId);
+
+          console.log("🔍 Raw API Response:", order);
+
           if (order) {
+            // Track the order status
+            setOrderStatus(order.status || "draft");
+
+            // Extract client info from nested clientId object
+            const client: any = order.clientId || {};
+            const clientAddress: any =
+              typeof client.address === "object" ? client.address : {};
+
+            // Get business details from store or API
+            const businessData =
+              order.businessDetails ||
+              (businessDetails
+                ? {
+                    name: businessDetails.businessName || "",
+                    gstin: businessDetails.gstNumber || "",
+                    address: businessDetails.website || "",
+                    contact: businessDetails.phone || "",
+                    email: "",
+                    state: businessDetails.state || "",
+                  }
+                : {
+                    name: "",
+                    gstin: "",
+                    address: "",
+                    contact: "",
+                    email: "",
+                    state: "",
+                  });
+
             setInitialValues({
               type: "salesOrder",
               orderTitle:
-                (order.orderTitle && order.orderTitle.trim()) || 
-                (order as any).salesOrderTitle || 
-                order.orderNumber || 
+                (order as any).salesOrderTitle ||
+                order.orderTitle ||
                 "Sales Order",
               orderNumber:
                 (order as any).salesOrderNumber || order.orderNumber || "",
@@ -47,45 +81,42 @@ const { data: itemsData } = useItems("");
                 order.orderDate?.split("T")[0] ||
                 new Date().toISOString().slice(0, 10),
               deliveryDate:
-                order.deliveryDate?.split("T")[0] ||
                 (order as any).expectedDeliveryDate?.split("T")[0] ||
+                order.deliveryDate?.split("T")[0] ||
                 "",
               clientId:
                 typeof order.clientId === "string"
                   ? order.clientId
-                  : (order.clientId as any)?._id ||
-                    (order.clientId as any)?.id ||
-                    "",
+                  : client._id || client.id || "",
               clientDetails: {
                 name:
                   order.clientDetails?.name ||
-                  (order as any).client?.businessName ||
-                  (typeof order.clientId === "object" &&
-                    (order.clientId as any)?.email) ||
+                  client.businessName ||
+                  client.name ||
                   "",
-                gstin:
-                  order.clientDetails?.gstin ||
-                  (order as any).client?.gstin ||
-                  "",
+                gstin: order.clientDetails?.gstin || client.gstin || "",
                 address:
                   order.clientDetails?.address ||
-                  (order as any).client?.address?.street ||
+                  clientAddress.street ||
+                  (typeof client.address === "string" ? client.address : "") ||
                   "",
                 contact:
                   order.clientDetails?.contact ||
-                  (order as any).client?.phone ||
+                  client.phone ||
+                  client.contact ||
                   "",
-                email:
-                  order.clientDetails?.email ||
-                  (order as any).client?.email ||
-                  "",
+                email: order.clientDetails?.email || client.email || "",
               },
               businessDetails: {
-                name: order.businessDetails?.name || "",
-                gstin: order.businessDetails?.gstin || "",
-                address: order.businessDetails?.address || "",
-                contact: order.businessDetails?.contact || "",
-                email: order.businessDetails?.email || "",
+                name: businessData.name || "",
+                gstin: businessData.gstin || "",
+                address: businessData.address || "",
+                contact: businessData.contact || "",
+                email: businessData.email || "",
+                state:
+                  (businessData as any).state ||
+                  (businessDetails as any)?.state ||
+                  "",
               },
               taxType:
                 order.taxType === "inclusive" || order.taxType === "exclusive"
@@ -98,34 +129,55 @@ const { data: itemsData } = useItems("");
                 type: "cess" as const,
               })),
               items:
-                order.items?.map((item: any) => ({
-                  itemId: item.itemId,
-                  name: item.name,
-                  description: item.description || "",
-                  qty: item.quantity,
-                  rate: item.rate,
-                  discount: item.discount || 0,
-                  igst: item.igst || item.taxRate || 0,
-                  sgst: item.sgst || 0,
-                  cgst: item.cgst || 0,
-                  amount: item.amount || 0,
-                  hsn: item.hsn || "",
-                  unit: item.unit || "pcs",
-                })) || [],
+                order.items?.map((item: any) => {
+                  // Determine tax configuration based on taxType
+                  const taxType = item.taxType || "none";
+                  let igst = 0;
+                  let cgst = 0;
+                  let sgst = 0;
+                  let taxRate = item.taxRate || 0;
+
+                  if (taxType === "igst") {
+                    igst = taxRate;
+                  } else if (taxType === "cgst_sgst") {
+                    cgst = taxRate / 2;
+                    sgst = taxRate / 2;
+                  }
+
+                  return {
+                    itemId: item.itemId || "",
+                    name: item.name || "",
+                    description: item.description || "",
+                    qty: item.quantity || 0,
+                    rate: item.rate || 0,
+                    discount: item.discount || 0,
+                    taxRate: taxRate,
+                    taxType: taxType,
+                    igst: igst,
+                    sgst: sgst,
+                    cgst: cgst,
+                    amount: item.amount || 0,
+                    hsn: item.hsn || "",
+                    unit: item.unit || "pcs",
+                  };
+                }) || [],
               discountType:
                 order.discountType === "percent" ? "percent" : "flat",
               discountValue: order.discountValue || 0,
               shipping: order.shipping || 0,
-              roundOff: order.roundOff || false,
-              showHSN: order.showHSN !== undefined ? order.showHSN : false,
-              showUnit: order.showUnit !== undefined ? order.showUnit : false,
-              terms: order.terms || "",
+              roundOff: order.roundOff === true,
+              showHSN: order.showHSN === true,
+              showUnit: order.showUnit === true,
+              terms: order.terms || "dueOnReceipt",
               notes: order.notes || "",
               attachments: [],
-              showSignature: order.showSignature || false,
+              showSignature: order.showSignature === true,
             });
+
+            console.log("✅ Initial Values Set");
           }
         } catch (error) {
+          console.error("❌ Fetch Error:", error);
           toast.error("Failed to load sales order");
           router.push("/finance/sales-orders");
         }
@@ -143,7 +195,7 @@ const { data: itemsData } = useItems("");
 
     setLoading(true);
     try {
-      await updateSalesOrder(orderId, user.companyId, {
+      const payload = {
         orderTitle: values.orderTitle,
         orderDate: values.orderDate,
         deliveryDate: values.deliveryDate,
@@ -163,11 +215,16 @@ const { data: itemsData } = useItems("");
           quantity: item.qty,
           rate: item.rate,
           discount: item.discount,
-          taxRate: item.igst || item.taxRate,
+          taxRate: item.taxRate || item.igst || 0,
+          taxType: item.taxType || "none",
           hsn: item.hsn,
           unit: item.unit,
         })),
-        discountType: values.discountType === "percent" ? "percent" : "flat",
+        discountType:
+          values.discountType === "percent" ||
+          values.discountType === "percentage"
+            ? ("percent" as const)
+            : ("flat" as const),
         discountValue: values.discountValue,
         shipping: values.shipping,
         roundOff: values.roundOff,
@@ -176,9 +233,13 @@ const { data: itemsData } = useItems("");
         terms: values.terms,
         notes: values.notes,
         showSignature: values.showSignature,
-      });
+      };
+
+      await updateSalesOrder(orderId, user.companyId, payload);
+      toast.success("Sales order updated successfully");
       router.push("/finance/sales-orders");
     } catch (error) {
+      console.error("❌ Update Error:", error);
       toast.error("Failed to update sales order");
     } finally {
       setLoading(false);
@@ -189,6 +250,12 @@ const { data: itemsData } = useItems("");
     return <div className="p-8 text-center">Loading sales order...</div>;
   }
 
+  // Check if order status is one that should disable editing
+  const isEditDisabled =
+    orderStatus === "cancelled" ||
+    orderStatus === "delivered" ||
+    orderStatus === "shipped";
+
   return (
     <SalesOrderForm
       initialValues={initialValues}
@@ -197,6 +264,7 @@ const { data: itemsData } = useItems("");
       mockClients={clients}
       mockProducts={items}
       loading={loading}
+      disabled={isEditDisabled}
     />
   );
 }

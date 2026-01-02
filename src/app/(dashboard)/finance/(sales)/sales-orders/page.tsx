@@ -179,16 +179,20 @@ export default function SalesOrdersPage() {
     try {
       const statsData = await getSalesOrderStats(user.companyId, "30");
       console.log("📊 Raw Stats Data:", statsData); // Debug ke liye
-      
+
       // API response ke actual field names ko UI ke expected field names se map karein
       setStats({
         totalOrders: statsData?.totalSalesOrders ?? statsData?.totalOrders ?? 0,
         draftOrders: statsData?.draftCount ?? statsData?.draftOrders ?? 0,
-        confirmedOrders: statsData?.confirmedCount ?? statsData?.confirmedOrders ?? 0,
-        processingOrders: statsData?.processingCount ?? statsData?.processingOrders ?? 0,
+        confirmedOrders:
+          statsData?.confirmedCount ?? statsData?.confirmedOrders ?? 0,
+        processingOrders:
+          statsData?.processingCount ?? statsData?.processingOrders ?? 0,
         shippedOrders: statsData?.shippedCount ?? statsData?.shippedOrders ?? 0,
-        deliveredOrders: statsData?.deliveredCount ?? statsData?.deliveredOrders ?? 0,
-        cancelledOrders: statsData?.cancelledCount ?? statsData?.cancelledOrders ?? 0,
+        deliveredOrders:
+          statsData?.deliveredCount ?? statsData?.deliveredOrders ?? 0,
+        cancelledOrders:
+          statsData?.cancelledCount ?? statsData?.cancelledOrders ?? 0,
         totalValue: statsData?.totalValue ?? 0,
         period: statsData?.period ?? "30 days",
       });
@@ -209,28 +213,24 @@ export default function SalesOrdersPage() {
         (value) => value && value.length > 0
       );
 
-      if (hasActiveFilters) {
-        const params: any = {
-          page: currentPage,
-          limit: itemsPerPage,
-        };
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
 
-        if (currentFilters.search) params.search = currentFilters.search;
-        if (currentFilters.status) params.status = currentFilters.status;
-        if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
-        if (currentFilters.sortOrder)
-          params.sortOrder = currentFilters.sortOrder;
-        if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
-        if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
+      if (currentFilters.search) params.search = currentFilters.search;
+      if (currentFilters.status) params.status = currentFilters.status;
+      if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
+      if (currentFilters.sortOrder) params.sortOrder = currentFilters.sortOrder;
+      if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
+      if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
 
-        searchSalesOrders(user.companyId, params);
-      } else {
-        fetchSalesOrders(currentPage, itemsPerPage);
-      }
+      // Always use searchSalesOrders (it handles both filtered and unfiltered cases)
+      searchSalesOrders(user.companyId, params);
 
       loadStats();
     }
-  }, [user?.companyId, mounted, currentPage, itemsPerPage, currentFilters]);
+  }, [user?.companyId, mounted, currentPage, itemsPerPage, currentFilters, setCompanyId, searchSalesOrders, loadStats]);
 
   // Handle search and filters
   const handleSearch = useCallback((filters: SearchFilters) => {
@@ -288,12 +288,46 @@ export default function SalesOrdersPage() {
     }
   };
 
+  // Valid status transitions
+  const validTransitions: Record<string, string[]> = {
+    draft: ["confirmed", "cancelled"],
+    confirmed: ["processing", "cancelled"],
+    processing: ["shipped", "cancelled"],
+    shipped: ["delivered"],
+    delivered: [], // Terminal state
+    cancelled: [], // Terminal state
+  };
+
   const handleStatusChange = async (orderId: string, status: string) => {
     try {
+      // Find the order to check current status
+      const order = salesOrders.find((o) => o._id === orderId);
+      if (!order) {
+        toast.error("Order not found");
+        return;
+      }
+
+      const currentStatus = order.status || "draft";
+      const allowedTransitions = validTransitions[currentStatus] || [];
+
+      // Check if transition is valid
+      if (!allowedTransitions.includes(status)) {
+        toast.error(
+          `Cannot change status from ${currentStatus} to ${status}. Valid transitions: ${
+            allowedTransitions.length > 0
+              ? allowedTransitions.join(", ")
+              : "none (terminal state)"
+          }`
+        );
+        return;
+      }
+
       await updateSalesOrderStatus(orderId, status);
       setOpenPopoverId(null);
+      toast.success(`Status updated to ${status}`);
     } catch (error) {
       console.error("Failed to update sales order status:", error);
+      toast.error("Failed to update status");
     }
   };
 
@@ -352,14 +386,12 @@ export default function SalesOrdersPage() {
   // Bulk delete handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select sales orders that can be deleted (draft and cancelled)
-      const deletableIds = salesOrders
-        .filter(
-          (order) => order?.status === "draft" || order?.status === "cancelled"
-        )
+      // Only select sales orders that are in draft status
+      const draftOrderIds = salesOrders
+        .filter((order) => order?.status === "draft")
         .map((order) => order._id)
         .filter(Boolean) as string[];
-      setSelectedOrders(deletableIds);
+      setSelectedOrders(draftOrderIds);
     } else {
       setSelectedOrders([]);
     }
@@ -376,17 +408,15 @@ export default function SalesOrdersPage() {
   const handleBulkDeleteClick = () => {
     if (selectedOrders.length === 0) return;
 
-    // Check if any selected sales order is not deletable
-    const nonDeletableCount = salesOrders.filter(
+    // Check if any selected sales order is not draft
+    const nonDraftCount = salesOrders.filter(
       (order) =>
-        selectedOrders.includes(order?._id || "") &&
-        order?.status !== "draft" &&
-        order?.status !== "cancelled"
+        selectedOrders.includes(order?._id || "") && order?.status !== "draft"
     ).length;
 
-    if (nonDeletableCount > 0) {
+    if (nonDraftCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} sales order(s). Only draft and cancelled sales orders can be deleted.`
+        `Cannot delete ${nonDraftCount} sales order(s). Only draft sales orders can be deleted.`
       );
       return;
     }
@@ -574,10 +604,7 @@ export default function SalesOrdersPage() {
                                 e.target.checked
                               )
                             }
-                            disabled={
-                              order?.status !== "draft" &&
-                              order?.status !== "cancelled"
-                            }
+                            disabled={order?.status !== "draft"}
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </td>
@@ -639,7 +666,6 @@ export default function SalesOrdersPage() {
                               {clientEmail && (
                                 <span className="text-xs text-gray-500">
                                   {clientEmail}
-                                  
                                 </span>
                               )}
                               {clientPhone && (
@@ -741,8 +767,8 @@ export default function SalesOrdersPage() {
                             {/* If converted → show Converted to Invoice instead of Confirmed */}
                             {(order as any)?.convertedToInvoice ? (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-700">
-                                       <FiCheckCircle className="inline" /> Converted
-                                     </span>
+                                <FiCheckCircle className="inline" /> Converted
+                              </span>
                             ) : (
                               getStatusBadge(order?.status || "draft")
                             )}
@@ -788,8 +814,23 @@ export default function SalesOrdersPage() {
                                 <Link
                                   href={`/finance/sales-orders/edit/${order?._id}`}
                                   onClick={() => setOpenPopoverId(null)}
-                                  className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm"
+                                  className={`px-3 py-2 rounded text-sm text-left ${
+                                    order?.status === "confirmed" ||
+                                    order?.status === "cancelled" ||
+                                    order?.status === "shipped" ||
+                                    order?.status === "delivered"
+                                      ? "text-gray-400 cursor-not-allowed pointer-events-none"
+                                      : "hover:bg-gray-100 text-gray-700"
+                                  }`}
                                   aria-label="Edit Sales Order"
+                                  {...(order?.status === "confirmed" ||
+                                  order?.status === "cancelled" ||
+                                  order?.status === "shipped" ||
+                                  order?.status === "delivered"
+                                    ? {
+                                        onClick: (e: any) => e.preventDefault(),
+                                      }
+                                    : {})}
                                 >
                                   Edit
                                 </Link>
@@ -816,7 +857,6 @@ export default function SalesOrdersPage() {
                                           id,
                                           "confirmed"
                                         );
-                                        toast.success("Sales Order Confirmed!");
                                       }
 
                                       setOpenPopoverId(null);
@@ -825,6 +865,83 @@ export default function SalesOrdersPage() {
                                     className="px-3 py-2 rounded hover:bg-gray-100 text-green-600 text-sm text-left flex items-center gap-2"
                                   >
                                     Confirm
+                                  </button>
+                                )}
+
+                                {/* Additional Status Transitions */}
+                                {order?.status === "confirmed" && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const id = order?._id;
+                                      if (id) {
+                                        await handleStatusChange(
+                                          id,
+                                          "processing"
+                                        );
+                                      }
+                                      setOpenPopoverId(null);
+                                    }}
+                                    className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 text-sm text-left"
+                                  >
+                                    Mark as Processing
+                                  </button>
+                                )}
+
+                                {order?.status === "processing" && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const id = order?._id;
+                                      if (id) {
+                                        await handleStatusChange(id, "shipped");
+                                      }
+                                      setOpenPopoverId(null);
+                                    }}
+                                    className="px-3 py-2 rounded hover:bg-gray-100 text-purple-600 text-sm text-left"
+                                  >
+                                    Mark as Shipped
+                                  </button>
+                                )}
+
+                                {order?.status === "shipped" && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const id = order?._id;
+                                      if (id) {
+                                        await handleStatusChange(
+                                          id,
+                                          "delivered"
+                                        );
+                                      }
+                                      setOpenPopoverId(null);
+                                    }}
+                                    className="px-3 py-2 rounded hover:bg-gray-100 text-green-600 text-sm text-left"
+                                  >
+                                    Mark as Delivered
+                                  </button>
+                                )}
+
+                                {/* Cancel option - available for draft, confirmed, processing */}
+                                {(order?.status === "draft" ||
+                                  order?.status === "confirmed" ||
+                                  order?.status === "processing") && (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const id = order?._id;
+                                      if (id) {
+                                        await handleStatusChange(
+                                          id,
+                                          "cancelled"
+                                        );
+                                      }
+                                      setOpenPopoverId(null);
+                                    }}
+                                    className="px-3 py-2 rounded hover:bg-gray-100 text-red-600 text-sm text-left"
+                                  >
+                                    Cancel Order
                                   </button>
                                 )}
 
@@ -893,9 +1010,8 @@ export default function SalesOrdersPage() {
                                     </div>
                                   ))}
 
-                                {/* Delete - Only for draft and cancelled status */}
-                                {(order?.status === "draft" ||
-                                  order?.status === "cancelled") && (
+                                {/* Delete - Only for draft status */}
+                                {order?.status === "draft" && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

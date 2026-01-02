@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { FiSearch, FiFilter, FiX, FiRefreshCw } from "react-icons/fi";
 
@@ -17,16 +23,34 @@ export interface SearchFilters {
   search?: string;
   status?: string;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   dateFrom?: string;
   dateTo?: string;
 }
 
-const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear, loading }) => {
+const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({
+  onSearch,
+  onClear,
+  loading,
+}) => {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleFilterChange = (key: keyof SearchFilters, value: string | undefined) => {
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (filters.search !== undefined) {
+        onSearch(filters);
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
+  const handleFilterChange = (
+    key: keyof SearchFilters,
+    value: string | undefined
+  ) => {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
   };
@@ -44,9 +68,9 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
   const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
     if (!value || value.length === 0) return false;
     // Don't count default values as active filters
-    if (key === 'status' && value === 'all') return false;
-    if (key === 'sortBy' && value === 'default') return false;
-    if (key === 'sortOrder' && value === 'desc') return false;
+    if (key === "status" && value === "all") return false;
+    if (key === "sortBy" && value === "default") return false;
+    if (key === "sortOrder" && value === "desc") return false;
     return true;
   });
 
@@ -60,10 +84,10 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
             <Input
               placeholder="Search sales orders by number, title, or client..."
               className="pl-10"
-              value={filters.search || ''}
-              onChange={(e) => handleFilterChange('search', e.target.value)}
+              value={filters.search || ""}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
               onKeyPress={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   handleApplyFilters();
                 }
               }}
@@ -78,13 +102,15 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
             <span>Filters</span>
             {hasActiveFilters && (
               <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                {Object.entries(filters).filter(([key, value]) => {
-                  if (!value || value.length === 0) return false;
-                  if (key === 'status' && value === 'all') return false;
-                  if (key === 'sortBy' && value === 'default') return false;
-                  if (key === 'sortOrder' && value === 'desc') return false;
-                  return true;
-                }).length}
+                {
+                  Object.entries(filters).filter(([key, value]) => {
+                    if (!value || value.length === 0) return false;
+                    if (key === "status" && value === "all") return false;
+                    if (key === "sortBy" && value === "default") return false;
+                    if (key === "sortOrder" && value === "desc") return false;
+                    return true;
+                  }).length
+                }
               </span>
             )}
           </Button>
@@ -112,7 +138,9 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
             disabled={loading}
             className="flex items-center space-x-2"
           >
-            <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />
             <span>Refresh</span>
           </Button>
         </div>
@@ -122,8 +150,18 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
           <div className="pt-4 border-t">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <Select value={filters.status || 'all'} onValueChange={(value) => handleFilterChange('status', value === 'all' ? undefined : value)}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <Select
+                  value={filters.status || "all"}
+                  onValueChange={(value) =>
+                    handleFilterChange(
+                      "status",
+                      value === "all" ? undefined : value
+                    )
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
@@ -140,8 +178,18 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-                <Select value={filters.sortBy || 'default'} onValueChange={(value) => handleFilterChange('sortBy', value === 'default' ? undefined : value)}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sort By
+                </label>
+                <Select
+                  value={filters.sortBy || "default"}
+                  onValueChange={(value) =>
+                    handleFilterChange(
+                      "sortBy",
+                      value === "default" ? undefined : value
+                    )
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Default" />
                   </SelectTrigger>
@@ -157,8 +205,15 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
-                <Select value={filters.sortOrder || 'desc'} onValueChange={(value) => handleFilterChange('sortOrder', value as 'asc' | 'desc')}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Order
+                </label>
+                <Select
+                  value={filters.sortOrder || "desc"}
+                  onValueChange={(value) =>
+                    handleFilterChange("sortOrder", value as "asc" | "desc")
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Descending" />
                   </SelectTrigger>
@@ -170,24 +225,30 @@ const SalesOrderFilters: React.FC<SalesOrderFiltersProps> = ({ onSearch, onClear
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date From
+                </label>
                 <Input
                   type="date"
-                  value={filters.dateFrom || ''}
-                  onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                  value={filters.dateFrom || ""}
+                  onChange={(e) =>
+                    handleFilterChange("dateFrom", e.target.value)
+                  }
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date To
+                </label>
                 <Input
                   type="date"
-                  value={filters.dateTo || ''}
-                  onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                  value={filters.dateTo || ""}
+                  onChange={(e) => handleFilterChange("dateTo", e.target.value)}
                 />
               </div>
             </div>
-            
+
             {/* Apply Filters Button for Expanded Section */}
             <div className="flex justify-end space-x-2 pt-4 border-t mt-4">
               <Button

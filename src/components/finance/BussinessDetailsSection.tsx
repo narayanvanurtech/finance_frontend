@@ -122,42 +122,40 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
         </div>
       )}
       {businessDetails && (
-       
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-            <div>
-              <div className="text-xs text-gray-500">Company Name</div>
-              <div className="font-medium text-base">
-                {businessDetails.name}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">GSTIN</div>
-              <div className="font-medium text-base">
-                {businessDetails.gstin || "-"}
-              </div>
-            </div>
-            {businessStoreDetails?.state && (
-              <div>
-                <div className="text-xs text-gray-500">State</div>
-                <div className="font-medium text-base">
-                  {businessStoreDetails.state}
-                </div>
-              </div>
-            )}
-            <div>
-              <div className="text-xs text-gray-500">Billing Address</div>
-              <div className="font-medium text-base">
-                {businessDetails.address || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs text-gray-500">Contact Person</div>
-              <div className="font-medium text-base">
-                {businessDetails.contact || "-"}
-              </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+          <div>
+            <div className="text-xs text-gray-500">Company Name</div>
+            <div className="font-medium text-base">
+              {businessDetails.name || "-"}
             </div>
           </div>
-
+          <div>
+            <div className="text-xs text-gray-500">GSTIN</div>
+            <div className="font-medium text-base">
+              {businessDetails.gstin || businessDetails.igstn || "-"}
+            </div>
+          </div>
+          {(businessStoreDetails?.state || businessDetails.state) && (
+            <div>
+              <div className="text-xs text-gray-500">State</div>
+              <div className="font-medium text-base">
+                {businessStoreDetails?.state || businessDetails.state}
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="text-xs text-gray-500">Billing Address</div>
+            <div className="font-medium text-base">
+              {businessDetails.address || "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-gray-500">Contact Person</div>
+            <div className="font-medium text-base">
+              {businessDetails.contact || "-"}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

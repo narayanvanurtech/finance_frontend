@@ -67,6 +67,12 @@ const getStatusBadge = (status: string) => {
           <FiXCircle className="inline" /> Rejected
         </span>
       );
+    case "cancelled":
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-700">
+          <FiXCircle className="inline" /> Cancelled
+        </span>
+      );
     case "draft":
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600">
@@ -356,12 +362,9 @@ export default function DeliveryChallanListPage() {
   // Bulk Selection
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      // Only select challans that can be deleted (draft and rejected)
+      // Only select challans that can be deleted (draft only)
       const deletableIds = challans
-        .filter(
-          (challan: DeliveryChallan) =>
-            challan?.status === "draft" || challan?.status === "rejected"
-        )
+        .filter((challan: DeliveryChallan) => challan?.status === "draft")
         .map((challan: DeliveryChallan) => challan._id)
         .filter(Boolean) as string[];
       setSelectedChallans(deletableIds);
@@ -386,13 +389,12 @@ export default function DeliveryChallanListPage() {
     const nonDeletableCount = challans.filter(
       (challan: DeliveryChallan) =>
         selectedChallans.includes(challan?._id || "") &&
-        challan?.status !== "draft" &&
-        challan?.status !== "rejected"
+        challan?.status !== "draft"
     ).length;
 
     if (nonDeletableCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} challan(s). Only draft and rejected challans can be deleted.`
+        `Cannot delete ${nonDeletableCount} challan(s). Only draft challans can be deleted.`
       );
       return;
     }
@@ -586,10 +588,7 @@ export default function DeliveryChallanListPage() {
                                 e.target.checked
                               )
                             }
-                            disabled={
-                              challan?.status !== "draft" &&
-                              challan?.status !== "rejected"
-                            }
+                            disabled={challan?.status !== "draft"}
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </td>
@@ -722,7 +721,7 @@ export default function DeliveryChallanListPage() {
                                     Duplicate
                                   </button>
                                 )}
-                                <button
+                                {/* <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleDownloadPDF(challan._id!);
@@ -731,46 +730,85 @@ export default function DeliveryChallanListPage() {
                                   aria-label="Download PDF"
                                 >
                                   Download PDF
-                                </button>
+                                </button> */}
 
                                 {/* Status Change - Only for draft */}
                                 {challan?.status === "draft" && (
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const id = challan?._id;
-                                      if (id) {
-                                        await handleStatusChange(id, "sent");
-                                      }
-                                    }}
-                                    className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 text-sm text-left flex items-center gap-2"
-                                  >
-                                    Mark as Sent
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const id = challan?._id;
+                                        if (id) {
+                                          await handleStatusChange(id, "sent");
+                                        }
+                                      }}
+                                      className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 text-sm text-left flex items-center gap-2"
+                                    >
+                                      <FiSend className="w-4 h-4" />
+                                      Mark as Sent
+                                    </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const id = challan?._id;
+                                        if (id) {
+                                          await handleStatusChange(
+                                            id,
+                                            "cancelled"
+                                          );
+                                        }
+                                      }}
+                                      className="px-3 py-2 rounded hover:bg-gray-100 text-red-600 text-sm text-left flex items-center gap-2"
+                                    >
+                                      <FiXCircle className="w-4 h-4" />
+                                      Cancel Challan
+                                    </button>
+                                  </>
                                 )}
 
                                 {/* Mark as Delivered - Only for sent */}
                                 {challan?.status === "sent" && (
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const id = challan?._id;
-                                      if (id) {
-                                        await handleStatusChange(
-                                          id,
-                                          "delivered"
-                                        );
-                                      }
-                                    }}
-                                    className="px-3 py-2 rounded hover:bg-gray-100 text-green-600 text-sm text-left flex items-center gap-2"
-                                  >
-                                    Mark as Delivered
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const id = challan?._id;
+                                        if (id) {
+                                          await handleStatusChange(
+                                            id,
+                                            "delivered"
+                                          );
+                                        }
+                                      }}
+                                      className="px-3 py-2 rounded hover:bg-gray-100 text-green-600 text-sm text-left flex items-center gap-2"
+                                    >
+                                      <FiCheckCircle className="w-4 h-4" />
+                                      Mark as Delivered
+                                    </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const id = challan?._id;
+                                        if (id) {
+                                          await handleStatusChange(
+                                            id,
+                                            "cancelled"
+                                          );
+                                        }
+                                      }}
+                                      className="px-3 py-2 rounded hover:bg-gray-100 text-red-600 text-sm text-left flex items-center gap-2"
+                                    >
+                                      <FiXCircle className="w-4 h-4" />
+                                      Cancel Challan
+                                    </button>
+                                  </>
                                 )}
 
-                                {/* Delete - Only for draft and rejected */}
+                                {/* Delete - Only for draft, rejected and cancelled */}
                                 {(challan?.status === "draft" ||
-                                  challan?.status === "rejected") && (
+                                  challan?.status === "rejected" ||
+                                  challan?.status === "cancelled") && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

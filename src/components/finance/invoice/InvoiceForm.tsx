@@ -29,6 +29,7 @@ export type InvoiceFormValues = {
     address: string;
     contact: string;
     email: string;
+    state?: string;
   };
   businessDetails: {
     name: string;
@@ -61,7 +62,10 @@ export type InvoiceFormValues = {
     | "rejected"
     | "expired"
     | "converted"
-    | "paid";
+    | "paid"
+    | "partially_paid"
+    | "overdue"
+    | "cancelled";
 
   /** ⭐ OPTIONAL — if missing */
   _id?: string;
@@ -157,8 +161,14 @@ const InvoiceForm: React.FC<any> = ({
   const [roundOff, setRoundOff] = useState(initialValues.roundOff);
   const [showHSN, setShowHSN] = useState(initialValues.showHSN);
   const [showUnit, setShowUnit] = useState(initialValues.showUnit);
-  const [terms, setTerms] = useState(initialValues.terms || "dueOnReceipt");
-  const [notes, setNotes] = useState(initialValues.notes);
+  const [terms, setTerms] = useState(
+    mode === "edit" 
+      ? (initialValues.terms !== undefined && initialValues.terms !== null ? String(initialValues.terms) : "") 
+      : (initialValues.terms || "dueOnReceipt")
+  );
+  const [notes, setNotes] = useState(
+    initialValues.notes !== undefined && initialValues.notes !== null ? String(initialValues.notes) : ""
+  );
   const [attachments, setAttachments] = useState<File[]>(
     initialValues.attachments
   );
@@ -169,7 +179,7 @@ const InvoiceForm: React.FC<any> = ({
     initialValues.cessList || []
   );
   const [phases, setPhases] = useState<PaymentPhase[]>(
-    initialValues.phases || []
+    initialValues.phases && Array.isArray(initialValues.phases) ? initialValues.phases : []
   );
   const [type] = useState(initialValues.type);
 
@@ -181,6 +191,12 @@ const InvoiceForm: React.FC<any> = ({
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
     if (mode === "edit" && initialValues) {
+      console.log("🔄 InvoiceForm useEffect - Updating form with initialValues:", {
+        terms: initialValues.terms,
+        notes: initialValues.notes,
+        phases: initialValues.phases,
+      });
+
       setInvoiceTitle(initialValues.invoiceTitle);
       setDate(initialValues.date);
       setDueDate(initialValues.dueDate);
@@ -198,12 +214,34 @@ const InvoiceForm: React.FC<any> = ({
       setRoundOff(initialValues.roundOff);
       setShowHSN(initialValues.showHSN);
       setShowUnit(initialValues.showUnit);
-      setTerms(initialValues.terms || "dueOnReceipt");
-      setNotes(initialValues.notes);
+      
+      // Set terms, notes, and phases - ensure they're properly set
+      const termsValue = initialValues.terms !== undefined && initialValues.terms !== null 
+        ? String(initialValues.terms) 
+        : "";
+      const notesValue = initialValues.notes !== undefined && initialValues.notes !== null 
+        ? String(initialValues.notes) 
+        : "";
+      const phasesValue = initialValues.phases && Array.isArray(initialValues.phases)
+        ? initialValues.phases
+        : [];
+
+      console.log("📝 Setting form values:", {
+        termsValue,
+        notesValue,
+        termsValueType: typeof termsValue,
+        notesValueType: typeof notesValue,
+        termsValueLength: termsValue?.length || 0,
+        notesValueLength: notesValue?.length || 0,
+        phasesValue,
+      });
+
+      setTerms(termsValue);
+      setNotes(notesValue);
       setAttachments(initialValues.attachments);
       setShowSignature(initialValues.showSignature);
       setCessList(initialValues.cessList || []);
-      setPhases(initialValues.phases || []);
+      setPhases(phasesValue);
     }
   }, [initialValues, mode]);
 
@@ -655,6 +693,7 @@ const InvoiceForm: React.FC<any> = ({
         handleAttachment={handleAttachment}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
+        mode={mode}
       />
       <ActionBar
         mode={mode}
@@ -662,6 +701,10 @@ const InvoiceForm: React.FC<any> = ({
         loading={loading}
         onPrintDownload={handlePrintDownload}
         onCancel={handleCancel}
+        disabled={
+          mode === "edit" &&
+          (initialValues.status === "paid" || initialValues.status === "cancelled")
+        }
       />
       <AddClientModal
         open={showAddClient}

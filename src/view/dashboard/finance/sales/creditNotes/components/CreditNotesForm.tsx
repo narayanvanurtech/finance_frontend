@@ -69,19 +69,22 @@ Object.entries(STATE_CODE_TO_NAME).forEach(([code, name]) => {
 const findStateCodeFromName = (stateName: string): string => {
   if (!stateName) return "";
   const normalized = stateName.trim().toLowerCase();
-  
+
   // Direct match
   if (STATE_NAME_TO_CODE[normalized]) {
     return STATE_NAME_TO_CODE[normalized];
   }
-  
+
   // Partial match
   for (const [code, name] of Object.entries(STATE_CODE_TO_NAME)) {
-    if (name.toLowerCase().includes(normalized) || normalized.includes(name.toLowerCase())) {
+    if (
+      name.toLowerCase().includes(normalized) ||
+      normalized.includes(name.toLowerCase())
+    ) {
       return code;
     }
   }
-  
+
   return "";
 };
 
@@ -110,6 +113,8 @@ export type Invoice = {
   terms?: string;
   notes?: string;
   cessList?: any[];
+  placeOfSupply?: string;
+  stateCode?: string;
 };
 
 export type CreditNoteFormValues = {
@@ -478,21 +483,63 @@ const CreditNotesForm: React.FC<CreditNotesFormProps> = ({
   const handleLinkedInvoiceChange = (value: string) => {
     setLinkedInvoice(value);
     const foundInvoice = invoices.find((inv) => inv.id === value);
-    
+
     console.log("Selected invoice:", value);
     console.log("Found invoice:", foundInvoice);
-    
+
     if (foundInvoice) {
       // Auto-fill invoice number and date
       setOriginalInvoiceNo(foundInvoice.invoiceNo || "");
       setOriginalInvoiceDate(foundInvoice.invoiceDate || "");
-      
+
       console.log("Setting invoice date:", foundInvoice.invoiceDate);
+
+      // Auto-fill placeOfSupply and stateCode
+      if (foundInvoice.placeOfSupply) {
+        setPlaceOfSupply(foundInvoice.placeOfSupply);
+      }
+      if (foundInvoice.stateCode) {
+        setStateCode(foundInvoice.stateCode);
+      }
 
       // Auto-fill client details if available
       if (foundInvoice.clientId) {
         setClientId(foundInvoice.clientId);
-        if (foundInvoice.clientDetails) {
+
+        // Try to find full client details from the clients list
+        const fullClient = clients.find(
+          (c: any) => String(c._id) === foundInvoice.clientId
+        );
+
+        if (fullClient) {
+          // Use full client details from clients store for better data
+          const clientState =
+            fullClient.address?.state || (fullClient as any).state || "";
+
+          setClientDetails({
+            name: fullClient.businessName || "",
+            gstin: fullClient.gstin || "",
+            address:
+              typeof fullClient.address === "string"
+                ? fullClient.address
+                : fullClient.address?.street || "",
+            contact: fullClient.phone || "",
+            email: fullClient.email || "",
+            state: clientState,
+          });
+
+          // Update placeOfSupply and stateCode from full client if not already set
+          if (clientState && !foundInvoice.placeOfSupply) {
+            setPlaceOfSupply(clientState);
+          }
+
+          // Update state code from GSTIN if not already set
+          if (fullClient.gstin && !foundInvoice.stateCode) {
+            const codeFromGstin = fullClient.gstin.substring(0, 2);
+            setStateCode(codeFromGstin);
+          }
+        } else if (foundInvoice.clientDetails) {
+          // Fallback to invoice's client details if full client not found
           setClientDetails(foundInvoice.clientDetails);
         }
       }
