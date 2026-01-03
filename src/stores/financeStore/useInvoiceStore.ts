@@ -164,13 +164,14 @@ export const useInvoiceStore = create<InvoiceStore>()(
                 }
               : undefined,
             // ✅ Add phases if available
-            phases: invoice.phases && invoice.phases.length > 0
-              ? invoice.phases.map((phase: any) => ({
-                  title: phase.title || "",
-                  percentage: Number(phase.percentage) || 0,
-                  dueDate: phase.dueDate || "",
-                }))
-              : undefined,
+            phases:
+              invoice.phases && invoice.phases.length > 0
+                ? invoice.phases.map((phase: any) => ({
+                    title: phase.title || "",
+                    percentage: Number(phase.percentage) || 0,
+                    dueDate: phase.dueDate || "",
+                  }))
+                : undefined,
             // ✅ Add cessList if available
             cessList:
               invoice.cessList && invoice.cessList.length > 0
@@ -185,7 +186,10 @@ export const useInvoiceStore = create<InvoiceStore>()(
             showSignature: invoice.showSignature || false,
           };
 
-          console.log("📦 Create Invoice Payload:", JSON.stringify(payload, null, 2));
+          console.log(
+            "📦 Create Invoice Payload:",
+            JSON.stringify(payload, null, 2)
+          );
 
           // Make API call
           const response = await invoiceApi.createInvoice(payload);
@@ -227,6 +231,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             showSignature: (response.data as any)?.showSignature || false,
             cessList: (response.data as any)?.cessList || [],
             phases: (response.data as any)?.phases || [],
+            status: "draft", // ✅ Force draft status for newly created invoices
           };
 
           // Add new invoice to the beginning of the list
@@ -248,8 +253,6 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
       updateInvoice: async (invoiceId, updated) => {
         try {
-          
-
           // Update in API with the invoice ID
           await invoiceApi.updateInvoice(invoiceId, updated as any);
 

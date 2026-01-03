@@ -406,13 +406,13 @@ const performaInvoiceApi = {
       invoiceNumber: string;
       invoiceDate: string;
       dueDate: string;
-      invoiceType: string;
+      notes?: string;
     },
     companyId: string
   ): Promise<PerformaInvoiceResponse> => {
     try {
       const response = await axiosInstance.post<PerformaInvoiceResponse>(
-        `/api/v1/finance/sales/performa-invoices/${invoiceId}/duplicate?companyId=${companyId}`,
+        `/api/v1/finance/sales/performa-invoices/${invoiceId}/convert-to-invoice?companyId=${companyId}`,
         data
       );
       return response.data;
