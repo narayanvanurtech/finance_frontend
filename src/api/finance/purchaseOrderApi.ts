@@ -53,7 +53,7 @@ export interface CreatePurchaseOrderPayload {
   purchaseOrderNumber: string;
   purchaseOrderDate: string;
   expectedDeliveryDate?: string;
-  status?: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
+  status?: "draft" | "sent" | "acknowledged" | "partial_delivery" | "complete" | "cancelled";
   priority?: "low" | "medium" | "high";
   taxType: "inclusive" | "exclusive";
   discountType: "flat" | "percentage";
@@ -71,7 +71,7 @@ export interface UpdatePurchaseOrderPayload {
   purchaseOrderNumber?: string;
   purchaseOrderDate?: string;
   expectedDeliveryDate?: string;
-  status?: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
+  status?: "draft" | "sent" | "acknowledged" | "partial_delivery" | "complete" | "cancelled";
   priority?: "low" | "medium" | "high";
   taxType?: "inclusive" | "exclusive";
   discountType?: "flat" | "percentage";
@@ -107,7 +107,7 @@ export interface PurchaseOrder {
   paymentTerms?: string;
   referenceNumber?: string;
   currency?: string;
-  status: "draft" | "approved" | "acknowledged" | "received" | "cancelled";
+  status: "draft" | "sent" | "acknowledged" | "partial_delivery" | "complete" | "cancelled";
   priority?: "low" | "medium" | "high";
   approvalStatus?: "pending" | "approved" | "rejected";
   items: PurchaseOrderItem[];

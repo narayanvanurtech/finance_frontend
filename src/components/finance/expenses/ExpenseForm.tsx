@@ -32,6 +32,8 @@ export type ExpenseFormValues = {
   showSignature: boolean;
   expenseCategory: string;
   paymentMode: string;
+  phases?: Array<{ title: string; percentage: number; dueDate: string }>;
+  taxType?: "inclusive" | "exclusive";
 };
 
 type ExpenseFormProps = {
@@ -121,12 +123,20 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 
   // Tax configuration states
   const [taxType, setTaxType] = useState<"inclusive" | "exclusive">(
-    "exclusive"
+    (initialValues.taxType as "inclusive" | "exclusive") || "exclusive"
   );
   const [taxConfiguration, setTaxConfiguration] = useState<
     "IGST" | "SGST_CGST"
   >("IGST");
   const [cessList, setCessList] = useState<any[]>([]);
+
+    // Phases (Payment Milestones) state
+  const [phases, setPhases] = useState<
+    Array<{ title: string; percentage: number; dueDate: string }>
+  >(initialValues.phases || []);
+  const [showPhases, setShowPhases] = useState(
+    initialValues.phases && initialValues.phases.length > 0
+  );
 
   // Auto-switch tax configuration when business or vendor state changes
   React.useEffect(() => {
@@ -176,20 +186,28 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       // Calculate tax if exclusive
       let taxAmount = 0;
       if (taxType === "exclusive") {
-        if (taxConfiguration === "IGST") {
-          taxAmount = (subtotal * (Number(item.igst) || 0)) / 100;
-        } else if (taxConfiguration === "SGST_CGST") {
-          const sgstAmount = (subtotal * (Number(item.sgst) || 0)) / 100;
-          const cgstAmount = (subtotal * (Number(item.cgst) || 0)) / 100;
-          taxAmount = sgstAmount + cgstAmount;
+        const itemTaxType = item.taxType || taxConfiguration === "IGST" ? "igst" : "cgst_sgst";
+        const itemTaxRate = Number(item.taxRate) || 0;
+
+        if (itemTaxType === "igst") {
+          taxAmount = (subtotal * itemTaxRate) / 100;
+          updated[idx].igst = itemTaxRate;
+          updated[idx].sgst = 0;
+          updated[idx].cgst = 0;
+        } else if (itemTaxType === "cgst_sgst") {
+          const halfTax = itemTaxRate / 2;
+          taxAmount = (subtotal * itemTaxRate) / 100;
+          updated[idx].sgst = halfTax;
+          updated[idx].cgst = halfTax;
+          updated[idx].igst = 0;
         }
 
         // Add cess if any
-        cessList.forEach((cess) => {
-          if (cess.showInInvoice && item[cess.name]) {
-            taxAmount += (subtotal * (Number(item[cess.name]) || 0)) / 100;
-          }
-        });
+        if (item.cess && Array.isArray(item.cess)) {
+          item.cess.forEach((cessItem: any) => {
+            taxAmount += (subtotal * (Number(cessItem.rate) || 0)) / 100;
+          });
+        }
       }
 
       updated[idx].amount = subtotal + taxAmount;
@@ -207,9 +225,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         rate: 0,
         discount: 0,
         discountType: "flat",
+        taxType: taxConfiguration === "IGST" ? "igst" : "cgst_sgst",
+        taxRate: 0,
         igst: 0,
         sgst: 0,
         cgst: 0,
+        cess: [],
         amount: 0,
         hsn: "",
         unit: "pcs",
@@ -336,6 +357,34 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       setAttachments(Array.from(e.target.files));
     }
   };
+  // Phase handlers
+  const handleAddPhase = () => {
+    setPhases((prev) => [
+      ...prev,
+      {
+        title: "",
+        percentage: 0,
+        dueDate: new Date().toISOString().split("T")[0],
+      },
+    ]);
+  };
+
+  const handleRemovePhase = (idx: number) => {
+    setPhases((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handlePhaseChange = (
+    idx: number,
+    field: "title" | "percentage" | "dueDate",
+    value: string | number
+  ) => {
+    setPhases((prev) => {
+      const updated = [...prev];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return updated;
+    });
+  };
+
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
     if (!expenseNo.trim()) newErrors.expenseNo = "Expense No is required";
@@ -370,6 +419,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       showSignature,
       expenseCategory,
       paymentMode,
+      phases: showPhases ? phases : [],
+      taxType,
     });
     if (onSuccess) onSuccess();
   };
@@ -526,6 +577,114 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
           handleAddVendor={() => setShowAddVendor(true)}
           mockVendors={mockVendors}
         />
+      </div>
+
+      {/* Payment Phases/Milestones Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="checkbox"
+            id="showPhases"
+            checked={showPhases}
+            onChange={(e) => setShowPhases(e.target.checked)}
+            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+          />
+          <label
+            htmlFor="showPhases"
+            className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+          >
+            Add Payment Milestones/Phases
+          </label>
+        </div>
+
+        {showPhases && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="space-y-3">
+              {phases.map((phase, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end p-3 bg-gray-50 rounded-lg"
+                >
+                  <div className="md:col-span-5">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Phase Title
+                    </label>
+                    <input
+                      type="text"
+                      value={phase.title}
+                      onChange={(e) =>
+                        handlePhaseChange(idx, "title", e.target.value)
+                      }
+                      placeholder="e.g., Advance Payment"
+                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Percentage (%)
+                    </label>
+                    <input
+                      type="number"
+                      value={phase.percentage}
+                      onChange={(e) =>
+                        handlePhaseChange(
+                          idx,
+                          "percentage",
+                          Number(e.target.value)
+                        )
+                      }
+                      min={0}
+                      max={100}
+                      placeholder="30"
+                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={phase.dueDate}
+                      onChange={(e) =>
+                        handlePhaseChange(idx, "dueDate", e.target.value)
+                      }
+                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-700"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    {phases.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhase(idx)}
+                        className="w-full px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleAddPhase}
+              className="mt-3 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition"
+            >
+              + Add Phase
+            </button>
+            {phases.length > 0 && (
+              <div className="mt-2 text-xs text-gray-600">
+                Total: {phases.reduce((sum, p) => sum + Number(p.percentage || 0), 0)}%
+                {phases.reduce((sum, p) => sum + Number(p.percentage || 0), 0) !== 100 && (
+                  <span className="text-amber-600 ml-2">
+                    ⚠ Should total 100%
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Shipping Details Section - Compact Design */}

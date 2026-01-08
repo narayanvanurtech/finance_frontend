@@ -9,7 +9,7 @@ export interface Address {
   country?: string;
 }
 
-// Account Details interface based on backend structure
+// Account details can be stored as a simple string or as a structured object
 export interface AccountDetails {
   accountHolderName?: string;
   bankName?: string;
@@ -58,7 +58,7 @@ export interface Client {
     | "Overseas";
   address: Address;
   uniqueKey?: string;
-  accountDetails?: string;
+  accountDetails?: string | AccountDetails;
   accountHolderName?: string;
   bankName?: string;
   bankAccountNumber?: string;
@@ -89,8 +89,11 @@ export interface CreateClientPayload {
   showPhone?: boolean;
   gstType?: boolean;
   address?: Address;
-  accountDetails?: AccountDetails;
-  // Legacy fields - kept for backward compatibility but prefer accountDetails object
+  // accountDetails can be either a simple string or a structured object
+  accountDetails?: string | AccountDetails;
+  // Optional owner and tags for assigning/labeling clients
+  ownerId?: string;
+  tags?: string[];
   bankAccountNumber?: string;
   accountHolderName?: string;
   bankName?: string;
@@ -110,6 +113,22 @@ export interface ClientResponse {
   result: Client;
 }
 
+export interface ClientFilters {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  businessName?: string;
+  email?: string;
+  industry?: string;
+  clientType?: "Company" | "Individual";
+  taxTreatment?: "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas";
+  city?: string;
+  state?: string;
+  country?: string;
+  isActive?: boolean | "all" | "true" | "false";
+}
+
 export interface ClientsResponse {
   success: boolean;
   statusCode: number;
@@ -119,6 +138,14 @@ export interface ClientsResponse {
     total: number;
     currentPage: number;
     totalPages: number;
+    pagination?: {
+      totalClients: number;
+      totalPages: number;
+      currentPage: number;
+      limit: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
   };
 }
 
@@ -145,11 +172,64 @@ const clientApi = {
   },
 
   // Get all clients by company
-  getAllClients: async (companyId: string): Promise<ClientsResponse> => {
+  getAllClients: async (
+    companyId: string,
+    filters?: ClientFilters
+  ): Promise<ClientsResponse> => {
     try {
-      const response = await axios.get<ClientsResponse>(
-        `/api/v1/finance/sales/client/getAllClients/${companyId}`
-      );
+      const queryParams = new URLSearchParams();
+
+      if (filters) {
+        // Add pagination parameters
+        if (filters.page !== undefined) {
+          queryParams.append("page", filters.page.toString());
+        }
+        if (filters.limit !== undefined) {
+          queryParams.append("limit", filters.limit.toString());
+        }
+        if (filters.sortBy) {
+          queryParams.append("sortBy", filters.sortBy);
+        }
+        if (filters.sortOrder) {
+          queryParams.append("sortOrder", filters.sortOrder);
+        }
+
+        // Add filter parameters (only include if they have a value)
+        if (filters.businessName && filters.businessName.trim() !== "") {
+          queryParams.append("businessName", filters.businessName.trim());
+        }
+        if (filters.email && filters.email.trim() !== "") {
+          queryParams.append("email", filters.email.trim());
+        }
+        if (filters.industry && filters.industry.trim() !== "") {
+          queryParams.append("industry", filters.industry.trim());
+        }
+        if (filters.clientType) {
+          queryParams.append("clientType", filters.clientType);
+        }
+        if (filters.taxTreatment) {
+          queryParams.append("taxTreatment", filters.taxTreatment);
+        }
+        if (filters.city && filters.city.trim() !== "") {
+          queryParams.append("city", filters.city.trim());
+        }
+        if (filters.state && filters.state.trim() !== "") {
+          queryParams.append("state", filters.state.trim());
+        }
+        if (filters.country && filters.country.trim() !== "") {
+          queryParams.append("country", filters.country.trim());
+        }
+        if (filters.isActive !== undefined) {
+          queryParams.append("isActive", String(filters.isActive));
+        }
+      }
+
+      const queryString = queryParams.toString();
+      const url = `/api/v1/finance/sales/client/getAllClients/${companyId}${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      const response = await axios.get<ClientsResponse>(url);
       return response.data;
     } catch (error) {
       throw error;

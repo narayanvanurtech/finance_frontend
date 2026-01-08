@@ -111,18 +111,43 @@ export const transformFormToUpdatePayload = (
 ): UpdatePurchaseOrderPayload => {
   const payload: UpdatePurchaseOrderPayload = {};
 
+  // Basic fields
   if (formValues.vendorId) payload.vendorId = formValues.vendorId;
+  // if (formValues.purchaseOrderNo)
+  //   payload.purchaseOrderNumber = formValues.purchaseOrderNo;
   if (formValues.orderDate) payload.purchaseOrderDate = formValues.orderDate;
   if (formValues.dueDate) payload.expectedDeliveryDate = formValues.dueDate;
+
+  // Status and priority
+  if (formValues.status)
+    payload.status = formValues.status as
+      | "draft"
+      | "sent"
+      | "acknowledged"
+      | "partial_delivery"
+      | "complete"
+      | "cancelled";
+  if (formValues.priority)
+    payload.priority = formValues.priority as "low" | "medium" | "high";
+
+  // Tax and discount
   if (formValues.discountType)
     payload.discountType = formValues.discountType as "flat" | "percentage";
   if (formValues.discountValue !== undefined)
     payload.discountValue = formValues.discountValue;
   if (formValues.shipping !== undefined) payload.shipping = formValues.shipping;
   if (formValues.roundOff !== undefined) payload.roundOff = formValues.roundOff;
+
+  // Vendor and business details
+  if (formValues.vendorDetails) payload.vendorDetails = formValues.vendorDetails;
+  if (formValues.businessDetails)
+    payload.businessDetails = formValues.businessDetails;
+
+  // Additional fields
   if (formValues.terms) payload.terms = formValues.terms;
   if (formValues.notes) payload.notes = formValues.notes;
 
+  // Items
   if (formValues.items && formValues.items.length > 0) {
     payload.items = formValues.items
       .filter((item) => item.name?.trim() && (item.qty || item.quantity) > 0)
@@ -132,6 +157,7 @@ export const transformFormToUpdatePayload = (
         return {
           itemId: item.itemId,
           name: item.name?.trim() || "",
+          description: item.description || "",
           hsn: item.hsn || "",
           unit: item.unit || "pcs",
           quantity: item.qty || item.quantity || 0,

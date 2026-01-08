@@ -55,6 +55,7 @@ import {
   ChevronDown,
   MoreVertical,
 } from "lucide-react";
+import { getLogoUrl } from "@/lib/utils";
 
 const ClientDetailsPage = () => {
   const router = useRouter();
@@ -112,6 +113,13 @@ const ClientDetailsPage = () => {
 
   useEffect(() => {
     if (currentClient) {
+      // Support both flat and nested `accountDetails` shapes from the API
+      const accountDetails =
+        typeof currentClient.accountDetails === "object" &&
+        currentClient.accountDetails !== null
+          ? currentClient.accountDetails
+          : null;
+
       setFormData({
         businessName: currentClient.businessName || "",
         clientType: currentClient.clientType || "",
@@ -127,17 +135,26 @@ const ClientDetailsPage = () => {
         pan: currentClient.pan || "",
         taxTreatment: currentClient.taxTreatment || "",
         gstType: currentClient.gstType || false,
-        // backend stores bank details under `accountDetails`
+        // account details: prefer top-level fields but fallback to nested accountDetails
         accountHolderName:
-          (currentClient.accountDetails as any)?.accountHolderName || "",
-        bankName: (currentClient.accountDetails as any)?.bankName || "",
-        // backend field is `accountNumber` -> map to formData.bankAccountNumber
+          currentClient.accountHolderName ||
+          accountDetails?.accountHolderName ||
+          "",
+        bankName: currentClient.bankName || accountDetails?.bankName || "",
+        // API may provide `accountNumber` inside accountDetails -> map to bankAccountNumber
         bankAccountNumber:
-          (currentClient.accountDetails as any)?.accountNumber || "",
-        ifscCode: (currentClient.accountDetails as any)?.ifscCode || "",
-        branchName: (currentClient.accountDetails as any)?.branchName || "",
-        accountType: (currentClient.accountDetails as any)?.accountType || "",
+          currentClient.bankAccountNumber ||
+          accountDetails?.accountNumber ||
+          "",
+        ifscCode: currentClient.ifscCode || accountDetails?.ifscCode || "",
+        branchName:
+          currentClient.branchName || accountDetails?.branchName || "",
+        accountType:
+          currentClient.accountType || accountDetails?.accountType || "",
       });
+
+
+      setLogoPreview(currentClient.logoUrl as any)
     }
   }, [currentClient]);
 
@@ -162,7 +179,7 @@ const ClientDetailsPage = () => {
     try {
       await updateClient(user.companyId, clientId, {
         businessName: formData.businessName,
-        clientType: formData.clientType as "Individual" | "Company" | undefined,
+        clientType: formData.clientType as "Individual" | "Company",
         industry: formData.industry || undefined,
         email: formData.email,
         phone: formData.phone || undefined,
@@ -183,24 +200,14 @@ const ClientDetailsPage = () => {
               | "Overseas")
           : undefined,
         gstType: formData.gstType,
-        ...(formData.accountHolderName ||
-        formData.bankName ||
-        formData.bankAccountNumber ||
-        formData.ifscCode ||
-        formData.branchName ||
-        formData.accountType
-          ? {
-              accountDetails: {
-                accountHolderName: formData.accountHolderName || undefined,
-                bankName: formData.bankName || undefined,
-                // backend expects `accountNumber`
-                accountNumber: formData.bankAccountNumber || undefined,
-                ifscCode: formData.ifscCode || undefined,
-                branchName: formData.branchName || undefined,
-                accountType: formData.accountType || undefined,
-              },
-            }
-          : {}),
+        accountDetails: {
+          accountHolderName: formData.accountHolderName || undefined,
+          bankName: formData.bankName || undefined,
+          accountNumber: formData.bankAccountNumber || undefined,
+          ifscCode: formData.ifscCode || undefined,
+          branchName: formData.branchName || undefined,
+          accountType: formData.accountType || undefined,
+        },
       });
 
       await getClientById(user.companyId, clientId);
@@ -445,7 +452,7 @@ const ClientDetailsPage = () => {
                   {currentClient.logoUrl ? (
                     <div className="relative">
                       <img
-                        src={currentClient.logoUrl}
+                        src={getLogoUrl(currentClient.logoUrl) || ""}
                         alt={`${currentClient.businessName} logo`}
                         className="w-12 h-12 rounded-xl object-cover border-2 border-white shadow-sm"
                         onError={(e) => {
@@ -584,8 +591,12 @@ const ClientDetailsPage = () => {
                   <div className="flex items-center">
                     <Input
                       id="clientType"
-                      value={currentClient.clientType || ""}
+                      value={formData.clientType}
+                      onChange={(e) =>
+                        setFormData({ ...formData, clientType: e.target.value })
+                      }
                       className=" border-gray-200"
+                      placeholder="Enter client type"
                     />
                     {/* <Badge variant="secondary" className="ml-2">
                       {currentClient.clientType}

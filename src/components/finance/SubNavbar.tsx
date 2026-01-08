@@ -102,7 +102,7 @@ export default function FinanceSubNav({
   const currentSection = getCurrentSection();
   const config = sectionConfigs[currentSection] || sectionConfigs.clients;
   const { user } = useAuthStore();
-  const { clients, fetchClientsByUser, deleteClient } = useClientStore();
+  const { clients, fetchClientsByUser, bulkDeleteClients } = useClientStore();
 
   const [selectedOption, setSelectedOption] = useState(config.dropdownLabel);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -272,14 +272,12 @@ export default function FinanceSubNav({
             throw new Error("Company ID is required to delete clients");
           }
           
-          // Delete each selected client
-          for (const clientId of selectedItems) {
-            await deleteClient(user.companyId, clientId);
-          }
+          // Use bulk delete API for efficient deletion
+          await bulkDeleteClients(user.companyId, selectedItems);
           
           setSuccessMessage({
             title: "Success",
-            message: `Successfully deleted ${selectedItems.length} clients.`,
+            message: `Successfully deleted ${selectedItems.length} client${selectedItems.length > 1 ? 's' : ''}.`,
             type: "success",
           });
           

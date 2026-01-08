@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,10 +23,11 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
-import { CreateClientPayload } from "@/api/finance/clientApi";
+import { CreateClientPayload, ClientFilters } from "@/api/finance/clientApi";
 import FinanceSubNav from "@/components/finance/SubNavbar";
 import DeleteClientDialog from "@/components/finance/DeleteClientDialog";
 import { FiTrash2, FiSearch, FiFilter, FiX } from "react-icons/fi";
+import { getLogoUrl } from "@/lib/utils";
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -58,6 +59,14 @@ export default function ClientsPage() {
     industry: "",
     taxTreatment: "",
   });
+  // Separate state for search input to prevent losing focus
+  const [searchInput, setSearchInput] = useState("");
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Initialize searchInput from filters.search on mount
+  useEffect(() => {
+    setSearchInput(filters.search);
+  }, []); // Only run on mount
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     client: Client | null;
@@ -81,11 +90,66 @@ export default function ClientsPage() {
     message: "",
   });
 
+  // Convert frontend filters to backend filters format
+  const getBackendFilters = (): ClientFilters => {
+    const backendFilters: ClientFilters = {};
+
+    // Map search to businessName (only if not empty)
+    if (filters.search && filters.search.trim() !== "") {
+      backendFilters.businessName = filters.search.trim();
+    }
+
+    // Map other filters (only include if they have values)
+    if (filters.clientType && filters.clientType !== "") {
+      backendFilters.clientType = filters.clientType as "Company" | "Individual";
+    }
+
+    if (filters.industry && filters.industry !== "") {
+      backendFilters.industry = filters.industry;
+    }
+
+    if (filters.taxTreatment && filters.taxTreatment !== "") {
+      backendFilters.taxTreatment = filters.taxTreatment as
+        | "Registered Business"
+        | "Unregistered Business"
+        | "Consumer"
+        | "Overseas";
+    }
+
+    return backendFilters;
+  };
+
+  // Debounce search input
+  useEffect(() => {
+    // Clear existing timeout
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    // Set new timeout to update the filter after user stops typing
+    searchDebounceRef.current = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        search: searchInput,
+      }));
+    }, 800); // 500ms debounce delay
+
+    // Cleanup on unmount
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchInput]);
+
+  // Fetch clients with filters (exclude search from dependencies, use filters.search instead)
   useEffect(() => {
     if (user?.companyId) {
-      fetchClients(user.companyId);
+      const backendFilters = getBackendFilters();
+      fetchClients(user.companyId, backendFilters);
     }
-  }, [user?.companyId, fetchClients]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.companyId, filters.search, filters.clientType, filters.industry, filters.taxTreatment]);
 
   // Clear selections when clients change or become empty
   useEffect(() => {
@@ -231,6 +295,9 @@ export default function ClientsPage() {
   const handleDeleteConfirm = async () => {
     if (!deleteDialog.client || !user?.companyId) return;
 
+
+
+
     setDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
       await deleteClient(user.companyId, deleteDialog.client._id);
@@ -260,23 +327,23 @@ export default function ClientsPage() {
   // Multiple selection handlers
   const toggleAll = () => {
     if (
-      selectedRows.length === filteredClients.length &&
-      filteredClients.length > 0
+      selectedRows.length === clients.length &&
+      clients.length > 0
     ) {
       // Deselect all
       setSelectedRows([]);
       setSelectedClientIds([]);
     } else {
-      // Select all filtered clients
-      const allRows = filteredClients.map((_, index) => index);
-      const allIds = filteredClients.map((client) => client._id);
+      // Select all clients
+      const allRows = clients.map((_, index) => index);
+      const allIds = clients.map((client) => client._id);
       setSelectedRows(allRows);
       setSelectedClientIds(allIds);
     }
   };
 
   const toggleRow = (index: number) => {
-    const client = filteredClients[index];
+    const client = clients[index];
     const clientId = client._id;
 
     setSelectedRows((prev) => {
@@ -341,18 +408,34 @@ export default function ClientsPage() {
 
   // Filter handlers
   const handleFilterChange = (key: string, value: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    if (key === "search") {
+      // For search, update the input value directly (debouncing is handled in useEffect)
+      setSearchInput(value);
+    } else {
+      // For other filters, update immediately
+      setFilters((prev) => ({
+        ...prev,
+        [key]: value,
+      }));
+    }
+  };
+
+  // Handle search input change (immediate update for UI responsiveness)
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
   };
 
   const handleApplyFilters = () => {
-    // Filters are applied automatically via filteredClients
+    // Filters are applied automatically via useEffect
     // This function can be used for any additional logic if needed
+    if (user?.companyId) {
+      const backendFilters = getBackendFilters();
+      fetchClients(user.companyId, backendFilters);
+    }
   };
 
   const handleClearFilters = () => {
+    setSearchInput(""); // Clear search input
     setFilters({
       search: "",
       clientType: "",
@@ -360,11 +443,15 @@ export default function ClientsPage() {
       taxTreatment: "",
     });
     setIsFilterExpanded(false);
+    // Clear debounce timeout
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
   };
 
   const hasActiveFilters = () => {
     return (
-      filters.search ||
+      (searchInput && searchInput.trim() !== "") ||
       filters.clientType ||
       filters.industry ||
       filters.taxTreatment
@@ -373,45 +460,12 @@ export default function ClientsPage() {
 
   const activeFilterCount = () => {
     let count = 0;
-    if (filters.search) count++;
+    if (searchInput && searchInput.trim() !== "") count++;
     if (filters.clientType) count++;
     if (filters.industry) count++;
     if (filters.taxTreatment) count++;
     return count;
   };
-
-  // Filtered clients based on filter state
-  const filteredClients = clients.filter((client) => {
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch =
-        client.businessName?.toLowerCase().includes(searchLower) ||
-        client.email?.toLowerCase().includes(searchLower) ||
-        client.phone?.toLowerCase().includes(searchLower) ||
-        client.gstin?.toLowerCase().includes(searchLower) ||
-        client.alias?.toLowerCase().includes(searchLower);
-
-      if (!matchesSearch) return false;
-    }
-
-    // Client Type filter
-    if (filters.clientType && client.clientType !== filters.clientType) {
-      return false;
-    }
-
-    // Industry filter
-    if (filters.industry && client.industry !== filters.industry) {
-      return false;
-    }
-
-    // Tax Treatment filter
-    if (filters.taxTreatment && client.taxTreatment !== filters.taxTreatment) {
-      return false;
-    }
-
-    return true;
-  });
 
   if (isLoading) {
     return (
@@ -484,10 +538,18 @@ export default function ClientsPage() {
                 <Input
                   placeholder="Search clients by name, email, phone, or GSTIN..."
                   className="pl-10"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyPress={(e) => {
                     if (e.key === "Enter") {
+                      // Clear debounce and apply immediately
+                      if (searchDebounceRef.current) {
+                        clearTimeout(searchDebounceRef.current);
+                      }
+                      setFilters((prev) => ({
+                        ...prev,
+                        search: searchInput,
+                      }));
                       handleApplyFilters();
                     }
                   }}
@@ -653,8 +715,8 @@ export default function ClientsPage() {
                     type="checkbox"
                     className="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                     checked={
-                      selectedRows.length === filteredClients.length &&
-                      filteredClients.length > 0
+                      selectedRows.length === clients.length &&
+                      clients.length > 0
                     }
                     onChange={toggleAll}
                   />
@@ -691,7 +753,7 @@ export default function ClientsPage() {
             </thead>
 
             <tbody style={{ background: "var(--color-card)" }}>
-              {filteredClients?.map((client, idx) => (
+              {clients?.map((client, idx) => (
                 <tr
                   key={client?._id}
                   className={`transition-colors border-b border-zinc-300 ${
@@ -718,7 +780,7 @@ export default function ClientsPage() {
                     <div className="flex items-center justify-start">
                       {client?.logoUrl ? (
                         <img
-                          src={client.logoUrl}
+                          src={getLogoUrl(client.logoUrl) || ""}
                           alt={`${client.businessName} logo`}
                           className="w-8 h-8 rounded-full object-cover border border-gray-200"
                         />
@@ -840,15 +902,13 @@ export default function ClientsPage() {
                 </tr>
               ))}
 
-              {!isLoading && filteredClients?.length === 0 && (
+              {!isLoading && clients?.length === 0 && (
                 <tr>
                   <td
                     colSpan={8}
                     className="px-4 py-8 text-center text-[var(--color-muted-foreground)] text-xs"
                   >
-                    {filters.clientType ||
-                    filters.industry ||
-                    filters.taxTreatment
+                    {hasActiveFilters()
                       ? "No clients found matching the selected filters."
                       : "No clients found."}
                   </td>

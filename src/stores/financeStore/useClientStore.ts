@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import clientApi, { Client, CreateClientPayload, UpdateClientPayload, ClientResponse } from '../../api/finance/clientApi';
+import clientApi, { Client, CreateClientPayload, UpdateClientPayload, ClientResponse, ClientFilters } from '../../api/finance/clientApi';
 
 interface ClientStore {
   clients: Client[];
@@ -9,7 +9,7 @@ interface ClientStore {
   totalClients: number;
   
   // Actions
-  fetchClients: (companyId: string) => Promise<void>;
+  fetchClients: (companyId: string, filters?: ClientFilters) => Promise<void>;
   fetchClientsByUser: (companyId: string) => Promise<void>;
   getClientById: (companyId: string, clientId: string) => Promise<void>;
   createClient: (clientData: CreateClientPayload) => Promise<ClientResponse>;
@@ -30,13 +30,13 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   error: null,
   totalClients: 0,
 
-  fetchClients: async (companyId: string) => {
+  fetchClients: async (companyId: string, filters?: ClientFilters) => {
     try {
       set({ isLoading: true, error: null });
-      const response = await clientApi.getAllClients(companyId);
+      const response = await clientApi.getAllClients(companyId, filters);
       set({ 
         clients: response.result.clients,
-        totalClients: response.result.total,
+        totalClients: response.result.pagination?.totalClients || response.result.total || response.result.clients.length,
         isLoading: false 
       });
     } catch (error) {
@@ -126,6 +126,9 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   },
 
   deleteClient: async (companyId: string, clientId: string) => {
+
+
+    
     try {
       set({ isLoading: true, error: null });
       await clientApi.deleteClient(companyId, clientId);

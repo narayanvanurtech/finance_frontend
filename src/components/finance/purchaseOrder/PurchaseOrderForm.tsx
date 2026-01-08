@@ -53,6 +53,7 @@ type PurchaseOrderFormProps = {
   mockVendors: Vendor[];
   mockProducts?: any[];
   purchaseOrderId?: string;
+  isLocked?: boolean;
 };
 
 const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
@@ -63,6 +64,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   loading,
   mockVendors,
   purchaseOrderId,
+  isLocked = false,
 }) => {
   // Use vendors passed as props
   const availableVendors = mockVendors;
@@ -85,8 +87,8 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   const [paymentTerms, setPaymentTerms] = useState(
     initialValues.paymentTerms || "Net 30"
   );
-  const [status, setStatus] = useState(initialValues.status || "Draft");
-  const [priority, setPriority] = useState(initialValues.priority || "Medium");
+  const [status, setStatus] = useState(initialValues.status || "draft");
+  const [priority, setPriority] = useState(initialValues.priority || "medium");
   const [referenceNumber, setReferenceNumber] = useState(
     initialValues.referenceNumber || ""
   );
@@ -414,7 +416,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
           addAttachmentMutation.isPending || removeAttachmentMutation.isPending
         }
       />
-      <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
+      <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} disabled={isLocked} />
       <AddItemModal
         open={showAddItemModal}
         onClose={() => setShowAddItemModal(false)}
