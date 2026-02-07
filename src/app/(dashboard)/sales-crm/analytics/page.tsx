@@ -8,6 +8,8 @@ import useAnalyticsStore from '@/stores/salesCrmStore/useAnalyticsStore';
 import Overview from './Overview';
 import Leads from './Leads';
 import Deals from './Deals';
+import { mapAnalyticsToLeads } from '@/utils/mapAnalyticsToLeads';
+import { mapAnalyticsToDeals } from '@/utils/mapAnalyticsToDeals';
 
 const AnalyticsPage = () => {
   const { analytics, isLoading, error, fetchAnalytics } = useAnalyticsStore();
@@ -28,28 +30,41 @@ const AnalyticsPage = () => {
     return <div className="p-8">No analytics data available</div>;
   }
 
+  console.log(analytics)
+
   // Map analytics data to Overview props
-  const overviewData = {
-    leadsThisMonth: analytics.leadsThisMonth ?? 0,
-    revenueThisMonth: analytics.revenueThisMonth ?? 0,
-    dealsInPipeline: analytics.dealsInPipeline ?? 0,
-    accountsThisMonth: analytics.accountsThisMonth ?? 0,
-    last3Months: analytics.last3Months ?? {
-      months: [],
-      leadsCreated: [],
-      dealsCreated: [],
-      dealsWon: [],
-      revenueWon: [],
-      openAmount: [],
-    },
-    leadsBySource: analytics.leadsBySource ?? { labels: [], data: [] },
-    topSalesReps: Array.isArray(analytics.topSalesReps)
-      ? analytics.topSalesReps.map((rep: any) => ({
-          name: rep.name || '',
-          amount: rep.amount || 0,
-        }))
-      : [],
-  };
+ const overviewData = {
+  leadsThisMonth: analytics.result.summary.totalLeads,
+
+  revenueThisMonth: 0, // backend not sending revenue yet
+
+  dealsInPipeline: analytics.result.summary.totalContacted,
+
+  accountsThisMonth: analytics.result.distribution.byOwner.length,
+
+  last3Months: {
+    months: analytics.result.timeline.leads.map(l => l.formattedDate),
+    leadsCreated: analytics.result.timeline.leads.map(l => l.count),
+    dealsCreated: analytics.result.timeline.leads.map(l => l.contacted),
+    dealsWon: analytics.result.timeline.leads.map(l => l.converted),
+    revenueWon: [],
+    openAmount: [],
+  },
+
+  leadsBySource: {
+    labels: analytics.result.performance.leadSourcePerformance.map(s => s.source),
+    data: analytics.result.performance.leadSourcePerformance.map(s => s.total),
+  },
+
+  topSalesReps: analytics.result.distribution.byOwner.map(owner => ({
+    name: owner.ownerName,
+    amount: owner.totalLeads,
+  })),
+};
+
+
+
+
 
   return (
     <div className="p-8 space-y-8 bg-gray-50 min-h-screen">
@@ -78,34 +93,15 @@ const AnalyticsPage = () => {
         </TabsList>
         
         <TabsContent value="overview">
-          <Overview data={overviewData} />
+         <Overview data={overviewData} />
         </TabsContent>
         
         <TabsContent value="leads">
-          <Leads data={{
-            todayLeads: 0,
-            topLeadSources: [],
-            salesFunnel: { totalLeads: 0, conversionRate: 0, funnelData: [] },
-            thisWeekLeads: { count: 0, lastWeekRelative: 0, percentageChange: 0 },
-            topLeadOwners: [],
-            junkLeadsBySource: [],
-            leadsByIndustry: [],
-            monthlyLeadCreation: [],
-          }} />
+          <Leads data={mapAnalyticsToLeads(analytics)}/>
         </TabsContent>
         
         <TabsContent value="deals">
-          <Deals data={{
-            revenueThisMonth: 0,
-            dealsCreated: 0,
-            dealsInPipeline: 0,
-            revenueLost: 0,
-            revenueByUsers: [],
-            dealsByStages: [],
-            openAmountByUsers: [],
-            amountByStage: [],
-            amountByLeadSource: [],
-          }} />
+          <Deals data={mapAnalyticsToDeals(analytics)} />
         </TabsContent>
       </Tabs>
     </div>

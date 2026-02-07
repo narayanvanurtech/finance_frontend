@@ -68,8 +68,9 @@ export const useSupportStore = create<SupportStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await getAllSupportTicketsByCompany(companyId);
+      console.log("response....",response?.result.data)
       set({
-        companyTickets: response.data.tickets,
+        companyTickets: response?.result.data,
         isLoading: false,
         error: null,
       });

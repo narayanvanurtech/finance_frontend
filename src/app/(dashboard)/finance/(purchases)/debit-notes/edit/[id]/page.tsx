@@ -14,6 +14,7 @@ import {
   useUpdateDebitNote,
 } from "@/hooks/useDebitNotesQueries";
 import { UpdateDebitNotePayload } from "@/api/finance/debitNotesApi";
+import { calculateItemAmount } from "@/utils/debitNoteCalculator";
 
 export default function EditDebitNotePage() {
   const params = useParams();
@@ -154,30 +155,45 @@ export default function EditDebitNotePage() {
     showSignature: debitNote.showSignature,
   };
 
-  const handleUpdate = async (values: DebitNoteFormValues) => {
-    try {
-      // Transform form values to API payload
-      const payload: UpdateDebitNotePayload = {
-        vendorId: values.vendorId,
-        reason: values.reason,
-        purchaseId: values.purchaseId,
-        debitNoteDate: values.debitNoteDate,
-        originalBillNumber: values.originalBillNumber,
-        debitType: values.debitType as
-          | "quality_issue"
-          | "price_difference"
-          | "excess_billing"
-          | "return"
-          | "other",
-        taxType: values.taxType as "inclusive" | "exclusive",
-        discountType: values.discountType as "flat" | "percentage",
-        discountValue: values.discountValue,
-        shipping: values.shipping,
-        roundOff: values.roundOff,
-        showHSN: values.showHSN,
-        showUnit: values.showUnit,
-        showSignature: values.showSignature,
-        items: values.items.map((item) => ({
+ 
+
+const handleUpdate = async (values: DebitNoteFormValues) => {
+  try {
+    const taxType =
+      values.taxConfiguration === "IGST" ? "igst" : "cgst_sgst";
+
+    const payload: UpdateDebitNotePayload = {
+      vendorId: values.vendorId,
+      reason: values.reason,
+      purchaseId: values.purchaseId,
+      debitNoteDate: values.debitNoteDate,
+      originalBillNumber: values.originalBillNumber,
+      debitType: values.debitType as any,
+      taxType: values.taxType,
+      discountType: values.discountType,
+      discountValue: values.discountValue,
+      shipping: values.shipping,
+      roundOff: values.roundOff,
+      showHSN: values.showHSN,
+      showUnit: values.showUnit,
+      showSignature: values.showSignature,
+
+      items: values.items.map((item) => {
+        const taxRate =
+          values.taxConfiguration === "IGST"
+            ? Number(item.igst || 0)
+            : Number(item.cgst || 0) + Number(item.sgst || 0);
+
+        const calculated = calculateItemAmount({
+          qty: Number(item.qty),
+          rate: Number(item.rate),
+          discount: Number(item.discount || 0),
+          discountType: item.discountType,
+          taxRate,
+          taxType,
+        });
+
+        return {
           name: item.name,
           description: item.description,
           hsn: item.hsn,
@@ -186,23 +202,34 @@ export default function EditDebitNotePage() {
           rate: item.rate,
           discount: item.discount,
           discountType: item.discountType,
-          taxType: values.taxConfiguration === "IGST" ? "igst" : "cgst_sgst",
-          taxRate: item.igst || item.cgst + item.sgst,
+          taxType,
+          taxRate,
           reason: item.reason,
-        })),
-        terms: values.terms,
-        notes: values.notes,
-      };
 
-      await updateDebitNoteMutation.mutateAsync({
-        debitNoteId,
-        data: payload,
-      });
-      router.push("/finance/debit-notes");
-    } catch (error) {
-      console.error("Error updating debit note:", error);
-    }
-  };
+          // 🔥 IMPORTANT
+          amount: calculated.amount,
+          taxAmount: calculated.taxAmount,
+          igstAmount: calculated.igstAmount,
+          cgstAmount: calculated.cgstAmount,
+          sgstAmount: calculated.sgstAmount,
+        };
+      }),
+
+      terms: values.terms,
+      notes: values.notes,
+    };
+
+    await updateDebitNoteMutation.mutateAsync({
+      debitNoteId,
+      data: payload,
+    });
+
+    router.push("/finance/debit-notes");
+  } catch (error) {
+    console.error("❌ Error updating debit note:", error);
+  }
+};
+
 
   return (
     <DebitNotesForm

@@ -59,6 +59,7 @@ interface UpdatePayoutReceiptPayload {
   purpose?: string;
   internalNotes?: string;
   paymentRecords?: PaymentRecord[];
+  paymentType?:string
 }
 
 interface SinglePayoutReceiptResponse {

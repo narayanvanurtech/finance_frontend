@@ -144,6 +144,7 @@ export default function PaymentsMadeEditPage() {
         purpose: values.purpose,
         internalNotes: values.internalNotes,
         paymentRecords: values.paymentRecords,
+        paymentType:values.paymentType,
       };
 
       await updatePaymentMutation.mutateAsync({

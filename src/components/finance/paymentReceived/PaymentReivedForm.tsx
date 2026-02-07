@@ -221,6 +221,7 @@ export default function PaymentsMadeForm({
           invoice = invoices.find((inv) => inv.invoiceNumber === allocation.invoiceId);
         }
         if (invoice && invoice.invoiceNumber && !selectedInvoice) {
+          console.log("Fontend Invoice",invoice)
           setSelectedInvoice(invoice.invoiceNumber);
         }
       }

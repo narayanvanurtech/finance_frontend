@@ -14,6 +14,8 @@ const publicRoutes = [
   "/book-demo",
 ];
 
+
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get("token")?.value;
@@ -24,6 +26,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
+
+
   const isPublicRoute = publicRoutes.some((route) => pathname === route);
 
   // If it's a protected route and user is not authenticated
@@ -33,6 +37,8 @@ export function middleware(request: NextRequest) {
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
+
+
 
   // If user is authenticated and trying to access login/register
   if ((pathname === "/auth/login" || pathname === "/auth/register") && token) {
@@ -49,8 +55,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+
   return NextResponse.next();
 }
+
 
 // Configure which routes the middleware runs on
 export const config = {

@@ -42,7 +42,7 @@ export default function SupportTicketDetailPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Ticket Not Found</h2>
           <p className="text-gray-600 mb-4">The support ticket you're looking for doesn't exist.</p>
           <button
-            onClick={() => router.push('/support')}
+            onClick={() => router.push('/sales-crm/support/')}
             className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
           >
             Back to Support
@@ -56,7 +56,7 @@ export default function SupportTicketDetailPage() {
     <div className="container mx-auto p-6 max-w-7xl my-8">
       <div className="mb-8">
         <button
-          onClick={() => router.push('/support')}
+          onClick={() => router.push('/sales-crm/support/')}
           className="text-indigo-600 hover:underline mb-4"
         >
           &larr; Back to Support

@@ -45,18 +45,29 @@ const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   userAnalytics: null,
   isUserAnalyticsLoading: false,
   userAnalyticsError: null,
-  fetchAnalytics: async () => {
-    try {
-      set({ isLoading: true, error: null });
-      const data = await getallanalytics();
-      set({ analytics: data, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch analytics', 
-        isLoading: false 
-      });
-    }
-  },
+ fetchAnalytics: async () => {
+  const currentCompanyId = localStorage.getItem("currentCompanyId")
+  try {
+    set({ isLoading: true, error: null });
+
+    const data = await getallanalytics({
+      companyId :currentCompanyId , // 🔴 REQUIRED
+      groupBy: "day",
+      // optional:
+      startDate: "2026-01-07",
+      endDate: "2026-02-07"
+    });
+
+    console.log("All analytics",data)
+    set({ analytics: data, isLoading: false });
+  } catch (error) {
+    set({
+      error: error instanceof Error ? error.message : 'Failed to fetch analytics',
+      isLoading: false
+    });
+  }
+},
+
   fetchUserAnalytics: async () => {
     try {
       set({ isUserAnalyticsLoading: true, userAnalyticsError: null });

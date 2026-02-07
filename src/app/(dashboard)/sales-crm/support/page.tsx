@@ -41,14 +41,14 @@ export default function SupportPage() {
     }
   }, [successMessage, resetSuccessMessage, user, fetchTicketsByCompany]);
 
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to create ticket", {
-        description: error,
-      });
-      resetError();
-    }
-  }, [error, resetError]);
+  // useEffect(() => {
+  //   if (error) {
+  //     toast.error("Failed to create ticket", {
+  //       description: error,
+  //     });
+  //     resetError();
+  //   }
+  // }, [error, resetError]);
 
   useEffect(() => {
     if (user && user.companyId) {
@@ -71,6 +71,8 @@ export default function SupportPage() {
       console.error('Error creating support ticket:', error);
     }
   };
+
+  console.log(companyTickets)
 
   return (
     <div className="container mx-auto p-6 max-w-7xl my-8">
@@ -161,7 +163,7 @@ export default function SupportPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3 text-gray-700 border-b border-gray-100 whitespace-nowrap">{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                        <td className="px-5 py-3 text-gray-700 border-b border-gray-100 whitespace-nowrap">{ticket.user?.name || 'N/A'}</td>
+                        <td className="px-5 py-3 text-gray-700 border-b border-gray-100 whitespace-nowrap">{ticket.userName || 'N/A'}</td>
                         <td className="px-5 py-3 border-b border-gray-100 whitespace-nowrap text-right">
                           <span className="inline-flex items-center gap-1 text-blue-600 group-hover:underline">
                             View

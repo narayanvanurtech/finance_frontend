@@ -27,11 +27,7 @@ import type { SearchFilters } from "@/components/finance/performa-invoice/Perfor
 
 // Helper to get client initials
 const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase();
+  return name?.split(" ").map((n) => n[0]).join("").toUpperCase();
 };
 
 // Helper to get status badge

@@ -23,6 +23,7 @@ export default function PaymentReceivedCreatePage() {
       setCompanyId(user.companyId);
 
       await createPayment(values);
+      console.log(values)
 
       await fetchPayments(); // refresh list before navigation
       toast.success("Payment Recorded Successfully");

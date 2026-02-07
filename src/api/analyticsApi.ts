@@ -24,9 +24,17 @@ interface AnalyticsData {
   topSalesReps: any[];
 }
 
-export async function getallanalytics(): Promise<any> {
-  const response = await axiosInstance.get<any>(
-    "/api/v1/dashboard/getAnalytics"
+interface GetAnalyticsParams {
+  companyId: string;
+  startDate?: string;
+  endDate?: string;
+  groupBy?: 'day' | 'week' | 'month';
+}
+
+export async function getallanalytics(params: GetAnalyticsParams): Promise<any> {
+  const response = await axiosInstance.get(
+    "/api/v1/dashboard/getAnalytics",
+    { params }
   );
   return response.data;
 }
@@ -86,3 +94,5 @@ export async function getUserAnalytics(): Promise<UserAnalyticsResponse> {
   );
   return response.data;
 }
+
+

@@ -305,6 +305,8 @@ export default function CreateClientPage() {
       return;
     }
 
+    console.log(user?.companyId)
+
     if (!user?.companyId) {
       setErrors({ general: "Company ID is required" });
       return;

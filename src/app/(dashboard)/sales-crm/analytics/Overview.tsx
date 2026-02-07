@@ -30,6 +30,7 @@ interface OverviewProps {
 }
 
 const Overview = ({ data }: OverviewProps) => {
+  console.log(data)
   // Calculate KPIs
   const totalLeads = data.last3Months.leadsCreated.reduce((a, b) => a + b, 0);
   const totalDealsWon = data.last3Months.dealsWon.reduce((a, b) => a + b, 0);
