@@ -116,37 +116,37 @@ export default function PaymentsMadeForm({
 
   // Form state
   const [clientId, setClientId] = useState(
-    initialValues?.clientId || defaultInitialValues.clientId
+    initialValues?.clientId || defaultInitialValues.clientId,
   );
   const [showAddClient, setShowAddClient] = useState(false);
   const [clientDetails, setClientDetails] = useState<any>({});
-  const [selectedInvoice, setSelectedInvoice] = useState("");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState("");
   const [paymentNo, setPaymentNo] = useState(
-    initialValues?.paymentNo || defaultInitialValues.paymentNo
+    initialValues?.paymentNo || defaultInitialValues.paymentNo,
   );
   const [amountPaid, setAmountPaid] = useState(
-    initialValues?.amountPaid || defaultInitialValues.amountPaid
+    initialValues?.amountPaid || defaultInitialValues.amountPaid,
   );
   const [paymentDate, setPaymentDate] = useState(
-    initialValues?.paymentDate || defaultInitialValues.paymentDate
+    initialValues?.paymentDate || defaultInitialValues.paymentDate,
   );
   const [paymentMode, setPaymentMode] = useState(
-    initialValues?.paymentMode || defaultInitialValues.paymentMode
+    initialValues?.paymentMode || defaultInitialValues.paymentMode,
   );
   const [paidThrough, setPaidThrough] = useState(
-    initialValues?.paidThrough || defaultInitialValues.paidThrough
+    initialValues?.paidThrough || defaultInitialValues.paidThrough,
   );
   const [referenceNo, setReferenceNo] = useState(
-    initialValues?.referenceNo || defaultInitialValues.referenceNo
+    initialValues?.referenceNo || defaultInitialValues.referenceNo,
   );
   const [paymentType, setPaymentType] = useState(
-    initialValues?.paymentType || defaultInitialValues.paymentType
+    initialValues?.paymentType || defaultInitialValues.paymentType,
   );
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>(
-    initialValues?.selectedInvoices || []
+    initialValues?.selectedInvoices || [],
   );
   const [notes, setNotes] = useState(
-    initialValues?.notes || defaultInitialValues.notes
+    initialValues?.notes || defaultInitialValues.notes,
   );
 
   // Error states
@@ -200,33 +200,19 @@ export default function PaymentsMadeForm({
   // Initialize selectedInvoice from initialValues when invoices are loaded
   useEffect(() => {
     if (initialValues && invoices.length > 0 && clientId) {
-      // First try to get from selectedInvoices array (invoiceNumbers)
-      if (initialValues.selectedInvoices && initialValues.selectedInvoices.length > 0) {
-        const invoiceNumber = initialValues.selectedInvoices[0];
-        // Verify it exists in the invoices list
-        const invoiceExists = invoices.some(
-          (inv) => inv.invoiceNumber === invoiceNumber
+      if (initialValues.allocations?.length && !selectedInvoiceId) {
+        const allocId = initialValues.allocations[0].invoiceId;
+
+        const invoice = invoices.find(
+          (inv) => String(inv._id) === String(allocId),
         );
-        if (invoiceExists && !selectedInvoice) {
-          setSelectedInvoice(invoiceNumber);
-        }
-      }
-      // If not found, try to map from allocations (invoiceIds)
-      else if (initialValues.allocations && initialValues.allocations.length > 0) {
-        const allocation = initialValues.allocations[0];
-        // Try to find invoice by _id first
-        let invoice = invoices.find((inv) => inv._id === allocation.invoiceId);
-        // If not found by _id, try by invoiceNumber
-        if (!invoice) {
-          invoice = invoices.find((inv) => inv.invoiceNumber === allocation.invoiceId);
-        }
-        if (invoice && invoice.invoiceNumber && !selectedInvoice) {
-          console.log("Fontend Invoice",invoice)
-          setSelectedInvoice(invoice.invoiceNumber);
+
+        if (invoice) {
+          setSelectedInvoiceId(invoice._id);
         }
       }
     }
-  }, [initialValues, invoices, clientId, selectedInvoice]);
+  }, [initialValues, invoices, clientId, selectedInvoiceId]);
 
   // Update form fields when initialValues change (for edit mode)
   useEffect(() => {
@@ -254,7 +240,16 @@ export default function PaymentsMadeForm({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialValues?.referenceNo, initialValues?.notes, initialValues?.paymentMode, initialValues?.paidThrough, initialValues?.amountPaid, initialValues?.paymentDate, initialValues?.paymentType, mode]);
+  }, [
+    initialValues?.referenceNo,
+    initialValues?.notes,
+    initialValues?.paymentMode,
+    initialValues?.paidThrough,
+    initialValues?.amountPaid,
+    initialValues?.paymentDate,
+    initialValues?.paymentType,
+    mode,
+  ]);
 
   // Filter invoices for this client
   const clientInvoices = invoices.filter((inv) => {
@@ -266,23 +261,26 @@ export default function PaymentsMadeForm({
   });
 
   // Handle invoice selection and auto-fill amount
-  const handleInvoiceSelect = (invoiceNo: string) => {
-    setSelectedInvoice(invoiceNo);
-    if (invoiceNo) {
-      const invoice = clientInvoices.find(
-        (inv) => inv.invoiceNumber === invoiceNo
-      );
-      if (invoice) {
-        const total =
-          (invoice.items || []).reduce(
-            (sum: number, item: any) => sum + (Number(item.amount) || 0),
-            0
-          ) + (Number(invoice.shipping) || 0);
-        setAmountPaid(total.toString());
-      }
-    } else {
+  const handleInvoiceSelect = (invoiceId: string) => {
+    setSelectedInvoiceId(invoiceId);
+
+    const invoice = clientInvoices.find(
+      (inv) => String(inv._id) === String(invoiceId),
+    );
+
+    if (!invoice) {
       setAmountPaid("");
+      return;
     }
+
+    const total =
+      (invoice.items || []).reduce(
+        (sum: number, item: any) =>
+          sum + (Number(item.amount) || 0) + (Number(item.taxAmount) || 0),
+        0,
+      ) + (Number(invoice.shipping) || 0);
+
+    setAmountPaid(total.toString());
   };
 
   const calculateTotalSelected = () => {
@@ -292,7 +290,7 @@ export default function PaymentsMadeForm({
         const total =
           (inv.items || []).reduce(
             (s: number, item: any) => s + (Number(item.amount) || 0),
-            0
+            0,
           ) + (Number(inv.shipping) || 0);
         return sum + total;
       }, 0);
@@ -343,10 +341,10 @@ export default function PaymentsMadeForm({
       },
     ];
 
-    const allocations: Allocation[] = selectedInvoice
+    const allocations: Allocation[] = selectedInvoiceId
       ? [
           {
-            invoiceId: selectedInvoice,
+            invoiceId: selectedInvoiceId,
             amount: Number(amountPaid),
           },
         ]
@@ -428,33 +426,28 @@ export default function PaymentsMadeForm({
           <label className="block text-sm font-medium mb-1 text-gray-700">
             Select Invoice *
           </label>
-          <Select onValueChange={handleInvoiceSelect} value={selectedInvoice}>
+          <Select onValueChange={handleInvoiceSelect} value={selectedInvoiceId}>
             <SelectTrigger className="bg-gray-50">
               <SelectValue placeholder="Select an invoice" />
             </SelectTrigger>
+
             <SelectContent>
-              {clientInvoices.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  No invoices available
-                </SelectItem>
-              ) : (
-                clientInvoices.map((inv) => {
-                  const total =
-                    (inv.items || []).reduce(
-                      (sum: number, item: any) =>
-                        sum + (Number(item.amount) || 0),
-                      0
-                    ) + (Number(inv.shipping) || 0);
-                  return (
-                    <SelectItem
-                      key={inv.invoiceNumber}
-                      value={inv.invoiceNumber || ""}
-                    >
-                      {inv.invoiceNumber} - ₹{total.toFixed(2)} ({inv.date})
-                    </SelectItem>
-                  );
-                })
-              )}
+              {clientInvoices.map((inv) => {
+                const total =
+                  (inv.items || []).reduce(
+                    (sum: number, item: any) =>
+                      sum +
+                      (Number(item.amount) || 0) +
+                      (Number(item.taxAmount) || 0),
+                    0,
+                  ) + (Number(inv.shipping) || 0);
+
+                return (
+                  <SelectItem key={inv._id} value={inv._id}>
+                    {inv.invoiceNumber} — ₹{total.toFixed(2)} ({inv.date})
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -583,7 +576,7 @@ export default function PaymentsMadeForm({
       </div>
 
       {/* Invoice Selection */}
-      {clientId && clientId !== "new" && selectedInvoice && (
+      {clientId && clientId !== "new" && selectedInvoiceId && (
         <div className="bg-gray-50 p-4 rounded-lg">
           <label className="block text-sm font-semibold mb-3 text-gray-700">
             Invoice Details
@@ -601,15 +594,19 @@ export default function PaymentsMadeForm({
                 <tbody>
                   {(() => {
                     const invoice = clientInvoices.find(
-                      (inv) => inv.invoiceNumber === selectedInvoice
+                      (inv) => String(inv._id) === String(selectedInvoiceId),
                     );
+
                     if (!invoice) return null;
                     const total =
                       (invoice.items || []).reduce(
                         (sum: number, item: any) =>
-                          sum + (Number(item.amount) || 0),
-                        0
+                          sum +
+                          (Number(item.amount) || 0) +
+                          (Number(item.taxAmount) || 0),
+                        0,
                       ) + (Number(invoice.shipping) || 0);
+
                     return (
                       <tr className="bg-blue-50">
                         <td className="px-3 py-2 font-medium">
@@ -660,11 +657,11 @@ export default function PaymentsMadeForm({
               if (mode === "edit" && paymentId) {
                 window.open(
                   `/finance/payments-received/preview/${paymentId}`,
-                  "_blank"
+                  "_blank",
                 );
               } else {
                 alert(
-                  "Please save the payment first before printing or downloading."
+                  "Please save the payment first before printing or downloading.",
                 );
               }
             }}

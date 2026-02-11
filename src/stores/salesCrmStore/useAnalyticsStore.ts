@@ -45,28 +45,38 @@ const useAnalyticsStore = create<AnalyticsStore>((set) => ({
   userAnalytics: null,
   isUserAnalyticsLoading: false,
   userAnalyticsError: null,
- fetchAnalytics: async () => {
-  const currentCompanyId = localStorage.getItem("currentCompanyId")
+ fetchAnalytics: async (startDate?: string, endDate?: string) => {
+  const currentCompanyId = localStorage.getItem("currentCompanyId");
+
   try {
     set({ isLoading: true, error: null });
 
+    // fallback if not provided
+    const end = endDate ?? new Date().toISOString().split("T")[0];
+
+    const start =
+      startDate ??
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+
     const data = await getallanalytics({
-      companyId :currentCompanyId , // 🔴 REQUIRED
+      companyId: currentCompanyId,
       groupBy: "day",
-      // optional:
-      startDate: "2026-01-07",
-      endDate: "2026-02-07"
+      startDate: start,
+      endDate: end
     });
 
-    console.log("All analytics",data)
     set({ analytics: data, isLoading: false });
+
   } catch (error) {
     set({
-      error: error instanceof Error ? error.message : 'Failed to fetch analytics',
+      error: error instanceof Error ? error.message : "Failed to fetch analytics",
       isLoading: false
     });
   }
 },
+
 
   fetchUserAnalytics: async () => {
     try {

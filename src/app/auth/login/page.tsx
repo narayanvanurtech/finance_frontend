@@ -103,6 +103,7 @@ export default function LoginPage() {
       const role = useAuthStore.getState().user?.role;
 
       if (role === "superadmin" ||  role === "admin") {
+      // if (role === "admin") {
         router.push("/sales-crm/home");
       } else if (role === "manager") {
         router.push("/manager/sales-crm/home");

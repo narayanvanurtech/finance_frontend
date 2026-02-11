@@ -16,14 +16,19 @@ export default function PaymentReceivedEditPage() {
   const [loading, setLoading] = useState(true);
 
   // -------- LOAD PAYMENT --------
+
+
   useEffect(() => {
     if (!id) return;
 
+    
     getPayment(id as string).then((data) => {
       if (!data) {
         setLoading(false);
         return;
       }
+
+      console.log("data...14324",data)
 
       // 🟢 FORMAT RESPONSE FOR FORM
       const firstPaymentRecord = data.paymentRecords?.[0] || {};
@@ -48,10 +53,13 @@ export default function PaymentReceivedEditPage() {
         paymentRecords: data.paymentRecords || [],
       };
 
+  console.log("Formatted ,,...u347342",formatted);
+
       setPayment(formatted);
       setLoading(false);
     });
   }, [id]);
+
 
   if (loading)
     return (

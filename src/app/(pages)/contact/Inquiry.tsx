@@ -20,6 +20,7 @@ const InquiryForm = () => {
     message: "",
   });
 
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({
@@ -95,6 +96,8 @@ const InquiryForm = () => {
     if (!validateForm()) {
       return;
     }
+
+    console.log(formData)
 
     setIsLoading(true);
     try {

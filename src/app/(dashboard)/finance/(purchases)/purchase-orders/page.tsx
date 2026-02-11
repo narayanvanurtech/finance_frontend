@@ -140,6 +140,8 @@ export default function PurchaseOrdersPage() {
 
   const stats = statsData?.result;
 
+  console.log("////llkl,nhbgvgbh",purchaseOrders)
+
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     purchaseOrder: null as PurchaseOrder | null,
@@ -496,7 +498,7 @@ export default function PurchaseOrdersPage() {
                               if (typeof po.vendorId === "string") {
                                 return po.vendorId;
                               }
-                              const vendorName = po.vendorDetails?.name;
+                              const vendorName = po.vendorId?.name;
                               if (!vendorName) return "N/A";
                               if (typeof vendorName === "object") {
                                 const nameObj = vendorName as any;

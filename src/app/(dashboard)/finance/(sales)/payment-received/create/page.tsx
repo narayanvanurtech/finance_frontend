@@ -16,6 +16,7 @@ export default function PaymentReceivedCreatePage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (values: PaymentsMadeFormValues) => {
+    console.log("Values 123456787654321",values)
     if (!user?.companyId) return toast.error("Company ID Required");
 
     setLoading(true);
