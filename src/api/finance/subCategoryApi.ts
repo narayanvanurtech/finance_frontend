@@ -113,7 +113,7 @@ const subcategoryApi = {
       if (axios.isAxiosError(error)) {
         throw error;
       }
-      throw new Error("Error fetching subcategories");
+      // throw new Error("Error fetching subcategories");
     }
   },
 

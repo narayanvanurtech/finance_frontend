@@ -603,6 +603,9 @@ export default function QuotationListPage() {
 
   const isEmpty = quotations.length === 0;
 
+
+  console.log("quotation njhbjkchjb",quotations)
+
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto rounded-lg shadow p-4 sm:p-8 bg-[var(--color-card)]">

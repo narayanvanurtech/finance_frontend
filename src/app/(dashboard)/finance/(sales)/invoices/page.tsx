@@ -39,16 +39,22 @@ const validTransitions = {
 };
 
 // Helper to check if a status transition is valid
-const isValidTransition = (currentStatus: string, newStatus: string): boolean => {
+const isValidTransition = (
+  currentStatus: string,
+  newStatus: string,
+): boolean => {
   const normalizedCurrent = currentStatus || "draft";
-  const allowedTransitions = validTransitions[normalizedCurrent as keyof typeof validTransitions];
+  const allowedTransitions =
+    validTransitions[normalizedCurrent as keyof typeof validTransitions];
   return allowedTransitions ? allowedTransitions.includes(newStatus) : false;
 };
 
 // Helper to get valid next statuses for a given current status
 const getValidNextStatuses = (currentStatus: string): string[] => {
   const normalizedCurrent = currentStatus || "draft";
-  return validTransitions[normalizedCurrent as keyof typeof validTransitions] || [];
+  return (
+    validTransitions[normalizedCurrent as keyof typeof validTransitions] || []
+  );
 };
 
 // Helper to get client initials
@@ -70,7 +76,7 @@ export default function InvoicesPage() {
   const duplicateInvoice = useInvoiceStore((state) => state.duplicateInvoice);
   const deleteInvoice = useInvoiceStore((state) => state.deleteInvoice);
   const updateInvoiceStatus = useInvoiceStore(
-    (state) => state.updateInvoiceStatus
+    (state) => state.updateInvoiceStatus,
   );
 
   const [isLoading, setIsLoading] = useState(true);
@@ -124,7 +130,7 @@ export default function InvoicesPage() {
     setStatsLoading(true);
     try {
       const statsData = await getInvoiceStats("30");
-      
+
       const statusBreakdown = Array.isArray(statsData?.statusBreakdown)
         ? statsData.statusBreakdown.map((item: any) => ({
             status: item._id || item.status || "unknown",
@@ -141,18 +147,19 @@ export default function InvoicesPage() {
         typeof statsData?.totalRevenue === "number"
           ? statsData.totalRevenue
           : typeof statsData?.totalValue === "number"
-          ? statsData.totalValue
-          : Array.isArray(statsData?.statusBreakdown) && statsData.statusBreakdown.length > 0
-          ? statsData.statusBreakdown.reduce(
-              (sum: number, item: any) => sum + (item.totalValue || 0),
-              0
-            )
-          : Array.isArray(statsData?.paymentBreakdown)
-          ? statsData.paymentBreakdown.reduce(
-              (sum: number, item: any) => sum + (item.totalValue || 0),
-              0
-            )
-          : 0;
+            ? statsData.totalValue
+            : Array.isArray(statsData?.statusBreakdown) &&
+                statsData.statusBreakdown.length > 0
+              ? statsData.statusBreakdown.reduce(
+                  (sum: number, item: any) => sum + (item.totalValue || 0),
+                  0,
+                )
+              : Array.isArray(statsData?.paymentBreakdown)
+                ? statsData.paymentBreakdown.reduce(
+                    (sum: number, item: any) => sum + (item.totalValue || 0),
+                    0,
+                  )
+                : 0;
 
       // Calculate paidAmount from paymentBreakdown where _id is "paid"
       const paidAmount = Array.isArray(statsData?.paymentBreakdown)
@@ -161,27 +168,30 @@ export default function InvoicesPage() {
             .reduce((sum: number, item: any) => sum + (item.totalPaid || 0), 0)
         : 0;
 
+      console.log("paidAmount", paidAmount);
+
       // Calculate pendingAmount from paymentBreakdown where _id is "unpaid", "partial", or "overdue"
       const pendingAmount = Array.isArray(statsData?.paymentBreakdown)
         ? statsData.paymentBreakdown
             .filter(
               (item: any) =>
-                item._id === "unpaid" || item._id === "partial" || item._id === "overdue"
+                item._id === "unpaid" ||
+                item._id === "partial" ||
+                item._id === "overdue",
             )
-            .reduce(
-              (sum: number, item: any) => sum + (item.totalValue || 0),
-              0
-            )
+            .reduce((sum: number, item: any) => sum + (item.totalValue || 0), 0)
         : 0;
 
       // Extract overdue information from API response
-      const overdueInvoices = typeof statsData?.overdueInvoices === "number"
-        ? statsData.overdueInvoices
-        : 0;
-      
-      const overdueAmount = typeof statsData?.overdueAmount === "number"
-        ? statsData.overdueAmount
-        : 0;
+      const overdueInvoices =
+        typeof statsData?.overdueInvoices === "number"
+          ? statsData.overdueInvoices
+          : 0;
+
+      const overdueAmount =
+        typeof statsData?.overdueAmount === "number"
+          ? statsData.overdueAmount
+          : 0;
 
       // Ensure we have a valid stats object with default values
       const safeStats = {
@@ -194,7 +204,7 @@ export default function InvoicesPage() {
         overdueAmount,
         period: statsData?.period || "30 days",
       };
-      
+
       setStats(safeStats);
     } catch (error) {
       console.error("Failed to load stats:", error);
@@ -222,7 +232,7 @@ export default function InvoicesPage() {
 
         // Check if there are active filters
         const hasActiveFilters = Object.values(currentFilters).some(
-          (value) => value && value.length > 0
+          (value) => value && value.length > 0,
         );
 
         if (hasActiveFilters) {
@@ -287,21 +297,25 @@ export default function InvoicesPage() {
       setError(
         `Failed to duplicate invoice: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   };
 
-  const handleStatusChange = async (invoiceId: string, newStatus: string, currentStatus?: string) => {
+  const handleStatusChange = async (
+    invoiceId: string,
+    newStatus: string,
+    currentStatus?: string,
+  ) => {
     try {
       // Find the invoice to get its current status
       const invoice = invoices.find((inv) => (inv as any)._id === invoiceId);
       const invoiceStatus = currentStatus || invoice?.status || "draft";
-      
+
       // Validate the transition
       if (!isValidTransition(invoiceStatus, newStatus)) {
         toast.error(
-          `Invalid status transition: Cannot change from "${invoiceStatus}" to "${newStatus}"`
+          `Invalid status transition: Cannot change from "${invoiceStatus}" to "${newStatus}"`,
         );
         return;
       }
@@ -354,10 +368,7 @@ export default function InvoicesPage() {
     if (checked) {
       // Only select draft invoices
       const draftIds = invoices
-        .filter(
-          (inv) =>
-            inv?.status === "draft" || !inv?.status
-        )
+        .filter((inv) => inv?.status === "draft" || !inv?.status)
         .map((inv) => (inv as any)._id)
         .filter(Boolean);
       setSelectedInvoices(draftIds);
@@ -372,7 +383,7 @@ export default function InvoicesPage() {
     if (invoice && invoice?.status !== "draft" && invoice?.status) {
       return; // Don't allow selecting non-draft invoices
     }
-    
+
     if (checked) {
       setSelectedInvoices([...selectedInvoices, invoiceId]);
     } else {
@@ -388,12 +399,12 @@ export default function InvoicesPage() {
       (inv) =>
         selectedInvoices.includes((inv as any)._id) &&
         inv?.status !== "draft" &&
-        inv?.status
+        inv?.status,
     ).length;
 
     if (nonDraftCount > 0) {
       toast.error(
-        `Cannot delete ${nonDraftCount} invoice(s). Only draft invoices can be deleted.`
+        `Cannot delete ${nonDraftCount} invoice(s). Only draft invoices can be deleted.`,
       );
       return;
     }
@@ -512,19 +523,17 @@ export default function InvoicesPage() {
                     <th className="px-6 py-3 text-left">
                       <input
                         type="checkbox"
-                        checked={
-                          (() => {
-                            const draftInvoices = invoices.filter(
-                              (inv) => inv?.status === "draft" || !inv?.status
-                            );
-                            return (
-                              draftInvoices.length > 0 &&
-                              draftInvoices.every((inv) =>
-                                selectedInvoices.includes((inv as any)._id)
-                              )
-                            );
-                          })()
-                        }
+                        checked={(() => {
+                          const draftInvoices = invoices.filter(
+                            (inv) => inv?.status === "draft" || !inv?.status,
+                          );
+                          return (
+                            draftInvoices.length > 0 &&
+                            draftInvoices.every((inv) =>
+                              selectedInvoices.includes((inv as any)._id),
+                            )
+                          );
+                        })()}
                         onChange={(e) => handleSelectAll(e.target.checked)}
                         className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       />
@@ -582,19 +591,20 @@ export default function InvoicesPage() {
                           <input
                             type="checkbox"
                             checked={selectedInvoices.includes(
-                              (inv as any)._id
+                              (inv as any)._id,
                             )}
                             onChange={(e) =>
                               handleSelectInvoice(
                                 (inv as any)._id,
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                             disabled={
                               // Only enable for draft invoices, explicitly disable for paid, cancelled, and all other statuses
-                              inv?.status === "paid" || 
+                              inv?.status === "paid" ||
                               (inv?.status as string) === "cancelled" ||
-                              (inv?.status !== "draft" && inv?.status !== undefined)
+                              (inv?.status !== "draft" &&
+                                inv?.status !== undefined)
                             }
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
@@ -643,7 +653,7 @@ export default function InvoicesPage() {
                                 (typeof inv?.clientId === "object" &&
                                   (inv?.clientId as any)?.email) ||
                                   inv?.clientDetails?.name ||
-                                  "?"
+                                  "?",
                               )}
                             </span>
                             <span className="flex flex-col">
@@ -684,60 +694,47 @@ export default function InvoicesPage() {
                         </td>
 
                         <td
-                          className="px-6 py-4 whitespace-nowrap text-right text-gray-900 cursor-pointer"
-                          onClick={() => handleRowClick(inv._id!)}
-                        >
-                          <div className="flex flex-col items-end">
-                            <span className="font-semibold text-base">
-                              ₹
-                              {(
-                                (inv as any)?.grandTotal ||
-                                (inv as any)?.total ||
-                                0
-                              ).toLocaleString("en-IN", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </span>
-                            {(inv as any)?.subtotal &&
-                              (inv as any)?.subtotal !==
-                                (inv as any)?.grandTotal && (
-                                <span className="text-xs text-gray-500">
-                                  Subtotal: ₹
-                                  {(inv as any)?.subtotal.toLocaleString(
-                                    "en-IN",
-                                    {
-                                      minimumFractionDigits: 2,
-                                    }
-                                  )}
-                                </span>
-                              )}
-                            {(inv as any)?.totalTax &&
-                              (inv as any)?.totalTax > 0 && (
-                                <span className="text-xs text-gray-500">
-                                  Tax: ₹
-                                  {(inv as any)?.totalTax.toLocaleString(
-                                    "en-IN",
-                                    {
-                                      minimumFractionDigits: 2,
-                                    }
-                                  )}
-                                </span>
-                              )}
-                            {(inv as any)?.discountValue &&
-                              (inv as any)?.discountValue > 0 && (
-                                <span className="text-xs text-red-600">
-                                  Discount:{" "}
-                                  {(inv as any)?.discountType === "flat"
-                                    ? "₹"
-                                    : ""}
-                                  {(inv as any)?.discountValue}
-                                  {(inv as any)?.discountType === "percentage"
-                                    ? "%"
-                                    : ""}
-                                </span>
-                              )}
-                          </div>
-                        </td>
+  className="px-6 py-4 whitespace-nowrap text-right text-gray-900 cursor-pointer"
+  onClick={() => handleRowClick(inv._id!)}
+>
+  <div className="flex flex-col items-end">
+
+    {/* Grand Total */}
+    <span className="font-semibold text-base">
+      ₹{Number(inv?.grandTotal ?? 0).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+      })}
+    </span>
+
+    {/* Subtotal (correct key is subTotal, not subtotal) */}
+    {(inv as any)?.subTotal &&
+      (inv as any)?.subTotal !== (inv as any)?.grandTotal && (
+        <span className="text-xs text-gray-500">
+          Subtotal: ₹
+          {(inv as any)?.subTotal.toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+          })}
+        </span>
+      )}
+
+    {/* Paid */}
+    {(inv as any)?.totalPaid > 0 && (
+      <span className="text-xs text-green-600">
+        Paid: ₹
+        {(inv as any)?.totalPaid.toLocaleString("en-IN")}
+      </span>
+    )}
+
+    {/* Balance */}
+    {(inv as any)?.balanceAmount > 0 && (
+      <span className="text-xs text-red-600">
+        Balance: ₹
+        {(inv as any)?.balanceAmount.toLocaleString("en-IN")}
+      </span>
+    )}
+  </div>
+</td>
+
 
                         {/* ⭐ STATUS BADGE */}
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -833,7 +830,8 @@ export default function InvoicesPage() {
                                 {/* Status transition buttons based on valid transitions */}
                                 {(() => {
                                   const currentStatus = inv?.status || "draft";
-                                  const validNextStatuses = getValidNextStatuses(currentStatus);
+                                  const validNextStatuses =
+                                    getValidNextStatuses(currentStatus);
                                   const statusLabels: Record<string, string> = {
                                     sent: "Send",
                                     paid: "Mark as Paid",
@@ -853,13 +851,19 @@ export default function InvoicesPage() {
 
                                   // Filter out the current status and show only transitions
                                   return validNextStatuses
-                                    .filter((status) => status !== currentStatus)
+                                    .filter(
+                                      (status) => status !== currentStatus,
+                                    )
                                     .map((status) => (
                                       <button
                                         key={status}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleStatusChange(inv._id!, status, currentStatus);
+                                          handleStatusChange(
+                                            inv._id!,
+                                            status,
+                                            currentStatus,
+                                          );
                                           setOpenPopoverId(null);
                                         }}
                                         className={`px-3 py-2 rounded hover:bg-gray-100 ${statusColors[status] || "text-gray-700"} text-sm text-left`}
@@ -943,7 +947,7 @@ export default function InvoicesPage() {
                 <div className="flex items-center gap-1">
                   {Array.from(
                     { length: pagination.pages },
-                    (_, i) => i + 1
+                    (_, i) => i + 1,
                   ).map((page) => {
                     // Show first page, last page, current page, and pages around current
                     if (

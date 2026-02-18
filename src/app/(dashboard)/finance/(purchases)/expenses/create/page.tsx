@@ -10,6 +10,8 @@ import {
   useAddAttachment,
 } from "@/hooks/usePurchaseExpenseQueries";
 import { useRouter } from "next/navigation";
+import { useItems } from "@/hooks/useItemQueries";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 const generateExpenseNo = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -18,6 +20,7 @@ const generateExpenseNo = () => {
 };
 
 export default function CreateExpensePage() {
+  const { user } = useAuthStore();
   const { vendors, fetchVendors } = useVendorStore();
   // const { items } = useItemStore();
   const { details } = useBussinessStore();
@@ -26,7 +29,15 @@ export default function CreateExpensePage() {
     useAddAttachment();
   const router = useRouter();
   const businessStoreDetails = details;
+const { data: itemsData, isLoading: itemsLoading } = useItems(
+  user?.companyId ?? "",
+  {
+    enabled: !!user?.companyId,   // 🚀 prevents empty API call
+  }
+);
 
+const items = itemsData?.result?.items || [];
+  
   useEffect(() => {
     fetchVendors();
   }, [fetchVendors]);
@@ -168,13 +179,15 @@ export default function CreateExpensePage() {
     });
   };
 
+  
+
   return (
     <ExpenseForm
       initialValues={defaultInitialValues}
       onSubmit={handleCreate}
       mode="create"
       mockVendors={vendors}
-      // mockProducts={items}
+      mockProducts={items}
       loading={isPending || isUploadingAttachment}
     />
   );

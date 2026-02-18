@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import axios from "../../utils/axios";
 
 // Address interface based on the model
@@ -46,7 +47,9 @@ export interface Client {
   email: string;
   showEmail: boolean;
   phone?: string;
+  whatsappNo?:string;
   showPhone: boolean;
+  openSameAsWhatsappNo:boolean,
   gstin?: string;
   gstType: boolean;
   pan?: string;
@@ -75,6 +78,7 @@ export interface CreateClientPayload {
   companyId: string;
   email: string;
   phone?: string;
+  whatsappNo?:string;
   industry?: string;
   clientType?: "Company" | "Individual";
   taxTreatment?:
@@ -87,6 +91,7 @@ export interface CreateClientPayload {
   alias?: string;
   showEmail?: boolean;
   showPhone?: boolean;
+  phoneSameAsWhatsappNo?:boolean;
   gstType?: boolean;
   address?: Address;
   // accountDetails can be either a simple string or a structured object
@@ -122,7 +127,11 @@ export interface ClientFilters {
   email?: string;
   industry?: string;
   clientType?: "Company" | "Individual";
-  taxTreatment?: "Registered Business" | "Unregistered Business" | "Consumer" | "Overseas";
+  taxTreatment?:
+    | "Registered Business"
+    | "Unregistered Business"
+    | "Consumer"
+    | "Overseas";
   city?: string;
   state?: string;
   country?: string;
@@ -155,15 +164,18 @@ export interface DeleteResponse {
   message: string;
 }
 
+
+
 const clientApi = {
   // Create a new client
   createClient: async (
-    clientData: CreateClientPayload
+    clientData: CreateClientPayload,
+ 
   ): Promise<ClientResponse> => {
     try {
       const response = await axios.post<ClientResponse>(
         "/api/v1/finance/sales/client/createClient",
-        clientData
+        clientData,
       );
       return response.data;
     } catch (error) {
@@ -171,10 +183,11 @@ const clientApi = {
     }
   },
 
+  
   // Get all clients by company
   getAllClients: async (
     companyId: string,
-    filters?: ClientFilters
+    filters?: ClientFilters,
   ): Promise<ClientsResponse> => {
     try {
       const queryParams = new URLSearchParams();
@@ -238,9 +251,10 @@ const clientApi = {
 
   // Get all clients by user
   getAllClientsByUser: async (companyId: string): Promise<ClientsResponse> => {
+    console.log("CompanyId user",companyId)
     try {
       const response = await axios.get<ClientsResponse>(
-        `/api/v1/finance/sales/client/getAllClientsByUser/${companyId}`
+        `/api/v1/finance/sales/client/getAllClientsByUser/${companyId}`,
       );
       return response.data;
     } catch (error) {
@@ -251,11 +265,11 @@ const clientApi = {
   // Get client details by ID
   getClientDetails: async (
     companyId: string,
-    clientId: string
+    clientId: string,
   ): Promise<ClientResponse> => {
     try {
       const response = await axios.get<ClientResponse>(
-        `/api/v1/finance/sales/client/clientDetails/${companyId}/${clientId}`
+        `/api/v1/finance/sales/client/clientDetails/${companyId}/${clientId}`,
       );
       return response.data;
     } catch (error) {
@@ -267,15 +281,22 @@ const clientApi = {
   updateClientDetails: async (
     companyId: string,
     clientId: string,
-    clientData: UpdateClientPayload
+    clientData: UpdateClientPayload,
   ): Promise<ClientResponse> => {
     try {
       const response = await axios.put<ClientResponse>(
         `/api/v1/finance/sales/client/updateClientDetails/${companyId}/${clientId}`,
-        clientData
+        clientData,
       );
-      return response.data;
+      console.log("Client Updated SuccessFully ", response.data);
+      if (response.data.message === "Client updated successfully") {
+        setTimeout(() => {
+          toast.success(response.data.message);
+        }, 1000);
+        return response.data;
+      }
     } catch (error) {
+      toast.error(error.response.data.message || response.data.message || "Failed to Updated Client")
       throw error;
     }
   },
@@ -283,11 +304,11 @@ const clientApi = {
   // Delete a client
   deleteClient: async (
     companyId: string,
-    clientId: string
+    clientId: string,
   ): Promise<DeleteResponse> => {
     try {
       const response = await axios.delete<DeleteResponse>(
-        `/api/v1/finance/sales/client/deleteClient/${companyId}/${clientId}`
+        `/api/v1/finance/sales/client/deleteClient/${companyId}/${clientId}`,
       );
       return response.data;
     } catch (error) {
@@ -297,14 +318,14 @@ const clientApi = {
 
   bulkDeleteClients: async (
     companyId: string,
-    clientIds: string[]
+    clientIds: string[],
   ): Promise<DeleteResponse> => {
     try {
       const response = await axios.delete<DeleteResponse>(
         `/api/v1/finance/sales/client/bulkDeleteClients/${companyId}`,
         {
           data: { clientIds },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -317,7 +338,7 @@ const clientApi = {
     try {
       const response = await axios.post<ClientResponse>(
         "/api/v1/finance/sales/client/convertLead",
-        leadData
+        leadData,
       );
       return response.data;
     } catch (error) {
@@ -328,7 +349,7 @@ const clientApi = {
   // Upload client logo
   uploadClientLogo: async (
     clientId: string,
-    logoFile: File
+    logoFile: File,
   ): Promise<ClientResponse> => {
     try {
       const formData = new FormData();
@@ -337,7 +358,7 @@ const clientApi = {
       // Let axios automatically set Content-Type with boundary for FormData
       const response = await axios.post<ClientResponse>(
         `/api/v1/finance/sales/client/uploadLogo/${clientId}`,
-        formData
+        formData,
       );
       return response.data;
     } catch (error) {
@@ -349,7 +370,7 @@ const clientApi = {
   deleteClientLogo: async (clientId: string): Promise<DeleteResponse> => {
     try {
       const response = await axios.delete<DeleteResponse>(
-        `/api/v1/finance/sales/client/deleteLogo/${clientId}`
+        `/api/v1/finance/sales/client/deleteLogo/${clientId}`,
       );
       return response.data;
     } catch (error) {

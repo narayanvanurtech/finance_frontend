@@ -569,6 +569,7 @@ const InvoiceForm: React.FC<any> = ({
     if (onSuccess) onSuccess();
   };
 
+  console.log("Invoice ProductS",products)
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
       <InvoiceHeaderBar

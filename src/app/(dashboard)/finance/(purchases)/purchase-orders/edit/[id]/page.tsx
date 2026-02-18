@@ -15,13 +15,24 @@ import {
   transformFormToUpdatePayload,
   validatePurchaseOrderForm,
 } from "@/utils/purchaseOrderUtils";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
+import { useItems } from "@/hooks/useItemQueries";
 
 export default function EditPurchaseOrderPage() {
+  const { user } = useAuthStore();
   const params = useParams();
   const router = useRouter();
   const purchaseOrderId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const { data: vendorsData } = useGetVendors();
+  const { data: itemsData, isLoading: itemsLoading } = useItems(
+  user?.companyId ?? "",
+  {
+    enabled: !!user?.companyId,   // 🚀 prevents empty API call
+  }
+);
+
+ const items = itemsData?.result?.items || [];
   const { data: purchaseOrderData, isLoading } =
     useGetPurchaseOrderById(purchaseOrderId);
   const { mutate: updatePurchaseOrder, isPending } = useUpdatePurchaseOrder();
@@ -186,6 +197,7 @@ export default function EditPurchaseOrderPage() {
         mockVendors={vendors}
         purchaseOrderId={purchaseOrderId}
         isLocked={isOrderLocked}
+        mockProducts={items}
       />
     </>
   );

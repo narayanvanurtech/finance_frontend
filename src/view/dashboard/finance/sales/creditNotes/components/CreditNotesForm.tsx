@@ -719,6 +719,8 @@ const CreditNotesForm: React.FC<CreditNotesFormProps> = ({
     if (onSuccess) onSuccess();
   };
 
+  console.log("Invoice kncjdjijcijbdcnjdbhc:- ",invoices)
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
       {/* Credit Note Details Section */}

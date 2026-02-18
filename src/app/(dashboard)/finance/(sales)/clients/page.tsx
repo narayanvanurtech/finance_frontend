@@ -59,6 +59,10 @@ export default function ClientsPage() {
     industry: "",
     taxTreatment: "",
   });
+
+
+  console.log("Clients5673890:83765nnbcbvdc :=>=>",clients)
+
   // Separate state for search input to prevent losing focus
   const [searchInput, setSearchInput] = useState("");
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -178,8 +182,9 @@ export default function ClientsPage() {
     router.push(`/finance/clients/${clientId}`);
   };
 
-  const handleEditClientNavigation = (clientId: string) => {
-    router.push(`/finance/clients/${clientId}/edit`);
+  const handleEditClientNavigation = (clientId: string,companyId:string) => {
+    console.log("CompanyId....6ngfmn",companyId)
+    router.push(`/finance/clients/${clientId}/${companyId}/edit`);
   };
 
   const handleAddClient = async (data: AddClientForm) => {
@@ -198,6 +203,7 @@ export default function ClientsPage() {
         companyId: user.companyId,
         email: sanitize(data.email),
         phone: sanitize(data.phone),
+        whatsappNo:sanitize(data.whatsappNo),
         industry: sanitize(data.industry),
         clientType: data.clientType as "Company" | "Individual",
         taxTreatment: data.taxTreatment as
@@ -210,6 +216,7 @@ export default function ClientsPage() {
         alias: sanitize(data.alias),
         showEmail: !!data.showEmail,
         showPhone: !!data.showPhone,
+        phoneSameAsWhatsappNo:!!data.openSameAsWhatsappNo,
         gstType:
           typeof data.gstType === "boolean" ? data.gstType : !!data.gstType,
         address: {
@@ -253,6 +260,7 @@ export default function ClientsPage() {
         companyId: user.companyId,
         email: data.email,
         phone: data.phone,
+        whatsappNo:data.whatsappNo,
         industry: data.industry,
         clientType: data.clientType as "Company" | "Individual",
         taxTreatment: data.taxTreatment as
@@ -265,6 +273,7 @@ export default function ClientsPage() {
         alias: data.alias,
         showEmail: data.showEmail || false,
         showPhone: data.showPhone || false,
+        openSameAsWhatsappNo : data.openSameAsWhatsappNo || false,
         gstType: data.gstType || false,
         address: {
           street: data.street,
@@ -502,6 +511,8 @@ export default function ClientsPage() {
       </div>
     );
   }
+
+  console.log("Clients...4567",clients)
 
   return (
     <div className="w-full">
@@ -798,7 +809,7 @@ export default function ClientsPage() {
                   {/* Business Name */}
                   <td
                     className="px-4 py-4 font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId)}
                   >
                     {client?.businessName}
                   </td>
@@ -862,7 +873,7 @@ export default function ClientsPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEditClientNavigation(client._id);
+                              handleEditClientNavigation(client._id,client.companyId._id);
                               setOpenPopoverId(null);
                             }}
                             className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"

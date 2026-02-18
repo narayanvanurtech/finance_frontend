@@ -11,6 +11,7 @@ import { useItems } from "@/hooks/useItemQueries";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { toast } from "sonner";
+import { getAllItems } from "@/api/finance/itemApi";
 
 export default function EditSalesOrderPage() {
   const params = useParams();
@@ -18,8 +19,15 @@ export default function EditSalesOrderPage() {
   const { user } = useAuthStore();
   const { clients } = useClientStore();
   const businessDetails = useBussinessStore((s) => s.details);
-  const { data: itemsData } = useItems("");
-  const items = itemsData?.result?.items || [];
+const { data: itemsData, isLoading: itemsLoading } = useItems(
+  user?.companyId ?? "",
+  {
+    enabled: !!user?.companyId,   // 🚀 prevents empty API call
+  }
+);
+
+const items = itemsData?.result?.items || [];
+  const [allCategory ,setAllCategory]=useState([])
   const { currentSalesOrder, fetchSalesOrderById, updateSalesOrder } =
     useSalesOrderStore();
   const [loading, setLoading] = useState(false);
@@ -29,6 +37,9 @@ export default function EditSalesOrderPage() {
 
   // Get sales order ID from URL
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
+
+
+  console.log("Company Id Mcnn39874637",user?.companyId)
 
   // Fetch sales order data
   useEffect(() => {
@@ -186,6 +197,7 @@ export default function EditSalesOrderPage() {
 
     fetchData();
   }, [orderId, user?.companyId, fetchSalesOrderById, router]);
+
 
   const handleUpdate = async (values: SalesOrderFormValues) => {
     if (!user?.companyId) {

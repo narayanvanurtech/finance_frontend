@@ -209,7 +209,7 @@ const Profilesheet: React.FC<ProfilesheetProps> = ({
                       : "bg-white/20 text-white/90"
                   }`}
                 >
-                  {user?.role === "ADMIN" ? "Administrator" : "User"}
+                  {user?.role.toUpperCase() === "ADMIN" ? "Administrator" : "User"}
                 </div>
                 {plan?.isFree && (
                   <div className="px-3 py-1.5 rounded-full text-xs font-medium bg-white/20 text-white/90 border border-white/20 shadow-lg">

@@ -157,6 +157,8 @@ export type CreateClientForm = {
   email: string;
   showEmail: boolean;
   phone: string;
+  whatsappNo: string;
+  phoneSameAsWhatsappNo: boolean;
   showPhone: boolean;
   customFields: string;
   bankAccountNumber: string;
@@ -190,6 +192,8 @@ const initialForm: CreateClientForm = {
   email: "",
   showEmail: false,
   phone: "",
+  whatsappNo: "",
+  phoneSameAsWhatsappNo: false,
   showPhone: false,
   customFields: "",
   bankAccountNumber: "",
@@ -218,25 +222,37 @@ export default function CreateClientPage() {
   const [showAdditional, setShowAdditional] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
 
-  const handleChange = (field: keyof CreateClientForm, value: any) => {
-    // If GSTIN is being changed, try to auto-fill state
-    if (field === "gstin") {
-      let newState = form.addressState;
-      if (value && value.length >= 2) {
-        const code = value.substring(0, 2);
-        if (gstStateCodeMap[code]) {
-          newState = gstStateCodeMap[code];
-        }
+ const handleChange = (field: keyof CreateClientForm, value: any) => {
+  setForm((prev) => {
+    const updated = { ...prev, [field]: value };
+
+    // 🔥 Phone changed + checkbox ON → sync WhatsApp
+    if (field === "phone" && prev.phoneSameAsWhatsappNo) {
+      updated.whatsappNo = value;
+    }
+
+    // 🔥 Checkbox toggled
+    if (field === "phoneSameAsWhatsappNo") {
+      if (value === true) {
+        // Checked → copy phone
+        updated.phoneSameAsWhatsappNo=true
+        updated.whatsappNo = prev.phone;
+      } else {
+        // Unchecked → clear WhatsApp
+        updated.whatsappNo = "";
+        updated.phoneSameAsWhatsappNo=false
       }
-      setForm((f) => ({ ...f, gstin: value, addressState: newState }));
-    } else {
-      setForm((f) => ({ ...f, [field]: value }));
     }
-    // Clear field error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
+
+    return updated;
+  });
+
+  // Clear field error
+  if (errors[field]) {
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+  }
+};
+
 
   const handleLogo = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -280,9 +296,16 @@ export default function CreateClientPage() {
     }
 
     if (
+      form.whatsappNo &&
+      !/^[\+]?[1-9][\d]{0,15}$/.test(form.whatsappNo.replace(/\s/g, ""))
+    ) {
+      errs.whatsappNo = "Please enter a valid whatsappNo";
+    }
+
+    if (
       form.gstin &&
       !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(
-        form.gstin
+        form.gstin,
       )
     ) {
       errs.gstin = "Please enter a valid GSTIN format";
@@ -305,7 +328,7 @@ export default function CreateClientPage() {
       return;
     }
 
-    console.log(user?.companyId)
+    console.log(user?.companyId);
 
     if (!user?.companyId) {
       setErrors({ general: "Company ID is required" });
@@ -318,7 +341,12 @@ export default function CreateClientPage() {
       // Build accountDetails: if structured bank fields are provided, prefer structured object,
       // otherwise send the free-text customFields string for backwards compatibility.
       const accountDetailsPayload =
-        form.accountHolderName || form.bankName || form.bankAccountNumber || form.ifscCode || form.branchName || form.accountType
+        form.accountHolderName ||
+        form.bankName ||
+        form.bankAccountNumber ||
+        form.ifscCode ||
+        form.branchName ||
+        form.accountType
           ? {
               accountHolderName: form.accountHolderName || undefined,
               bankName: form.bankName || undefined,
@@ -334,6 +362,7 @@ export default function CreateClientPage() {
         companyId: user.companyId,
         email: form.email,
         phone: form.phone || "",
+        whatsappNo: form.whatsappNo || "",
         industry: form.industry || "",
         clientType: form.clientType as "Company" | "Individual",
         taxTreatment: form.taxTreatment
@@ -656,6 +685,22 @@ export default function CreateClientPage() {
                     >
                       Show phone in invoices
                     </label>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Checkbox
+                        checked={form.phoneSameAsWhatsappNo}
+                        onCheckedChange={(v) =>
+                          handleChange("phoneSameAsWhatsappNo", Boolean(v))
+                        }
+                        id="phoneSameAsWhatsappNo"
+                      />
+
+                      <label
+                        htmlFor="phoneSameAsWhatsappNo"
+                        className="text-sm text-gray-600"
+                      >
+                        Same as WhatsApp Number
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -668,6 +713,26 @@ export default function CreateClientPage() {
                     onChange={(e) => handleChange("alias", e.target.value)}
                     placeholder="Enter business alias"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    WhatsApp Number
+                  </label>
+                 <Input
+  value={form.whatsappNo}
+  onChange={(e) => handleChange("whatsappNo", e.target.value)}
+  placeholder="+91 9876543210"
+  disabled={form.phoneSameAsWhatsappNo}
+  className={
+    errors.whatsappNo ? "border-red-300" : ""
+  }
+/>
+
+                 {errors.whatsappNo && (
+  <p className="text-xs text-red-500 mt-1">{errors.whatsappNo}</p>
+)}
+
                 </div>
 
                 <div>

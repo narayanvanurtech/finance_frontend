@@ -82,7 +82,7 @@ export default function InvoicesPage() {
     <div className="max-w-5xl mx-auto rounded-lg shadow p-4 sm:p-8 bg-[var(--color-card)]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
         <h1 className="text-2xl font-bold text-[var(--color-card-foreground)]">
-          Invoices
+         Performa Invoices
         </h1>
         <a
           href="/dashboard/performa-invoices/create"
@@ -122,12 +122,12 @@ export default function InvoicesPage() {
                   colSpan={6}
                   className="py-12 text-center text-[var(--color-muted-foreground)] text-lg"
                 >
-                  No invoices found. <br />
+                  No Performa invoices found. <br />
                   <a
                     href="/dashboard/invoices/create"
                     className="text-[var(--color-primary)] underline"
                   >
-                    Create your first invoice
+                    Create your first Performa invoice
                   </a>
                 </td>
               </tr>

@@ -126,6 +126,8 @@ export default function AddClientModal({ open, onClose, onSubmit, initialValues,
     img.src = URL.createObjectURL(file);
   };
 
+  const companyId = localStorage.getItem("currentCompanyId")
+
   const validate = () => {
     const errs: { [k: string]: string } = {};
     if (!form.businessName) errs.businessName = "Business Name is required";
@@ -141,7 +143,7 @@ export default function AddClientModal({ open, onClose, onSubmit, initialValues,
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length === 0 && !logoError) {
-      onSubmit(form);
+      onSubmit({...form,companyId});
       setForm(initialForm);
       onClose();
     }

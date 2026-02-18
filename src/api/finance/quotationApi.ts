@@ -278,7 +278,7 @@ const quotationApi = {
   previewQuotationNumber: async (): Promise<QuotationNumberResponse> => {
     try {
       const response = await axiosInstance.get<QuotationNumberResponse>(
-        "/api/v1/finance/sales/quotations/preview-number"
+        "/api/v1/finance/sales/quotations/preview-number",
       );
       return response.data;
     } catch (error) {

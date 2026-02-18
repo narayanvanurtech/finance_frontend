@@ -34,6 +34,7 @@ import {
   Edit,
   Mail,
   Phone,
+
   MapPin,
   Building2,
   FileText,
@@ -56,11 +57,13 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { getLogoUrl } from "@/lib/utils";
+import { WhatsApp } from "@mui/icons-material";
 
 const ClientDetailsPage = () => {
   const router = useRouter();
   const params = useParams();
   const clientId = params?.id as string;
+ const companyId = params.companyId
 
   const { user } = useAuthStore();
   const {
@@ -76,6 +79,8 @@ const ClientDetailsPage = () => {
   } = useClientStore();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [sameAsPhone, setSameAsPhone] = useState(false);
+
   const [showLogoUploadModal, setShowLogoUploadModal] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
@@ -94,6 +99,7 @@ const ClientDetailsPage = () => {
     industry: "",
     email: "",
     phone: "",
+    whatsappNo:"",
     street: "",
     city: "",
     state: "",
@@ -126,6 +132,7 @@ const ClientDetailsPage = () => {
         industry: currentClient.industry || "",
         email: currentClient.email || "",
         phone: currentClient.phone || "",
+        whatsappNo: currentClient.whatsappNo || "",
         street: currentClient.address?.street || "",
         city: currentClient.address?.city || "",
         state: currentClient.address?.state || "",
@@ -153,36 +160,53 @@ const ClientDetailsPage = () => {
           currentClient.accountType || accountDetails?.accountType || "",
       });
 
+      setSameAsPhone(
+  !!currentClient.phone &&
+  currentClient.phone === currentClient.whatsappNo
+);
+
 
       setLogoPreview(currentClient.logoUrl as any)
     }
   }, [currentClient]);
 
   useEffect(() => {
-    if (user?.companyId && clientId) {
-      getClientById(user.companyId, clientId);
+  if (sameAsPhone) {
+    setFormData((prev) => ({
+      ...prev,
+      whatsappNo: prev.phone,
+    }));
+  }
+}, [formData.phone, sameAsPhone]);
+  console.log("User........324543214mkfnnfd",user)
+
+  useEffect(() => {
+    if (companyId && clientId) {
+      getClientById(companyId, clientId);
     }
 
     return () => {
       clearCurrentClient();
     };
-  }, [user?.companyId, clientId, getClientById, clearCurrentClient]);
-
-  const handleEdit = () => {
-    router.push(`/finance/clients/${clientId}/edit`);
-  };
+  }, [companyId, clientId, getClientById, clearCurrentClient]);
 
   const handleSave = async () => {
-    if (!user?.companyId || !clientId) return;
+    if (!companyId || !clientId) return;
+
+    console.log("CompanyId with clientId",companyId , clientId)
 
     setIsSaving(true);
     try {
-      await updateClient(user.companyId, clientId, {
+     await updateClient(companyId, clientId, {
         businessName: formData.businessName,
         clientType: formData.clientType as "Individual" | "Company",
         industry: formData.industry || undefined,
         email: formData.email,
         phone: formData.phone || undefined,
+  whatsappNo: sameAsPhone
+    ? formData.phone || undefined
+    : formData.whatsappNo || undefined,
+  phoneSameAsWhatsappNo: sameAsPhone,
         address: {
           street: formData.street || undefined,
           city: formData.city || undefined,
@@ -210,9 +234,11 @@ const ClientDetailsPage = () => {
         },
       });
 
-      await getClientById(user.companyId, clientId);
-
+ 
+     await getClientById(companyId, clientId);
+   
       // 👇 Redirect after update
+      
       router.push("/finance/clients");
     } catch (error) {
       console.error("Error updating client:", error);
@@ -222,10 +248,10 @@ const ClientDetailsPage = () => {
   };
 
   const handleDelete = async () => {
-    if (!user?.companyId || !clientId) return;
+    if (!companyId || !clientId) return;
 
     try {
-      await deleteClient(user.companyId, clientId);
+      await deleteClient(companyId, clientId);
       router.push("/finance/clients");
     } catch (error) {
       console.error("Error deleting client:", error);
@@ -414,7 +440,7 @@ const ClientDetailsPage = () => {
               </div>
               <p className="text-gray-600 mb-4">Client not found</p>
               <p className="text-sm text-gray-500 mb-4">
-                Client ID: {clientId} | Company ID: {user?.companyId}
+                Client ID: {clientId} | Company ID: {companyId}
               </p>
               <Button
                 onClick={handleBack}
@@ -676,6 +702,51 @@ const ClientDetailsPage = () => {
                     placeholder="Enter phone number"
                   />
                 </div>
+                
+               <div className="space-y-2">
+  <Label
+    htmlFor="whatsappNo"
+    className="flex items-center text-gray-500"
+  >
+    <WhatsApp className="w-4 h-4 mr-2" />
+    WhatsApp No
+  </Label>
+
+  <Input
+    id="whatsappNo"
+    type="tel"
+    value={formData.whatsappNo}
+    disabled={sameAsPhone}
+    onChange={(e) =>
+      setFormData({ ...formData, whatsappNo: e.target.value })
+    }
+    className="border-gray-200"
+    placeholder="Enter WhatsApp number"
+  />
+
+  {/* Same as phone checkbox */}
+  <div className="flex items-center gap-2 mt-2">
+    <input
+      type="checkbox"
+      id="sameAsPhone"
+      checked={sameAsPhone}
+      onChange={(e) => {
+        const checked = e.target.checked;
+        setSameAsPhone(checked);
+
+        setFormData((prev) => ({
+          ...prev,
+          whatsappNo: checked ? prev.phone : "",
+        }));
+      }}
+      className="h-4 w-4 rounded border-gray-300"
+    />
+    <Label htmlFor="sameAsPhone" className="text-sm text-gray-600">
+      Same as Phone Number
+    </Label>
+  </div>
+</div>
+
               </CardContent>
             </Card>
 

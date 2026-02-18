@@ -14,6 +14,7 @@ import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { CreateQuotationPayload } from "@/api/finance/quotationApi";
 import { toast } from "sonner";
 
+
 export default function CreateQuotationPage() {
   const { clients } = useClientStore();
   const { createQuotation, previewQuotationNumber } = useQuotationStore();
@@ -28,11 +29,13 @@ export default function CreateQuotationPage() {
   const [showConvertToInvoice, setShowConvertToInvoice] = useState(false);
   const { duplicatePerformaInvoice } = usePerformaInvoiceStore();
 
+
+
   // Fetch quotation number on component mount
   useEffect(() => {
     const fetchQuotationNumber = async () => {
       try {
-        const number = await previewQuotationNumber();
+        const number = await previewQuotationNumber("QUO",user?.companyId);
         setQuotationNumber(number);
       } catch (error: any) {
         const datePart = new Date()
@@ -46,6 +49,9 @@ export default function CreateQuotationPage() {
 
     fetchQuotationNumber();
   }, [previewQuotationNumber]);
+
+
+
 
   // if (!businessStoreDetails) {
   //   return <div>Loading business details...</div>;

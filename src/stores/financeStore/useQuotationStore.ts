@@ -112,8 +112,6 @@ export const useQuotationStore = create<QuotationStore>()((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await quotationApi.createQuotation(data);
-
-      // Add new quotation to store list
       set((state) => ({
         quotations: [res.data, ...state.quotations],
         loading: false,
@@ -189,10 +187,12 @@ export const useQuotationStore = create<QuotationStore>()((set, get) => ({
   previewQuotationNumber: async () => {
     try {
       const res = await quotationApi.previewQuotationNumber();
+      console.log("Preview Quotation",res.data)
       return res.data.quotationNumber;
     } catch (error: any) {
-      const msg = error?.response?.data?.message || "Failed to generate number";
-      toast.error(msg);
+      // const msg = error?.response?.data?.message || "Failed to generate number";
+      // toast.error(msg);
+
       throw error;
     }
   },

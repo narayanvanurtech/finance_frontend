@@ -1003,9 +1003,9 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
           const res = await performaInvoiceApi.previewPerformaInvoiceNumber();
           return res.data.invoiceNumber;
         } catch (error: any) {
-          const msg =
-            error?.response?.data?.message || "Failed to generate number";
-          toast.error(msg);
+          // const msg =
+          //   error?.response?.data?.message || "Failed to generate number";
+          // toast.error(msg);
           throw error;
         }
       },

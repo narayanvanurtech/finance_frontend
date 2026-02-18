@@ -251,6 +251,8 @@ export default function CreatePerformaInvoicePage() {
     }
   };
 
+  console.log("Permonace Invoice ....",items)
+
   return (
     <PerformaInvoiceForm
       initialValues={defaultInitialValues}

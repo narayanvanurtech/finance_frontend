@@ -276,9 +276,9 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
           const res = await salesOrderApi.previewOrderNumber(companyId);
           return res.data.orderNumber;
         } catch (error: any) {
-          const msg =
-            error?.response?.data?.message || "Failed to generate number";
-          toast.error(msg);
+          // const msg =
+          //   error?.response?.data?.message || "Failed to generate number";
+          // toast.error(msg);
           throw error;
         }
       },

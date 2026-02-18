@@ -15,13 +15,23 @@ import { useBussinessStore } from "@/financeStore/useBussinessStore";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FiArrowLeft } from "react-icons/fi";
+
 import Link from "next/link";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
+import { useItems } from "@/hooks/useItemQueries";
 
 export default function EditExpensePage() {
+  const { user } = useAuthStore();
   const params = useParams();
   const router = useRouter();
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
-
+const { data: itemsData, isLoading: itemsLoading } = useItems(
+  user?.companyId ?? "",
+  {
+    enabled: !!user?.companyId,   // 🚀 prevents empty API call
+  }
+);
+const items = itemsData?.result?.items || [];
   // Fetch vendors and business details
   const { vendors, fetchVendors } = useVendorStore();
   const { details: businessDetails } = useBussinessStore();
@@ -323,7 +333,7 @@ export default function EditExpensePage() {
         mode="edit"
         loading={isUpdating || isUploadingAttachment}
         mockVendors={vendors}
-        mockProducts={[]}
+        mockProducts={items}
       />
     </div>
   );

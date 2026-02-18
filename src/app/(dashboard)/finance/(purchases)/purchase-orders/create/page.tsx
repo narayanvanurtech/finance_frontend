@@ -14,6 +14,7 @@ import { useCreatePurchaseOrder } from "@/hooks/usePurchaseOrderQueries";
 import { useGetVendors } from "@/hooks/useVendorQueries";
 import { useItems } from "@/hooks/useItemQueries";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 
 const generatePurchaseOrderNo = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -22,14 +23,22 @@ const generatePurchaseOrderNo = () => {
 };
 
 export default function CreatePurchaseOrderPage() {
+  const { user } = useAuthStore();
   const { data: vendorsData } = useGetVendors();
-  const { data: itemsData } = useItems("");
+  const { data: itemsData, isLoading: itemsLoading } = useItems(
+  user?.companyId ?? "",
+  {
+    enabled: !!user?.companyId,   // 🚀 prevents empty API call
+  }
+);
+
+ const items = itemsData?.result?.items || [];
   const { details } = useBussinessStore();
   const { mutate: createPurchaseOrder, isPending } = useCreatePurchaseOrder();
   const router = useRouter();
 
   const vendors = vendorsData?.result?.vendors || [];
-  const items = itemsData?.result?.items || [];
+
   const businessStoreDetails = details;
 
   // if (!businessStoreDetails) {
@@ -146,6 +155,7 @@ export default function CreatePurchaseOrderPage() {
       toast.error(errorMessage);
     }
   };
+
 
   return (
     <PurchaseOrderForm

@@ -62,6 +62,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   mode,
   onSuccess,
   loading,
+  mockProducts,
   mockVendors,
   purchaseOrderId,
   isLocked = false,
@@ -363,6 +364,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         </div>
       </div>
       <ItemTable
+      mockProducts={mockProducts}
         items={items}
         setItems={setItems}
         handleItemChange={handleItemChange}

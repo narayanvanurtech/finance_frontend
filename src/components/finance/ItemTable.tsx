@@ -64,7 +64,7 @@ export type ItemTableProps = {
   mockProducts?: {
     id: number;
     name: string;
-    price: number;
+    sellingPrice: number;
     type: string;
     description?: string;
     hsn?: string;
@@ -110,6 +110,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
     }
   }, [businessState, clientState, taxType, setTaxConfiguration]);
 
+  console.log("Items .......",items)
+
   const UNIT_OPTIONS = [
     { value: "nos", label: "Nos (Numbers)" },
     { value: "pcs", label: "Pcs (Pieces)" },
@@ -139,6 +141,8 @@ const ItemTable: React.FC<ItemTableProps> = ({
   const [customUnits, setCustomUnits] = React.useState<{
     [key: number]: string;
   }>({});
+
+
 
   return (
     <Card className="bg-white rounded-xl p-6 mb-6">
@@ -266,17 +270,67 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 className="even:bg-gray-50 hover:bg-blue-50 transition"
               >
                 {/* Item Name */}
-                <td className="px-3 py-3 align-top">
-                  <Input
-                    type="text"
-                    className="w-full min-w-[180px] h-10"
-                    placeholder="Enter item name"
-                    value={item.name}
-                    onChange={(e) =>
-                      handleItemChange(idx, "name", e.target.value)
-                    }
-                  />
-                </td>
+               {/* Product Select */}
+<td className="px-3 py-3 align-top">
+  <Select
+    value={item.name || ""}
+    onValueChange={(value) => {
+      const selectedProduct = mockProducts?.find(
+        (prod) => prod.name === value
+      );
+
+      setItems((prev) =>
+        prev.map((it, i) => {
+          if (i !== idx) return it;
+
+          const updatedItem = {
+            ...it,
+            itemId:selectedProduct?.id || selectedProduct?._id || "",
+            name: selectedProduct?.name || "",
+            rate: selectedProduct?.sellingPrice ?? 0,
+            description: selectedProduct?.description || "",
+            hsn: selectedProduct?.hsn || "",
+            unit: selectedProduct?.unit || "pcs",
+            igst: selectedProduct?.igst || 0,
+            sgst: selectedProduct?.sgst || 0,
+            cgst: selectedProduct?.cgst || 0,
+          };
+
+          // 🔥 Recalculate amount immediately
+          const qty = updatedItem.qty || 0;
+          const rate = updatedItem.rate || 0;
+          const discount = updatedItem.discount || 0;
+
+          let subtotal = qty * rate;
+
+          if (updatedItem.discountType === "percentage") {
+            subtotal -= (subtotal * discount) / 100;
+          } else {
+            subtotal -= discount;
+          }
+
+          return {
+            ...updatedItem,
+            amount: subtotal,
+          };
+        })
+      );
+    }}
+  >
+    <SelectTrigger className="w-full min-w-[180px] h-10">
+      <SelectValue placeholder="Select product" />
+    </SelectTrigger>
+
+    <SelectContent>
+      {mockProducts?.map((product) => (
+        <SelectItem key={product.id || product._id} value={product.name}>
+          {product.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</td>
+
 
                 {/* Qty */}
                 <td className="px-3 py-3 align-top">
@@ -300,9 +354,9 @@ const ItemTable: React.FC<ItemTableProps> = ({
                       className="w-full text-center h-10"
                       value={item.rate}
                       min={0}
-                      onChange={(e) =>
-                        handleItemChange(idx, "rate", e.target.value)
-                      }
+                    onChange={(e) =>
+  handleItemChange(idx, "rate", Number(e.target.value))
+}
                     />
                   </div>
                 </td>

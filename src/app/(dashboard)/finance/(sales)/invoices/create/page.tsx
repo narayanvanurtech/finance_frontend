@@ -1,7 +1,6 @@
 "use client";
 
-// Copy and adapt from quotation create page
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import InvoiceForm, {
   InvoiceFormValues,
 } from "@/components/finance/invoice/InvoiceForm";
@@ -9,28 +8,52 @@ import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useItems } from "@/hooks/useItemQueries";
 import { useRouter } from "next/navigation";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { toast } from "sonner";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import type { Item } from "@/api/finance/itemApi";
 
 const generateInvoiceNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random
+  const randomPart = Math.floor(1000 + Math.random() * 9000);
   return `INV-${datePart}-${randomPart}`;
 };
 
 export default function CreateInvoicePage() {
   const router = useRouter();
   const { clients } = useClientStore();
-  const { data: itemsData } = useItems("");
-  const items = itemsData?.result?.items || [];
-  const [loading, setLoading] = useState(false);
-  const createInvoice = useInvoiceStore((state) => state.createInvoice);
+  const { user } = useAuthStore();
   const { details } = useBussinessStore();
-  const businessStoreDetails = details;
+  const createInvoice = useInvoiceStore((state) => state.createInvoice);
 
-  // State for initial items (for bulk invoice)
-  const [initialItems, setInitialItems] = useState<InvoiceFormValues["items"]>([
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * ✅ Fetch items using companyId
+   * Only runs when user.companyId exists
+   */
+  const { data: itemsData } = useItems(user?.companyId ?? "", {
+    enabled: !!user?.companyId,
+  });
+
+  const items: Item[] = itemsData?.result?.items || [];
+
+  /**
+   * ✅ Map products for InvoiceForm
+   */
+  const mappedProducts = useMemo(() => {
+    return items.map((item: Item) => ({
+      ...item,
+      price: item.sellingPrice,
+    }));
+  }, [items]);
+
+  /**
+   * ✅ Initial Item Row
+   */
+  const [initialItems, setInitialItems] = useState<
+    InvoiceFormValues["items"]
+  >([
     {
       name: "",
       description: "",
@@ -46,49 +69,56 @@ export default function CreateInvoicePage() {
     },
   ]);
 
+  /**
+   * ✅ Load bulk items from localStorage (if any)
+   */
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const bulkItems = localStorage.getItem("bulkInvoiceItems");
-      if (bulkItems) {
-        try {
-          const parsed = JSON.parse(bulkItems);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setInitialItems(
-              parsed.map((item: any) => ({
-                name: item.name || "",
-                description: item.description || "",
-                qty: 1,
-                rate: item.sellingPrice || 0,
-                discount: 0,
-                igst: 0,
-                sgst: 0,
-                cgst: 0,
-                amount: 0,
-                hsn: item.hsn || "",
-                unit: item.unit || "pcs",
-              }))
-            );
-          }
-        } catch (e) {
-          // ignore
+    if (typeof window === "undefined") return;
+
+    const bulkItems = localStorage.getItem("bulkInvoiceItems");
+
+    if (bulkItems) {
+      try {
+        const parsed = JSON.parse(bulkItems);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setInitialItems(
+            parsed.map((item: any) => ({
+              name: item.name || "",
+              description: item.description || "",
+              qty: 1,
+              rate: item.sellingPrice || 0,
+              discount: 0,
+              igst: 0,
+              sgst: 0,
+              cgst: 0,
+              amount: 0,
+              hsn: item.hsn || "",
+              unit: item.unit || "pcs",
+            }))
+          );
         }
-        localStorage.removeItem("bulkInvoiceItems");
+      } catch {
+        // ignore parsing errors
       }
+
+      localStorage.removeItem("bulkInvoiceItems");
     }
   }, []);
 
-  // if (!businessStoreDetails) {
-  //   return <div>Loading business details...</div>;
-  // }
-
+  /**
+   * ✅ Map business details safely
+   */
   const mappedBusinessDetails = {
-    name: businessStoreDetails?.businessName || "",
-    gstin: businessStoreDetails?.gstNumber || "",
-    address: businessStoreDetails?.website || "",
-    contact: businessStoreDetails?.phone || "",
+    name: details?.businessName || "",
+    gstin: details?.gstNumber || "",
+    address: details?.website || "",
+    contact: details?.phone || "",
     email: "",
   };
 
+  /**
+   * ✅ Default form values
+   */
   const defaultInitialValues: InvoiceFormValues = {
     type: "invoice",
     invoiceTitle: "",
@@ -121,179 +151,47 @@ export default function CreateInvoicePage() {
     phases: [],
   };
 
-  console.log(defaultInitialValues);
-
+  /**
+   * ✅ Handle Create Invoice
+   */
   const handleCreate = async (values: InvoiceFormValues) => {
     setLoading(true);
+
     try {
-      // ✅ Validate clientId is provided
-      if (!values.clientId || values.clientId.trim() === "") {
+      if (!values.clientId?.trim()) {
         toast.error("Please select a client");
-        setLoading(false);
         return;
       }
 
-      // ✅ Validate items exist
-      if (!values.items || values.items.length === 0) {
+      if (!values.items?.length) {
         toast.error("Please add at least one item");
-        setLoading(false);
         return;
       }
 
-      // ✅ Validate that at least one item has a name
-      if (values.items.every((item: any) => !item.name || !item.name.trim())) {
-        toast.error("Please add at least one item with a name");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Validate dates
-      if (!values.date) {
-        toast.error("Invoice date is required");
-        setLoading(false);
-        return;
-      }
-
-      if (!values.dueDate) {
-        toast.error("Due date is required");
-        setLoading(false);
-        return;
-      }
-
-      if (new Date(values.dueDate) < new Date(values.date)) {
-        toast.error("Due date cannot be earlier than invoice date");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Validate invoice title
-      if (!values.invoiceTitle || !values.invoiceTitle.trim()) {
-        toast.error("Invoice title is required");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Validate phases if any exist
-      if (values.phases && values.phases.length > 0) {
-        const totalPercentage = values.phases.reduce(
-          (sum, phase) => sum + (Number(phase.percentage) || 0),
-          0
-        );
-        if (totalPercentage !== 100) {
-          toast.error(
-            `Total percentage of phases must equal 100%. Current total: ${totalPercentage}%`
-          );
-          setLoading(false);
-          return;
-        }
-
-        // Check for empty phase titles
-        const hasEmptyTitles = values.phases.some(
-          (phase) => !phase.title || !phase.title.trim()
-        );
-        if (hasEmptyTitles) {
-          toast.error("All phases must have a title");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // ✅ Sanitize items - convert string numbers to actual numbers
       const sanitizedItems = values.items.map((item: any) => ({
         ...item,
-        name: item.name || "",
-        description: item.description || "",
         qty: Number(item.qty) || 0,
-        quantity: Number(item.quantity) || Number(item.qty) || 0,
         rate: Number(item.rate) || 0,
         discount: Number(item.discount) || 0,
         igst: Number(item.igst) || 0,
         sgst: Number(item.sgst) || 0,
         cgst: Number(item.cgst) || 0,
         amount: Number(item.amount) || 0,
-        hsn: item.hsn || "",
-        unit: item.unit || "pcs",
         taxRate: Number(item.taxRate) || 0,
       }));
 
-      // ✅ Sanitize phases - convert percentage strings to numbers
-      const sanitizedPhases =
-        values.phases?.map((phase) => ({
-          ...phase,
-          title: phase.title || "",
-          percentage: Number(phase.percentage) || 0,
-          dueDate: phase.dueDate || "",
-        })) || [];
-
-      // ✅ Sanitize attachments - remove empty ones
-      const sanitizedAttachments = Array.isArray(values.attachments)
-        ? values.attachments.filter((att) => att && Object.keys(att).length > 0)
-        : [];
-
-      // ✅ Sanitize emails - ensure they are strings (not undefined)
-      const sanitizedBusinessDetails = {
-        name: values.businessDetails?.name || "",
-        gstin: values.businessDetails?.gstin || "",
-        address: values.businessDetails?.address || "",
-        contact: values.businessDetails?.contact || "",
-        email:
-          values.businessDetails?.email &&
-          values.businessDetails.email.trim() !== ""
-            ? values.businessDetails.email
-            : "",
-      };
-
-      const sanitizedClientDetails = {
-        name: values.clientDetails?.name || "",
-        gstin: values.clientDetails?.gstin || "",
-        address: values.clientDetails?.address || "",
-        contact: values.clientDetails?.contact || "",
-        email:
-          values.clientDetails?.email &&
-          values.clientDetails.email.trim() !== ""
-            ? values.clientDetails.email
-            : "",
-      };
-
-      // ✅ Sanitize cessList
-      const sanitizedCessList =
-        values.cessList?.map((cess: any) => ({
-          name: cess.name || "",
-          value: Number(cess.value) || 0,
-          showInInvoice: cess.showInInvoice || false,
-        })) || [];
-
-      // ✅ Create final payload with all sanitized values
-      const sanitizedValues: InvoiceFormValues = {
+      const payload: InvoiceFormValues = {
         ...values,
-        type: values.type || "invoice",
-        invoiceTitle: values.invoiceTitle.trim(),
-        invoiceNumber: values.invoiceNumber,
-        date: values.date,
-        dueDate: values.dueDate,
-        clientId: values.clientId,
         items: sanitizedItems,
-        phases: sanitizedPhases,
-        attachments: sanitizedAttachments,
-        businessDetails: sanitizedBusinessDetails,
-        clientDetails: sanitizedClientDetails,
-        cessList: sanitizedCessList as any,
-        discountType: values.discountType || "flat",
         discountValue: Number(values.discountValue) || 0,
         shipping: Number(values.shipping) || 0,
-        roundOff: values.roundOff || false,
-        showHSN: values.showHSN || false,
-        showUnit: values.showUnit || false,
-        terms: values.terms || "",
-        notes: values.notes || "",
-        showSignature: values.showSignature || false,
       };
 
-      await createInvoice(sanitizedValues);
+      await createInvoice(payload);
+
       toast.success("Invoice created successfully!");
       router.push("/finance/invoices");
     } catch (error: any) {
-      console.error("Error creating invoice:", error);
       toast.error(
         error?.message ||
           error?.response?.data?.message ||
@@ -310,10 +208,7 @@ export default function CreateInvoicePage() {
       onSubmit={handleCreate}
       mode="create"
       mockClients={clients}
-      mockProducts={items.map((item: Item) => ({
-        ...item,
-        price: item.sellingPrice,
-      }))}
+      mockProducts={mappedProducts}
       loading={loading}
     />
   );

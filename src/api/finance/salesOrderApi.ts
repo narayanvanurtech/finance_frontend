@@ -210,6 +210,7 @@ const salesOrderApi = {
   previewOrderNumber: async (
     companyId: string
   ): Promise<SalesOrderNumberResponse> => {
+    
     try {
       const response = await axiosInstance.get<SalesOrderNumberResponse>(
         `/api/v1/finance/sales/sales-orders/preview-number/${companyId}`

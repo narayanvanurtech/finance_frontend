@@ -763,7 +763,7 @@ export default function PaymentsMadeForm({
                           {purchase.purchaseOrderDate}
                         </td>
                         <td className="px-3 py-2 text-right font-semibold">
-                          ₹{total.toFixed(2)}
+                          ₹{total.toFixed(2) || amountPaid}
                         </td>
                       </tr>
                     );
