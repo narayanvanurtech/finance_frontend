@@ -48,6 +48,8 @@ const QuotationStats: React.FC<QuotationStatsProps> = ({
     );
   }
 
+  console.log("Stats",stats)
+
   const getStatusIcon = (status: string) => {
     if (!status) return <FiFileText className="w-5 h-5 text-gray-500" />;
 

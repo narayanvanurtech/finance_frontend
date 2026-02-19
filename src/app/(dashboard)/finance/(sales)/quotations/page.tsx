@@ -25,6 +25,7 @@ import QuotationFilters, {
   SearchFilters,
 } from "@/components/finance/quotation/QuotationFilters";
 import DeleteQuotationDialog from "@/components/finance/quotation/DeleteQuotationDialog";
+import axiosInstance from "@/utils/axios";
 
 // Helper to get status color classes
 const getStatusClasses = (status: string) => {
@@ -48,6 +49,9 @@ const getInitials = (name: string) => {
     .join("")
     .toUpperCase();
 };
+
+
+
 
 // Helper to get status badge
 const getStatusBadge = (status: string) => {
@@ -252,6 +256,7 @@ export default function QuotationListPage() {
     setCurrentPage(1); // Reset to first page when searching
   }, []);
 
+
   // Handle clear filters
   const handleClearFilters = useCallback(() => {
     setCurrentFilters({});
@@ -379,6 +384,31 @@ export default function QuotationListPage() {
   const handleDeleteCancel = () => {
     setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
   };
+
+  const handleSendEmail = async (quotationId: string) => {
+    const token = localStorage.getItem("token")
+    console.log("handleSendEmail",quotationId)
+    
+  try {
+    const res = await axiosInstance.post(
+      `/api/v1/email/send-quotation`,
+      { quotationId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    toast.success("Quotation email sent");
+    console.log(res.data);
+
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to send quotation email");
+  }
+};
+
 
   const handleDuplicate = async (quotationId: string) => {
     try {
@@ -956,6 +986,17 @@ export default function QuotationListPage() {
                             >
                               Edit
                             </Link>
+                           <button
+                              onClick={()=>{
+                                const id = q?._id || q?.id;
+                                handleSendEmail(id)
+                              }}
+                              className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                              aria-label="Send"
+                            >
+                             Send Email
+                            </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

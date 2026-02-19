@@ -35,7 +35,7 @@ export default function CreateQuotationPage() {
   useEffect(() => {
     const fetchQuotationNumber = async () => {
       try {
-        const number = await previewQuotationNumber("QUO",user?.companyId);
+        const number = await previewQuotationNumber();
         setQuotationNumber(number);
       } catch (error: any) {
         const datePart = new Date()
@@ -181,7 +181,8 @@ export default function CreateQuotationPage() {
             showInInvoice: cess.showInInvoice,
           })) || [],
       };
-      await createQuotation(payload);
+ await createQuotation(payload);
+     
       toast.success("Quotation created successfully");
       router.push("/finance/quotations"); // Redirect to quotations listing
     } catch (error: any) {

@@ -24,10 +24,15 @@ import PerformaInvoiceStats from "@/components/finance/performa-invoice/Performa
 import PerformaInvoiceFilters from "@/components/finance/performa-invoice/PerformaInvoiceFilters";
 import type { PerformaInvoiceFormValues } from "@/components/finance/performa-invoice/PerformaInvoiceForm";
 import type { SearchFilters } from "@/components/finance/performa-invoice/PerformaInvoiceFilters";
+import axiosInstance from "@/utils/axios";
 
 // Helper to get client initials
 const getInitials = (name: string) => {
-  return name?.split(" ").map((n) => n[0]).join("").toUpperCase();
+  return name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 };
 
 // Helper to get status badge
@@ -81,29 +86,29 @@ const getStatusBadge = (status: string) => {
 export default function PerformaInvoicesPage() {
   const router = useRouter();
   const allPerformaInvoices = usePerformaInvoiceStore(
-    (state) => state.performaInvoices
+    (state) => state.performaInvoices,
   );
   const pagination = usePerformaInvoiceStore((state) => state.pagination);
   const fetchPerformaInvoices = usePerformaInvoiceStore(
-    (state) => state.fetchPerformaInvoices
+    (state) => state.fetchPerformaInvoices,
   );
   const searchPerformaInvoices = usePerformaInvoiceStore(
-    (state) => state.searchPerformaInvoices
+    (state) => state.searchPerformaInvoices,
   );
   const getPerformaInvoiceStats = usePerformaInvoiceStore(
-    (state) => state.getPerformaInvoiceStats
+    (state) => state.getPerformaInvoiceStats,
   );
   const duplicatePerformaInvoice = usePerformaInvoiceStore(
-    (state) => state.duplicatePerformaInvoice
+    (state) => state.duplicatePerformaInvoice,
   );
   const deletePerformaInvoice = usePerformaInvoiceStore(
-    (state) => state.deletePerformaInvoice
+    (state) => state.deletePerformaInvoice,
   );
   const updatePerformaInvoiceStatus = usePerformaInvoiceStore(
-    (state) => state.updatePerformaInvoiceStatus
+    (state) => state.updatePerformaInvoiceStatus,
   );
   const convertToInvoice = usePerformaInvoiceStore(
-    (state) => state.convertToInvoice
+    (state) => state.convertToInvoice,
   );
 
   const [isLoading, setIsLoading] = useState(true);
@@ -164,7 +169,7 @@ export default function PerformaInvoicesPage() {
 
         // Check if there are active filters
         const hasActiveFilters = Object.values(currentFilters).some(
-          (value) => value && value.length > 0
+          (value) => value && value.length > 0,
         );
 
         if (hasActiveFilters) {
@@ -190,7 +195,7 @@ export default function PerformaInvoicesPage() {
         }
       } catch (err: any) {
         setError(
-          `Failed to load performa invoices: ${err?.message || "Unknown error"}`
+          `Failed to load performa invoices: ${err?.message || "Unknown error"}`,
         );
       } finally {
         setIsLoading(false);
@@ -211,6 +216,29 @@ export default function PerformaInvoicesPage() {
     isMounted,
     currentFilters,
   ]);
+
+  const handleSendEmail = async (performanceInvoiceId: string) => {
+    const token = localStorage.getItem("token");
+    console.log("handleSendEmail", performanceInvoiceId);
+
+    try {
+      const res = await axiosInstance.post(
+        `/api/v1/email/send-perfomance`,
+        { performanceInvoiceId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      toast.success("Performa Invoice email sent");
+      console.log(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send quotation email");
+    }
+  };
 
   // Load statistics
   const loadStats = async () => {
@@ -236,8 +264,8 @@ export default function PerformaInvoicesPage() {
           typeof statsData?.totalRevenue === "number"
             ? statsData.totalRevenue
             : typeof statsData?.totalValue === "number"
-            ? statsData.totalValue
-            : 0,
+              ? statsData.totalValue
+              : 0,
         acceptedAmount:
           typeof statsData?.acceptedAmount === "number"
             ? statsData.acceptedAmount
@@ -295,7 +323,7 @@ export default function PerformaInvoicesPage() {
       setError(
         `Failed to duplicate performa invoice: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   };
@@ -386,7 +414,11 @@ export default function PerformaInvoicesPage() {
     }
   };
 
-  const handleSelectInvoice = (invoiceId: string, checked: boolean, invoice?: PerformaInvoiceFormValues) => {
+  const handleSelectInvoice = (
+    invoiceId: string,
+    checked: boolean,
+    invoice?: PerformaInvoiceFormValues,
+  ) => {
     // Only allow selecting draft invoices
     if (invoice && invoice.status !== "draft") {
       return;
@@ -404,13 +436,12 @@ export default function PerformaInvoicesPage() {
     // Check if any selected performa invoice is not deletable (only draft can be deleted)
     const nonDeletableCount = validInvoices.filter(
       (inv) =>
-        selectedInvoices.includes(inv?._id || "") &&
-        inv?.status !== "draft"
+        selectedInvoices.includes(inv?._id || "") && inv?.status !== "draft",
     ).length;
 
     if (nonDeletableCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} performa invoice(s). Only draft performa invoices can be deleted.`
+        `Cannot delete ${nonDeletableCount} performa invoice(s). Only draft performa invoices can be deleted.`,
       );
       return;
     }
@@ -451,7 +482,7 @@ export default function PerformaInvoicesPage() {
 
   // Filter out any null or undefined invoices
   const validInvoices = invoices.filter(
-    (inv): inv is PerformaInvoiceFormValues => inv != null
+    (inv): inv is PerformaInvoiceFormValues => inv != null,
   );
 
   if (!isMounted) {
@@ -516,7 +547,7 @@ export default function PerformaInvoicesPage() {
                   validInvoices.filter(
                     (inv) =>
                       selectedInvoices.includes(inv?._id || "") &&
-                      inv?.status === "draft"
+                      inv?.status === "draft",
                   ).length === 0
                 }
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -613,7 +644,7 @@ export default function PerformaInvoicesPage() {
                               handleSelectInvoice(
                                 inv._id || "",
                                 e.target.checked,
-                                inv
+                                inv,
                               )
                             }
                             disabled={inv?.status !== "draft"}
@@ -664,7 +695,7 @@ export default function PerformaInvoicesPage() {
                                 (typeof inv?.clientId === "object" &&
                                   (inv?.clientId as any)?.email) ||
                                   inv?.clientDetails?.name ||
-                                  "?"
+                                  "?",
                               )}
                             </span>
                             <span className="flex flex-col">
@@ -674,7 +705,7 @@ export default function PerformaInvoicesPage() {
                                     (typeof inv?.clientId === "object"
                                       ? (inv?.clientId as any)?.email
                                       : undefined) ||
-                                    null
+                                    null,
                                 )}
                               </span>
 
@@ -800,7 +831,15 @@ export default function PerformaInvoicesPage() {
                                 >
                                   Edit
                                 </Link>
-
+                                <button
+                                  onClick={() => {
+                                    handleSendEmail(inv._id);
+                                  }}
+                                  className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                                  aria-label="Send"
+                                >
+                                  Send Email
+                                </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -852,7 +891,7 @@ export default function PerformaInvoicesPage() {
                                         e.stopPropagation();
                                         handleStatusChange(
                                           inv._id!,
-                                          "accepted"
+                                          "accepted",
                                         );
                                         setOpenPopoverId(null);
                                       }}
@@ -867,7 +906,7 @@ export default function PerformaInvoicesPage() {
                                         e.stopPropagation();
                                         handleStatusChange(
                                           inv._id!,
-                                          "rejected"
+                                          "rejected",
                                         );
                                         setOpenPopoverId(null);
                                       }}
@@ -950,7 +989,7 @@ export default function PerformaInvoicesPage() {
                 <div className="flex items-center gap-1">
                   {Array.from(
                     { length: pagination.pages },
-                    (_, i) => i + 1
+                    (_, i) => i + 1,
                   ).map((page) => {
                     // Show first page, last page, current page, and pages around current
                     if (

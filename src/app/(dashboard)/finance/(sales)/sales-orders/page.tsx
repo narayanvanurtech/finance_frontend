@@ -27,6 +27,7 @@ import SalesOrderStats from "@/components/finance/salesOrder/SalesOrderStats";
 import SalesOrderFilters, {
   SearchFilters,
 } from "@/components/finance/salesOrder/SalesOrderFilters";
+import axiosInstance from "@/utils/axios";
 
 // Helper to get client initials
 const getInitials = (name: string) => {
@@ -447,6 +448,34 @@ export default function SalesOrdersPage() {
     setBulkDeleteDialog({ open: false, loading: false });
   };
 
+
+  //send Email
+    const handleSendEmail = async (salesOrderId: string) => {
+      const token = localStorage.getItem("token")
+      console.log("handleSendEmail",salesOrderId)
+      
+    try {
+      const res = await axiosInstance.post(
+        `/api/v1/email/send-salesOrder`,
+        { salesOrderId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      toast.success("salesOrder email sent");
+      console.log(res.data);
+  
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send salesOrder email");
+    }
+  };
+  
+
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -834,6 +863,16 @@ export default function SalesOrdersPage() {
                                 >
                                   Edit
                                 </Link>
+
+                                 <button
+                              onClick={()=>{
+                                handleSendEmail(order._id)
+                              }}
+                              className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                              aria-label="Send"
+                            >
+                             Send Email
+                            </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();

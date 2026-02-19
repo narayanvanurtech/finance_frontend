@@ -27,6 +27,7 @@ import InvoiceFilters, {
 } from "@/components/finance/invoice/InvoiceFilters";
 import type { InvoiceFormValues } from "@/components/finance/invoice/InvoiceForm";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
+import axiosInstance from "@/utils/axios";
 
 // Valid status transitions
 const validTransitions = {
@@ -443,6 +444,30 @@ export default function InvoicesPage() {
     setCurrentPage(1); // Reset to first page when changing limit
   };
 
+
+   const handleSendEmail = async (invoiceId: string) => {
+      const token = localStorage.getItem("token");
+      console.log("handleSendEmail", invoiceId);
+  
+      try {
+        const res = await axiosInstance.post(
+          `/api/v1/email/send-invoice`,
+          { invoiceId },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+  
+        toast.success("Performa Invoice email sent");
+        console.log(res.data);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to send quotation email");
+      }
+    };
+    
   return (
     <>
       <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -814,6 +839,18 @@ export default function InvoicesPage() {
                                 >
                                   Edit
                                 </Link>
+
+
+<button
+                              onClick={()=>{
+                              
+                                handleSendEmail(inv._id)
+                              }}
+                              className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                              aria-label="Send"
+                            >
+                             Send Email
+                            </button>
 
                                 <button
                                   onClick={(e) => {
