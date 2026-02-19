@@ -1255,7 +1255,7 @@ export default function MainSidebar({
               {!collapsed && (
                 <div className="text-left min-w-0 flex-1">
                   <div className="font-semibold text-sm text-gray-900 truncate">
-                    {(user.name && isClient) ? user?.name : "User"}
+                    {(user?.name && isClient) ? user?.name : "User"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
                     {user?.email || "user@crm.com"}
