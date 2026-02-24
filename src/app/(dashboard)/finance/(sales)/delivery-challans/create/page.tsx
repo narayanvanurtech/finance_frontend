@@ -104,8 +104,9 @@ export default function CreateDeliveryChallanPage() {
     try {
       // Ensure companyId is set before creating
       setCompanyId(user.companyId);
-      await createChallan(values);
-      router.push("/finance/delivery-challans");
+     const res =  await createChallan(values);
+    
+      router.push(`/finance/delivery-challans/preview/${res?.data.id}`);
     } finally {
       setLoading(false);
     }

@@ -26,6 +26,7 @@ import QuotationFilters, {
 } from "@/components/finance/quotation/QuotationFilters";
 import DeleteQuotationDialog from "@/components/finance/quotation/DeleteQuotationDialog";
 import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 // Helper to get status color classes
 const getStatusClasses = (status: string) => {
@@ -49,9 +50,6 @@ const getInitials = (name: string) => {
     .join("")
     .toUpperCase();
 };
-
-
-
 
 // Helper to get status badge
 const getStatusBadge = (status: string) => {
@@ -166,7 +164,7 @@ export default function QuotationListPage() {
 
         // Check if there are active filters
         const hasActiveFilters = Object.values(currentFilters).some(
-          (value) => value && value.length > 0
+          (value) => value && value.length > 0,
         );
 
         if (hasActiveFilters) {
@@ -190,7 +188,7 @@ export default function QuotationListPage() {
         }
       } catch (err: any) {
         setError(
-          `Failed to load quotations: ${err?.message || "Unknown error"}`
+          `Failed to load quotations: ${err?.message || "Unknown error"}`,
         );
       } finally {
         setIsLoading(false);
@@ -217,7 +215,7 @@ export default function QuotationListPage() {
     try {
       const statsData = await getQuotationStats("30");
       const safeStats = {
-        totalQuotations: statsData?.totalQuotations || 0,
+        totalQuotations: statsData?.totalQuotations  || 0,
         statusBreakdown: Array.isArray(statsData?.statusBreakdown)
           ? statsData.statusBreakdown
           : [],
@@ -256,7 +254,6 @@ export default function QuotationListPage() {
     setCurrentPage(1); // Reset to first page when searching
   }, []);
 
-
   // Handle clear filters
   const handleClearFilters = useCallback(() => {
     setCurrentFilters({});
@@ -289,25 +286,30 @@ export default function QuotationListPage() {
 
       setCurrentFilters(filters);
     },
-    []
+    [],
   );
 
   // Handle delete quotation
   const handleDeleteClick = (quotation: Quotation) => {
     // Extract ID immediately to ensure we have it
     const quotationId = quotation?._id || quotation?.id;
-    
+
     console.log("Delete clicked for quotation:", quotation);
-    console.log("Quotation _id:", quotation?._id, "Type:", typeof quotation?._id);
+    console.log(
+      "Quotation _id:",
+      quotation?._id,
+      "Type:",
+      typeof quotation?._id,
+    );
     console.log("Quotation id:", quotation?.id, "Type:", typeof quotation?.id);
     console.log("Extracted quotationId:", quotationId);
-    
+
     if (!quotationId) {
       console.error("Cannot delete: Quotation ID is missing", quotation);
       toast.error("Cannot delete: Quotation ID not found");
       return;
     }
-    
+
     // Store both quotation object and ID separately
     setDeleteDialog({
       open: true,
@@ -320,21 +322,35 @@ export default function QuotationListPage() {
   const handleDeleteConfirm = async () => {
     // Use the stored quotationId directly - more reliable than extracting from object
     const quotationId = deleteDialog.quotationId;
-    
-    if (!quotationId || quotationId.trim() === '') {
+
+    if (!quotationId || quotationId.trim() === "") {
       console.error("Delete confirm: No quotationId in dialog state");
-      toast.error("Quotation ID is missing. Please refresh the page and try again.");
-      setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
+      toast.error(
+        "Quotation ID is missing. Please refresh the page and try again.",
+      );
+      setDeleteDialog({
+        open: false,
+        quotation: null,
+        quotationId: null,
+        loading: false,
+      });
       return;
     }
 
     const cleanId = quotationId.trim();
-    
+
     // Validate MongoDB ObjectId format (24 hex characters)
     const objectIdPattern = /^[0-9a-fA-F]{24}$/;
     if (!objectIdPattern.test(cleanId)) {
-      console.error("Invalid ObjectId format:", cleanId, "Length:", cleanId.length);
-      toast.error("Invalid quotation ID format. Please refresh the page and try again.");
+      console.error(
+        "Invalid ObjectId format:",
+        cleanId,
+        "Length:",
+        cleanId.length,
+      );
+      toast.error(
+        "Invalid quotation ID format. Please refresh the page and try again.",
+      );
       return;
     }
 
@@ -343,14 +359,19 @@ export default function QuotationListPage() {
     setDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
       await deleteQuotation(cleanId);
-      setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
-      
+      setDeleteDialog({
+        open: false,
+        quotation: null,
+        quotationId: null,
+        loading: false,
+      });
+
       // Remove from selected quotations if it was selected
       setSelectedQuotations((prev) => prev.filter((id) => id !== cleanId));
-      
+
       // Refresh the list
       const hasActiveFilters = Object.values(currentFilters).some(
-        (value) => value && value.length > 0
+        (value) => value && value.length > 0,
       );
 
       if (hasActiveFilters) {
@@ -362,7 +383,8 @@ export default function QuotationListPage() {
         if (currentFilters.search) params.search = currentFilters.search;
         if (currentFilters.status) params.status = currentFilters.status;
         if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
-        if (currentFilters.sortOrder) params.sortOrder = currentFilters.sortOrder;
+        if (currentFilters.sortOrder)
+          params.sortOrder = currentFilters.sortOrder;
         if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
         if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
 
@@ -370,45 +392,30 @@ export default function QuotationListPage() {
       } else {
         await fetchQuotations(currentPage, itemsPerPage);
       }
-      
+
       loadStats();
     } catch (error: any) {
       console.error("Delete failed:", error);
       console.error("Error details:", error?.response?.data);
-      const errorMessage = error?.response?.data?.message || "Failed to delete quotation";
+      const errorMessage =
+        error?.response?.data?.message || "Failed to delete quotation";
       toast.error(errorMessage);
       setDeleteDialog((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const handleDeleteCancel = () => {
-    setDeleteDialog({ open: false, quotation: null, quotationId: null, loading: false });
+    setDeleteDialog({
+      open: false,
+      quotation: null,
+      quotationId: null,
+      loading: false,
+    });
   };
 
-  const handleSendEmail = async (quotationId: string) => {
-    const token = localStorage.getItem("token")
-    console.log("handleSendEmail",quotationId)
-    
-  try {
-    const res = await axiosInstance.post(
-      `/api/v1/email/send-quotation`,
-      { quotationId },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    toast.success("Quotation email sent");
-    console.log(res.data);
-
-  } catch (err) {
-    console.error(err);
-    toast.error("Failed to send quotation email");
-  }
-};
-
+  const handleQuotationSendEmail = async (quotationId: string) => {
+       router.push(`/finance/quotations/email/${quotationId}`)
+  };
 
   const handleDuplicate = async (quotationId: string) => {
     try {
@@ -425,7 +432,7 @@ export default function QuotationListPage() {
     try {
       // Find the quotation to check current status
       const quotation = quotations.find(
-        (q) => q?._id === quotationId || q?.id === quotationId
+        (q) => q?._id === quotationId || q?.id === quotationId,
       );
 
       // Prevent unnecessary API call if status hasn't changed
@@ -435,16 +442,16 @@ export default function QuotationListPage() {
 
       // Update status - store will update local state immediately for optimistic UI update
       await updateQuotationStatus(quotationId, status);
-      
+
       // Refresh stats to reflect the status change
       loadStats();
-      
+
       // Optionally refresh quotations list after a delay to ensure backend consistency
       // The store update should be enough for immediate UI feedback
       setTimeout(async () => {
         try {
           const hasActiveFilters = Object.values(currentFilters).some(
-            (value) => value && value.length > 0
+            (value) => value && value.length > 0,
           );
 
           if (hasActiveFilters) {
@@ -475,7 +482,7 @@ export default function QuotationListPage() {
       // Refresh to get current state in case of error
       try {
         const hasActiveFilters = Object.values(currentFilters).some(
-          (value) => value && value.length > 0
+          (value) => value && value.length > 0,
         );
 
         if (hasActiveFilters) {
@@ -540,7 +547,11 @@ export default function QuotationListPage() {
     }
   };
 
-  const handleSelectQuotation = (quotationId: string, checked: boolean, quotation?: Quotation) => {
+  const handleSelectQuotation = (
+    quotationId: string,
+    checked: boolean,
+    quotation?: Quotation,
+  ) => {
     // Only allow selecting draft quotations
     if (quotation && quotation.status !== "draft") {
       return;
@@ -559,12 +570,12 @@ export default function QuotationListPage() {
     const nonDeletableCount = quotations.filter(
       (q) =>
         selectedQuotations.includes(q?._id || q?.id || "") &&
-        q?.status !== "draft"
+        q?.status !== "draft",
     ).length;
 
     if (nonDeletableCount > 0) {
       toast.error(
-        `Cannot delete ${nonDeletableCount} quotation(s). Only draft quotations can be deleted.`
+        `Cannot delete ${nonDeletableCount} quotation(s). Only draft quotations can be deleted.`,
       );
       return;
     }
@@ -576,8 +587,10 @@ export default function QuotationListPage() {
     setBulkDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
       // Filter out any invalid/empty IDs before deleting
-      const validIds = selectedQuotations.filter((id) => id && id.trim().length > 0);
-      
+      const validIds = selectedQuotations.filter(
+        (id) => id && id.trim().length > 0,
+      );
+
       if (validIds.length === 0) {
         toast.error("No valid quotation IDs to delete");
         setBulkDeleteDialog((prev) => ({ ...prev, loading: false }));
@@ -587,10 +600,10 @@ export default function QuotationListPage() {
       await Promise.all(validIds.map((id) => deleteQuotation(id.trim())));
       setSelectedQuotations([]);
       setBulkDeleteDialog({ open: false, loading: false });
-      
+
       // Refresh the list
       const hasActiveFilters = Object.values(currentFilters).some(
-        (value) => value && value.length > 0
+        (value) => value && value.length > 0,
       );
 
       if (hasActiveFilters) {
@@ -602,7 +615,8 @@ export default function QuotationListPage() {
         if (currentFilters.search) params.search = currentFilters.search;
         if (currentFilters.status) params.status = currentFilters.status;
         if (currentFilters.sortBy) params.sortBy = currentFilters.sortBy;
-        if (currentFilters.sortOrder) params.sortOrder = currentFilters.sortOrder;
+        if (currentFilters.sortOrder)
+          params.sortOrder = currentFilters.sortOrder;
         if (currentFilters.dateFrom) params.dateFrom = currentFilters.dateFrom;
         if (currentFilters.dateTo) params.dateTo = currentFilters.dateTo;
 
@@ -610,7 +624,7 @@ export default function QuotationListPage() {
       } else {
         await fetchQuotations(currentPage, itemsPerPage);
       }
-      
+
       loadStats();
     } catch (error) {
       console.error("Failed to delete quotations:", error);
@@ -633,8 +647,7 @@ export default function QuotationListPage() {
 
   const isEmpty = quotations.length === 0;
 
-
-  console.log("quotation njhbjkchjb",quotations)
+  console.log("quotation njhbjkchjb", quotations);
 
   if (isLoading) {
     return (
@@ -651,6 +664,8 @@ export default function QuotationListPage() {
       </div>
     );
   }
+
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
@@ -673,7 +688,7 @@ export default function QuotationListPage() {
       <QuotationStats
         stats={
           stats || {
-            totalQuotations: 0,
+            totalQuotations: 0  ,
             statusBreakdown: [],
             conversionRate: 0,
             invoiceConversionRate: 0,
@@ -713,7 +728,7 @@ export default function QuotationListPage() {
                 quotations.filter(
                   (q) =>
                     selectedQuotations.includes(q?._id || q?.id || "") &&
-                    q?.status === "draft"
+                    q?.status === "draft",
                 ).length === 0
               }
               className="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -794,13 +809,13 @@ export default function QuotationListPage() {
                       <input
                         type="checkbox"
                         checked={selectedQuotations.includes(
-                          q?._id || q?.id || ""
+                          q?._id || q?.id || "",
                         )}
                         onChange={(e) =>
                           handleSelectQuotation(
                             q?._id || q?.id || "",
                             e.target.checked,
-                            q
+                            q,
                           )
                         }
                         disabled={q?.status !== "draft"}
@@ -845,16 +860,23 @@ export default function QuotationListPage() {
                       onClick={() => handleRowClick(q?._id || q?.id || "")}
                     >
                       <span className="inline-flex items-center gap-2">
+                        
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold text-sm">
                           {getInitials(
                             (typeof q?.clientId === "object" &&
                               q?.clientId?.email) ||
                               q?.clientDetails?.name ||
                               q?.createdBy?.name ||
-                              "?"
+                              "?",
                           )}
                         </span>
                         <span className="flex flex-col">
+                          <span className="font-medium">
+                            {(typeof q?.clientId === "object" &&
+                              q?.clientId?.name) ||
+                              
+                              "-"}
+                          </span>
                           <span className="font-medium">
                             {(typeof q?.clientId === "object" &&
                               q?.clientId?.email) ||
@@ -897,7 +919,7 @@ export default function QuotationListPage() {
                           ₹
                           {(q?.grandTotal || q?.total || 0).toLocaleString(
                             "en-IN",
-                            { minimumFractionDigits: 2 }
+                            { minimumFractionDigits: 2 },
                           )}
                         </span>
                         {q?.subtotal && q?.subtotal !== q?.grandTotal && (
@@ -951,7 +973,7 @@ export default function QuotationListPage() {
                         open={openPopoverId === (q?._id || q?.id)}
                         onOpenChange={(isOpen) =>
                           setOpenPopoverId(
-                            isOpen ? q?._id || q?.id || null : null
+                            isOpen ? q?._id || q?.id || null : null,
                           )
                         }
                       >
@@ -986,15 +1008,15 @@ export default function QuotationListPage() {
                             >
                               Edit
                             </Link>
-                           <button
-                              onClick={()=>{
+                            <button
+                              onClick={() => {
                                 const id = q?._id || q?.id;
-                                handleSendEmail(id)
+                                handleQuotationSendEmail(String(id));
                               }}
                               className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
                               aria-label="Send"
                             >
-                             Send Email
+                              Send Email
                             </button>
 
                             <button
@@ -1017,7 +1039,9 @@ export default function QuotationListPage() {
                                     e.stopPropagation();
                                     const id = q?._id || q?.id;
                                     setShowConvertMenu(
-                                      showConvertMenu === id ? null : id || null
+                                      showConvertMenu === id
+                                        ? null
+                                        : id || null,
                                     );
                                   }}
                                   className="w-full px-3 py-2 rounded hover:bg-gray-100 text-purple-600 text-sm text-left flex items-center justify-between"
@@ -1126,8 +1150,13 @@ export default function QuotationListPage() {
                                   // Extract ID directly from the quotation object
                                   const id = q?._id || q?.id;
                                   if (!id) {
-                                    console.error("Cannot delete: No ID found in quotation", q);
-                                    toast.error("Cannot delete: Quotation ID not found");
+                                    console.error(
+                                      "Cannot delete: No ID found in quotation",
+                                      q,
+                                    );
+                                    toast.error(
+                                      "Cannot delete: Quotation ID not found",
+                                    );
                                     return;
                                   }
                                   handleDeleteClick(q);
@@ -1247,7 +1276,7 @@ export default function QuotationListPage() {
                       );
                     }
                     return null;
-                  }
+                  },
                 )}
               </div>
 

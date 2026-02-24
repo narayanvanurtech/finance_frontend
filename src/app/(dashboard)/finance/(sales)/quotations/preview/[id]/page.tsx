@@ -42,7 +42,7 @@ export default function QuotationPreviewPage() {
 
         if (response.success && response.data) {
           const quote = response.data;
-
+          console.log("quote ..mvnkncnkjvnjkc",quote)
           console.log("API Response:", quote); // Debug log
 
           // Helper function to format address
@@ -132,7 +132,7 @@ export default function QuotationPreviewPage() {
             terms: quote.terms || "",
             notes: quote.notes || "",
             attachments: quote.attachments || [],
-            signature: quote.showSignature || null,
+            signature: quote.signature || null,
             phases: (quote.phases || []).map((phase: any) => ({
               name: phase.title || `Phase ${phase.name || ""}`,
               dueDate: phase.dueDate || "",

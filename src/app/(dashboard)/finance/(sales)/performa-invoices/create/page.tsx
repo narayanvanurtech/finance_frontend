@@ -15,7 +15,7 @@ import { useItems } from "@/hooks/useItemQueries";
 
 const generateInvoiceNumber = () => {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomPart = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+  const randomPart = Math.floor(1000 + Math.random() * 9000); 
   return `PINV-${datePart}-${randomPart}`;
 };
 
@@ -155,10 +155,12 @@ export default function CreatePerformaInvoicePage() {
     notes: "",
     attachments: [],
     showSignature: false,
+    signature:"",
     phases: [],
   };
 
   const handleCreate = async (values: PerformaInvoiceFormValues) => {
+    console.log("Values",values)
     setLoading(true);
     try {
       // Validate clientId is provided
@@ -183,6 +185,7 @@ export default function CreatePerformaInvoicePage() {
       const sanitizedItems = values.items.map((item) => ({
         ...item,
         quantity: Number(item.quantity),
+        signature:values.signature,
         rate: Number(item.rate),
         discount: Number(item.discount),
         taxRate: Number(item.taxRate),
@@ -231,14 +234,16 @@ export default function CreatePerformaInvoicePage() {
         phases: sanitizedPhases,
         attachments: sanitizedAttachments,
         businessDetails: sanitizedBusinessDetails,
+        signature:values?.signature,
         clientDetails: sanitizedClientDetails,
       };
+      console.log("sanitizedValues",sanitizedValues)
 
       // Call the store's createPerformaInvoice with sanitized values
-      await createPerformaInvoice(sanitizedValues);
+   const res =  await createPerformaInvoice(sanitizedValues);
 
       // Success - redirect to performa invoices list
-      router.push("/finance/performa-invoices");
+      router.push(`/finance/performa-invoices/preview/${res.data._id}`)
     } catch (error: any) {
       console.error("Error creating performa invoice:", error);
       toast.error(
@@ -252,17 +257,14 @@ export default function CreatePerformaInvoicePage() {
   };
 
   console.log("Permonace Invoice ....",items)
-
+  console.log("defaultInitialValues",defaultInitialValues)
   return (
     <PerformaInvoiceForm
       initialValues={defaultInitialValues}
       onSubmit={handleCreate}
       mode="create"
       mockClients={clients}
-      mockProducts={items.map((item: any) => ({
-        ...item,
-        price: item.sellingPrice,
-      }))}
+      mockProducts={items}
       loading={loading}
     />
   );

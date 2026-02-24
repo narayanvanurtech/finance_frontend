@@ -57,9 +57,11 @@ export const useDeliveryChallanStore = create<DeliveryChallanStore>(
 
       try {
         set({ loading: true });
-        await deliveryChallanApi.createChallan(data, companyId);
+       const res =  await deliveryChallanApi.createChallan(data, companyId);
+    
         toast.success("Delivery Challan Created");
         await get().fetchChallans();
+        return res ;
       } catch (err: any) {
         toast.error(err?.response?.data?.message || "Failed creating challan");
       } finally {

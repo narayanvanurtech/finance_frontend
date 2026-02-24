@@ -142,7 +142,8 @@ export default function SalesOrderPreviewPage() {
             terms: order.terms || "",
             notes: order.notes || "",
             attachments: order.attachments || [],
-            signature: order.showSignature || null,
+            showSignature:order.showSignature || false,
+            signature: order.signature || "",
             phases: [],
           };
 

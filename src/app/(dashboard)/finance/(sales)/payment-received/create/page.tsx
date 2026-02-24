@@ -23,12 +23,11 @@ export default function PaymentReceivedCreatePage() {
     try {
       setCompanyId(user.companyId);
 
-      await createPayment(values);
-      console.log(values)
+    const res =   await createPayment(values);
 
       await fetchPayments(); // refresh list before navigation
       toast.success("Payment Recorded Successfully");
-      router.push("/finance/payment-received");
+      router.push(`/finance/payment-received/preview/${res._id}`);
     } catch {
       toast.error("Failed to add payment");
     } finally {

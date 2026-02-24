@@ -25,6 +25,7 @@ import PerformaInvoiceFilters from "@/components/finance/performa-invoice/Perfor
 import type { PerformaInvoiceFormValues } from "@/components/finance/performa-invoice/PerformaInvoiceForm";
 import type { SearchFilters } from "@/components/finance/performa-invoice/PerformaInvoiceFilters";
 import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 // Helper to get client initials
 const getInitials = (name: string) => {
@@ -217,27 +218,8 @@ export default function PerformaInvoicesPage() {
     currentFilters,
   ]);
 
-  const handleSendEmail = async (performanceInvoiceId: string) => {
-    const token = localStorage.getItem("token");
-    console.log("handleSendEmail", performanceInvoiceId);
-
-    try {
-      const res = await axiosInstance.post(
-        `/api/v1/email/send-perfomance`,
-        { performanceInvoiceId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      toast.success("Performa Invoice email sent");
-      console.log(res.data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to send quotation email");
-    }
+  const handleSendPerformaInvoiceEmail = async (performanceInvoiceId: string) => {
+         router.push(`/finance/performa-invoices/email/${performanceInvoiceId}`)
   };
 
   // Load statistics
@@ -700,13 +682,7 @@ export default function PerformaInvoicesPage() {
                             </span>
                             <span className="flex flex-col">
                               <span className="font-medium">
-                                {getInitials(
-                                  inv?.clientDetails?.name ||
-                                    (typeof inv?.clientId === "object"
-                                      ? (inv?.clientId as any)?.email
-                                      : undefined) ||
-                                    null,
-                                )}
+                          {inv?.clientId?.name}
                               </span>
 
                               {typeof inv?.clientId === "object" &&
@@ -833,7 +809,7 @@ export default function PerformaInvoicesPage() {
                                 </Link>
                                 <button
                                   onClick={() => {
-                                    handleSendEmail(inv._id);
+                                    handleSendPerformaInvoiceEmail(inv._id);
                                   }}
                                   className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
                                   aria-label="Send"

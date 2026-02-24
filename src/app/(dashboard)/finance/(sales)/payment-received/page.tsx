@@ -307,6 +307,9 @@ export default function PaymentReceivedListPage() {
 
   const isEmpty = !payments || payments.length === 0;
 
+
+  console.log("paginated",paginated)
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}

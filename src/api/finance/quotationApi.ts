@@ -141,6 +141,7 @@ export interface CreateQuotationPayload {
   notes?: string;
   attachments?: File[];
   showSignature: boolean;
+  signature:string;
   phases?: PaymentPhase[];
   status?: "draft" | "sent" | "accepted" | "rejected" | "expired" | "converted";
 }
@@ -165,6 +166,7 @@ export interface UpdateQuotationPayload {
   terms?: string;
   notes?: string;
   showSignature?: boolean;
+  signature?:string;
   phases?: PaymentPhase[];
 }
 

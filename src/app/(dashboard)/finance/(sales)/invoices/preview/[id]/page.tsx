@@ -86,7 +86,7 @@ export default function InvoicePreviewPage() {
             terms: invoice.terms || "",
             notes: invoice.notes || "",
             attachments: invoice.attachments || [],
-            signature: invoice.showSignature || null,
+            signature: invoice.signature || null,
             phases: invoice.phases || [],
           };
 

@@ -135,6 +135,7 @@ export interface CreatePerformaInvoicePayload {
   notes?: string;
   attachments?: File[];
   showSignature: boolean;
+  signature?:string;
   phases?: any[];
   status?: "draft" | "sent" | "accepted" | "rejected" | "expired" | "converted";
 }
@@ -160,6 +161,7 @@ export interface UpdatePerformaInvoicePayload {
   terms?: string;
   notes?: string;
   showSignature?: boolean;
+  signature?:string;
   phases?: any[];
   status?: "draft" | "sent" | "accepted" | "rejected" | "expired" | "converted";
 }
@@ -228,6 +230,8 @@ export interface PerformaInvoiceQueryParams {
   search?: string;
 }
 
+
+
 const performaInvoiceApi = {
   // Preview performa invoice number
   previewPerformaInvoiceNumber:
@@ -246,6 +250,7 @@ const performaInvoiceApi = {
   createPerformaInvoice: async (
     invoiceData: CreatePerformaInvoicePayload
   ): Promise<PerformaInvoiceResponse> => {
+
     try {
       const response = await axiosInstance.post<PerformaInvoiceResponse>(
         "/api/v1/finance/sales/performa-invoices/create",
@@ -306,6 +311,7 @@ const performaInvoiceApi = {
     invoiceData: UpdatePerformaInvoicePayload,
     companyId?: string
   ): Promise<PerformaInvoiceResponse> => {
+    console.log("Updated Invoice Data ....",invoiceData)
     try {
       const response = await axiosInstance.put<PerformaInvoiceResponse>(
         `/api/v1/finance/sales/performa-invoices/update/${invoiceId}?companyId=${companyId}`,

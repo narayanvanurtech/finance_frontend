@@ -12,6 +12,7 @@ import type { Cess as ConfigureTaxCess } from "@/components/finance/ConfigureTax
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+import { useParams, useRouter } from "next/navigation";
 
 // Cess type compatible with ItemTable
 type Cess = {
@@ -53,7 +54,8 @@ export type SalesOrderFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
-  showSignature: boolean;
+  showSignature:boolean;
+  signature:string;
   cessList: Cess[];
 };
 
@@ -95,6 +97,10 @@ const SalesOrderForm: React.FC<any> = ({
   const [clientDetails, setClientDetails] = useState(
     initialValues.clientDetails
   );
+
+   const router =  useRouter()
+ const {id}=useParams()
+
   const businessStoreDetails = useBussinessStore((s) => s.details);
 
   // Prefer business details from initial values (API) if present, otherwise fallback to global business store
@@ -146,7 +152,10 @@ const SalesOrderForm: React.FC<any> = ({
     initialValues.attachments
   );
   const [showSignature, setShowSignature] = useState(
-    initialValues.showSignature
+    initialValues.showSignature || false
+  );
+   const [signature, setSignature] = useState(
+    initialValues.signature || ""
   );
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
@@ -410,15 +419,10 @@ const SalesOrderForm: React.FC<any> = ({
     }
   };
 
-  const handleSendEmail = () => {
-    const salesOrderId = (initialValues as any)?._id;
-    if (mode === "edit" && salesOrderId) {
-      alert("Email functionality will be implemented soon!");
-      // TODO: Implement email sending functionality
-    } else {
-      alert("Please save the sales order first before sending email.");
-    }
-  };
+  const submitEmail =()=>{
+    router.push(`/finance/sales-orders/email/${id}`)
+}
+
 
   const handleCancel = () => {
     window.history.back();
@@ -460,6 +464,7 @@ const SalesOrderForm: React.FC<any> = ({
       notes,
       attachments,
       showSignature,
+      signature,
       cessList,
     };
 
@@ -573,6 +578,8 @@ const SalesOrderForm: React.FC<any> = ({
           notes={notes}
           setNotes={setNotes}
           attachments={attachments}
+          signature={signature}
+          setSignature={setSignature}
           handleAttachment={handleAttachment}
           showSignature={showSignature}
           setShowSignature={setShowSignature}
@@ -580,10 +587,11 @@ const SalesOrderForm: React.FC<any> = ({
         <ActionBar
           mode={mode}
           onSubmit={handleFormSubmit}
+         
           loading={loading}
           disabled={disabled}
           onPrintDownload={handlePrintDownload}
-          onSendEmail={handleSendEmail}
+          onSendEmail={submitEmail}
           onCancel={handleCancel}
           documentType="invoice"
         />

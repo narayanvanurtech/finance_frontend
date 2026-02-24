@@ -184,6 +184,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             terms: invoice.terms || "",
             notes: invoice.notes || "",
             showSignature: invoice.showSignature || false,
+            signature: invoice.signature || "",
           };
 
           console.log(
@@ -229,6 +230,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             notes: (response.data as any)?.notes || "",
             attachments: (response.data as any)?.attachments || [],
             showSignature: (response.data as any)?.showSignature || false,
+            signature:(response.data as any)?.signature || "",
             cessList: (response.data as any)?.cessList || [],
             phases: (response.data as any)?.phases || [],
             status: "draft", // ✅ Force draft status for newly created invoices
@@ -244,6 +246,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             get().invoices
           );
 
+          return response
           // Don't show toast here - let the calling component handle it
         } catch (error: any) {
           console.error("Error creating invoice:", error);

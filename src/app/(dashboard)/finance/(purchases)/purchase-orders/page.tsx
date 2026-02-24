@@ -73,6 +73,10 @@ import {
 import { format } from "date-fns";
 import type { PurchaseOrder } from "@/api/finance/purchaseOrderApi";
 import DeletePurchaseOrderDialog from "@/components/finance/purchase-order/DeletePurchaseOrderDialog";
+import { Email } from "@mui/icons-material";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 const statusColors = {
   draft: "bg-gray-100 text-gray-600",
@@ -140,7 +144,7 @@ export default function PurchaseOrdersPage() {
 
   const stats = statsData?.result;
 
-  console.log("////llkl,nhbgvgbh",purchaseOrders)
+  console.log("////llkl,nhbgvgbh", purchaseOrders);
 
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
@@ -196,13 +200,13 @@ export default function PurchaseOrdersPage() {
 
   const toggleSelection = (poId: string) => {
     setSelectedPOs((prev) =>
-      prev.includes(poId) ? prev.filter((id) => id !== poId) : [...prev, poId]
+      prev.includes(poId) ? prev.filter((id) => id !== poId) : [...prev, poId],
     );
   };
 
   const toggleSelectAll = () => {
     const valid = purchaseOrders.filter((po) =>
-      ["draft", "cancelled"].includes(po.status)
+      ["draft", "cancelled"].includes(po.status),
     );
     const allIds = valid.map((p) => p._id);
 
@@ -230,6 +234,11 @@ export default function PurchaseOrdersPage() {
       },
     });
   };
+
+
+  const handlePurchaseOrderSendEmail = async (purchaseOrderId: string) => {
+       router.push(`/finance/purchase-orders/email/${purchaseOrderId}`)
+      };
 
   const handleBulkDeleteCancel = () => {
     setBulkDeleteDialog({ open: false, loading: false });
@@ -413,7 +422,7 @@ export default function PurchaseOrdersPage() {
                       selectedPOs.length > 0 &&
                       selectedPOs.length ===
                         purchaseOrders.filter((po) =>
-                          ["draft", "cancelled"].includes(po.status)
+                          ["draft", "cancelled"].includes(po.status),
                         ).length
                     }
                     onChange={toggleSelectAll}
@@ -525,7 +534,7 @@ export default function PurchaseOrdersPage() {
                           <Calendar className="h-4 w-4 text-gray-400" />
                           {format(
                             new Date(po.purchaseOrderDate),
-                            "MMM dd, yyyy"
+                            "MMM dd, yyyy",
                           )}
                         </div>
                       </td>
@@ -592,30 +601,38 @@ export default function PurchaseOrdersPage() {
                             <DropdownMenuItem
                               onClick={() =>
                                 router.push(
-                                  `/finance/purchase-orders/edit/${po._id}`
+                                  `/finance/purchase-orders/edit/${po._id}`,
                                 )
                               }
                             >
                               <Edit className="h-4 w-4 mr-2" /> Edit
                             </DropdownMenuItem>
-
+                                {/* send email */}
+                            <DropdownMenuItem
+                              onClick={() =>handlePurchaseOrderSendEmail(po._id)}
+                            >
+                              <Email className="h-4 w-4 mr-2" /> Send Email
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
 
                             {/* Status Updates */}
-                            {po.status !== "sent" && po.status !== "complete" && po.status !== "cancelled" && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setStatusDialog({
-                                    open: true,
-                                    purchaseOrder: po,
-                                    newStatus: "sent",
-                                    loading: false,
-                                  });
-                                }}
-                              >
-                                <FileText className="h-4 w-4 mr-2" /> Mark as Sent
-                              </DropdownMenuItem>
-                            )}
+                            {po.status !== "sent" &&
+                              po.status !== "complete" &&
+                              po.status !== "cancelled" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setStatusDialog({
+                                      open: true,
+                                      purchaseOrder: po,
+                                      newStatus: "sent",
+                                      loading: false,
+                                    });
+                                  }}
+                                >
+                                  <FileText className="h-4 w-4 mr-2" /> Mark as
+                                  Sent
+                                </DropdownMenuItem>
+                              )}
 
                             {/* Vendor Acknowledgment - Only show when status is "sent" */}
                             {po.status === "sent" && (
@@ -630,71 +647,82 @@ export default function PurchaseOrdersPage() {
                                 }}
                                 className="text-amber-600"
                               >
-                                <CheckCircle className="h-4 w-4 mr-2" /> Vendor Acknowledgment
+                                <CheckCircle className="h-4 w-4 mr-2" /> Vendor
+                                Acknowledgment
                               </DropdownMenuItem>
                             )}
 
-                            {po.status !== "acknowledged" && po.status !== "complete" && po.status !== "cancelled" && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setStatusDialog({
-                                    open: true,
-                                    purchaseOrder: po,
-                                    newStatus: "acknowledged",
-                                    loading: false,
-                                  });
-                                }}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" /> Mark as Acknowledged
-                              </DropdownMenuItem>
-                            )}
+                            {po.status !== "acknowledged" &&
+                              po.status !== "complete" &&
+                              po.status !== "cancelled" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setStatusDialog({
+                                      open: true,
+                                      purchaseOrder: po,
+                                      newStatus: "acknowledged",
+                                      loading: false,
+                                    });
+                                  }}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" /> Mark
+                                  as Acknowledged
+                                </DropdownMenuItem>
+                              )}
 
-                            {po.status !== "partial_delivery" && po.status !== "complete" && po.status !== "cancelled" && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setStatusDialog({
-                                    open: true,
-                                    purchaseOrder: po,
-                                    newStatus: "partial_delivery",
-                                    loading: false,
-                                  });
-                                }}
-                              >
-                                <Package className="h-4 w-4 mr-2" /> Mark as Partial Delivery
-                              </DropdownMenuItem>
-                            )}
+                            {po.status !== "partial_delivery" &&
+                              po.status !== "complete" &&
+                              po.status !== "cancelled" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setStatusDialog({
+                                      open: true,
+                                      purchaseOrder: po,
+                                      newStatus: "partial_delivery",
+                                      loading: false,
+                                    });
+                                  }}
+                                >
+                                  <Package className="h-4 w-4 mr-2" /> Mark as
+                                  Partial Delivery
+                                </DropdownMenuItem>
+                              )}
 
-                            {po.status !== "complete" && po.status !== "cancelled" && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setStatusDialog({
-                                    open: true,
-                                    purchaseOrder: po,
-                                    newStatus: "complete",
-                                    loading: false,
-                                  });
-                                }}
-                                className="text-green-600"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" /> Mark as Complete
-                              </DropdownMenuItem>
-                            )}
+                            {po.status !== "complete" &&
+                              po.status !== "cancelled" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setStatusDialog({
+                                      open: true,
+                                      purchaseOrder: po,
+                                      newStatus: "complete",
+                                      loading: false,
+                                    });
+                                  }}
+                                  className="text-green-600"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-2" /> Mark
+                                  as Complete
+                                </DropdownMenuItem>
+                              )}
 
-                            {po.status !== "cancelled" && po.status !== "complete" && (
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setStatusDialog({
-                                    open: true,
-                                    purchaseOrder: po,
-                                    newStatus: "cancelled",
-                                    loading: false,
-                                  });
-                                }}
-                                className="text-orange-600"
-                              >
-                                <XCircle className="h-4 w-4 mr-2" /> Mark as Cancelled
-                              </DropdownMenuItem>
-                            )}
+                            {po.status !== "cancelled" &&
+                              po.status !== "complete" && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setStatusDialog({
+                                      open: true,
+                                      purchaseOrder: po,
+                                      newStatus: "cancelled",
+                                      loading: false,
+                                    });
+                                  }}
+                                  className="text-orange-600"
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" /> Mark as
+                                  Cancelled
+                                </DropdownMenuItem>
+                              )}
 
                             <DropdownMenuSeparator />
 
@@ -746,12 +774,12 @@ export default function PurchaseOrdersPage() {
               Showing{" "}
               {Math.min(
                 (pagination.currentPage - 1) * pagination.itemsPerPage + 1,
-                pagination.totalItems
+                pagination.totalItems,
               )}{" "}
               to{" "}
               {Math.min(
                 pagination.currentPage * pagination.itemsPerPage,
-                pagination.totalItems
+                pagination.totalItems,
               )}{" "}
               of {pagination.totalItems} orders
             </div>
@@ -771,7 +799,7 @@ export default function PurchaseOrdersPage() {
               <div className="flex items-center gap-1">
                 {Array.from(
                   { length: pagination.totalPages },
-                  (_, i) => i + 1
+                  (_, i) => i + 1,
                 ).map((page) => {
                   if (
                     page === 1 ||
@@ -939,7 +967,7 @@ export default function PurchaseOrdersPage() {
                       onError: () => {
                         setApprovalDialog((p) => ({ ...p, loading: false }));
                       },
-                    }
+                    },
                   );
                 }}
               >
@@ -958,16 +986,23 @@ export default function PurchaseOrdersPage() {
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h2 className="text-xl font-semibold mb-3">
               {statusDialog.newStatus === "sent" && "Mark as Sent"}
-              {statusDialog.newStatus === "acknowledged" && "Mark as Acknowledged"}
-              {statusDialog.newStatus === "partial_delivery" && "Mark as Partial Delivery"}
+              {statusDialog.newStatus === "acknowledged" &&
+                "Mark as Acknowledged"}
+              {statusDialog.newStatus === "partial_delivery" &&
+                "Mark as Partial Delivery"}
               {statusDialog.newStatus === "complete" && "Mark as Complete"}
-              {statusDialog.newStatus === "cancelled" && "Cancel Purchase Order"}
+              {statusDialog.newStatus === "cancelled" &&
+                "Cancel Purchase Order"}
             </h2>
 
             <p className="text-gray-600 mb-6">
               Are you sure you want to change the status of{" "}
-              <strong>{statusDialog.purchaseOrder?.purchaseOrderNumber}</strong>
-              {" "}to <strong className="capitalize">{statusDialog.newStatus?.replace("_", " ")}</strong>?
+              <strong>{statusDialog.purchaseOrder?.purchaseOrderNumber}</strong>{" "}
+              to{" "}
+              <strong className="capitalize">
+                {statusDialog.newStatus?.replace("_", " ")}
+              </strong>
+              ?
             </p>
 
             <div className="flex justify-end gap-3">
@@ -990,12 +1025,12 @@ export default function PurchaseOrdersPage() {
                   statusDialog.newStatus === "complete"
                     ? "bg-green-600"
                     : statusDialog.newStatus === "cancelled"
-                    ? "bg-orange-600"
-                    : statusDialog.newStatus === "acknowledged"
-                    ? "bg-amber-600"
-                    : statusDialog.newStatus === "partial_delivery"
-                    ? "bg-purple-600"
-                    : "bg-blue-600"
+                      ? "bg-orange-600"
+                      : statusDialog.newStatus === "acknowledged"
+                        ? "bg-amber-600"
+                        : statusDialog.newStatus === "partial_delivery"
+                          ? "bg-purple-600"
+                          : "bg-blue-600"
                 }`}
                 disabled={statusDialog.loading}
                 onClick={() => {
@@ -1021,7 +1056,7 @@ export default function PurchaseOrdersPage() {
                       },
                       onError: () =>
                         setStatusDialog((p) => ({ ...p, loading: false })),
-                    }
+                    },
                   );
                 }}
               >
@@ -1103,7 +1138,7 @@ export default function PurchaseOrdersPage() {
                           ...p,
                           loading: false,
                         })),
-                    }
+                    },
                   );
                 }}
               >

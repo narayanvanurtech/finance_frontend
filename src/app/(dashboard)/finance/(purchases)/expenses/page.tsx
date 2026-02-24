@@ -35,6 +35,9 @@ import ExpenseFilters, {
   SearchFilters,
 } from "@/components/finance/expenses/ExpenseFilters";
 import type { ExpenseFormValues } from "@/components/finance/expenses/ExpenseForm";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 export default function ExpensesListPage() {
   /** Pagination **/
@@ -209,6 +212,12 @@ export default function ExpensesListPage() {
     setShowDeliveryDialog(true);
     setOpenPopoverId(null);
   };
+
+   const handlePurchaseExpensesSendEmail = (purchaseId: string) => {
+    console.log("purchaseId knkmnjnjvkmlv-00d99vhnfv",purchaseId)
+        router.push(`/finance/expenses/email/${purchaseId}`)
+    };
+  
 
   const handleDeliveryStatusUpdate = (receivedQuantity: number) => {
     if (!selectedPurchase) return;
@@ -511,9 +520,6 @@ export default function ExpensesListPage() {
                   return (
                     <tr
                       key={purchase._id}
-                      onClick={() =>
-                        router.push(`/finance/expenses/edit/${purchase._id}`)
-                      }
                       className="transition hover:bg-[var(--color-muted)]/60 focus-within:bg-[var(--color-muted)]/80 cursor-pointer border-b"
                       style={{ borderColor: "var(--color-border)" }}
                     >
@@ -629,6 +635,14 @@ export default function ExpensesListPage() {
                                 <FiEdit className="w-4 h-4" />
                                 Edit
                               </Link>
+
+                                <button
+                              onClick={()=> handlePurchaseExpensesSendEmail(purchase._id)}
+                              className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                              aria-label="Send"
+                            >
+                              Send Email
+                            </button>
 
                               <button
                                 onClick={(e) => {

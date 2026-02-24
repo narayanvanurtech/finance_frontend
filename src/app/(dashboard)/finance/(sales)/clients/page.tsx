@@ -28,6 +28,7 @@ import FinanceSubNav from "@/components/finance/SubNavbar";
 import DeleteClientDialog from "@/components/finance/DeleteClientDialog";
 import { FiTrash2, FiSearch, FiFilter, FiX } from "react-icons/fi";
 import { getLogoUrl } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -294,6 +295,7 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = (client: Client) => {
+   
     setDeleteDialog({
       open: true,
       client,
@@ -301,6 +303,7 @@ export default function ClientsPage() {
     });
   };
 
+  console.log("DeleteDialog",deleteDialog)
   const handleDeleteConfirm = async () => {
     if (!deleteDialog.client || !user?.companyId) return;
 
@@ -309,12 +312,14 @@ export default function ClientsPage() {
 
     setDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
-      await deleteClient(user.companyId, deleteDialog.client._id);
+      await deleteClient(deleteDialog?.client?.companyId?._id, deleteDialog.client._id);
       setDeleteDialog({ open: false, client: null, loading: false });
       setSuccessMessage({
         title: "Success",
         message: `Client "${deleteDialog.client.businessName}" has been successfully deleted.`,
       });
+
+      toast.success("Client Deleted Successfully !")
       setShowSuccessDialog(true);
 
       // Auto hide success message after 3 seconds

@@ -92,6 +92,7 @@ const ClientDetailsPage = () => {
     businessName: "",
     clientType: "",
     industry: "",
+    name:"",
     email: "",
     phone: "",
     street: "",
@@ -655,6 +656,25 @@ const ClientDetailsPage = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="name"
+                    className="flex items-center text-gray-500"
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    Client Name
+                  </Label>
+                  <Input
+                    id="name"
+                    type="name"
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className=" border-gray-200"
+                    placeholder="Enter Client Name"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"

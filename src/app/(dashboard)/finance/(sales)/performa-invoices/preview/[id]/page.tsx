@@ -114,7 +114,7 @@ export default function PerformaInvoicePreviewPage() {
             terms: invoice.terms || "",
             notes: invoice.notes || "",
             attachments: invoice.attachments || [],
-            signature: invoice.showSignature || null,
+            signature: invoice.signature || null,
           };
 
           setInvoiceData(transformedData);

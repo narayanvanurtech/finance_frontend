@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,8 @@ export type AdditionalInputsProps = {
   handleAttachment: (e: React.ChangeEvent<HTMLInputElement>) => void;
   showSignature: boolean;
   setShowSignature: React.Dispatch<React.SetStateAction<boolean>>;
- 
+  setSignature: React.Dispatch<React.SetStateAction<string>>;
+  signature:string;
   purchaseOrderId?: string;
   existingAttachments?: string[];
   onAddAttachment?: (file: File) => Promise<void>;
@@ -38,6 +39,8 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   setNotes,
   attachments,
   handleAttachment,
+  setSignature,
+  signature,
   showSignature,
   setShowSignature,
   purchaseOrderId,
@@ -48,7 +51,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   isLoadingAttachment = false,
 }) => {
   const [signatureMode, setSignatureMode] = useState<"none" | "upload" | "pad">(
-    "none"
+    "none",
   );
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePadData, setSignaturePadData] = useState<string | null>(null);
@@ -56,7 +59,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   const [showTerms, setShowTerms] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
   const [signatureError, setSignatureError] = useState<string>("");
-  
+
   React.useEffect(() => {
     console.log("🔍 AdditionalInputs - Received props:", {
       mode,
@@ -103,6 +106,16 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
     setSignatureError("");
     setSignatureFile(file);
   };
+
+  useEffect(() => {
+  // If signature already exists (edit mode / fetched data)
+  if (signature && signature.trim() !== "") {
+    setSignatureMode("pad");        // auto select pad
+    setSignaturePadData(signature); // show preview
+  }
+}, [signature]);
+
+  // console.log("signaturePadData,,,mnjbhub", signaturePadData);
 
   return (
     <Card className="bg-white rounded-xl p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -176,7 +189,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
           </Button>
         )}
       </div>
-      
+
       {/* Attachment Manager */}
       <div className="md:col-span-2">
         <AttachmentManager
@@ -187,10 +200,10 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
           localAttachments={attachments}
           onLocalAdd={(file) => {
             const dt = new DataTransfer();
-            attachments.forEach(f => dt.items.add(f));
+            attachments.forEach((f) => dt.items.add(f));
             dt.items.add(file);
             const event = {
-              target: { files: dt.files }
+              target: { files: dt.files },
             } as any;
             handleAttachment(event);
           }}
@@ -200,7 +213,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
               if (i !== index) dt.items.add(f);
             });
             const event = {
-              target: { files: dt.files }
+              target: { files: dt.files },
             } as any;
             handleAttachment(event);
           }}
@@ -269,6 +282,8 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
                     onClick={() => {
                       setSignatureFile(null);
                       setSignatureError("");
+                      setSignature("");
+                       setSignaturePadData(null)
                     }}
                   >
                     Reset
@@ -280,13 +295,13 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
         )}
         {signatureMode === "pad" && (
           <div className="mt-2">
-            {signaturePadData && (
+         {(signaturePadData || signature) && (
               <div className="mb-4">
                 <span className="block text-xs text-gray-500 mb-1">
                   Signature Preview:
                 </span>
                 <img
-                  src={signaturePadData}
+                  src={signaturePadData || signature}
                   alt="Signature preview"
                   className="border rounded h-40"
                 />
@@ -305,7 +320,10 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => setSignaturePadData(null)}
+                  onClick={() =>{ 
+                    setSignaturePadData(null)
+                    setSignature("")
+                  }}
                 >
                   Reset
                 </Button>
@@ -321,6 +339,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
                 </DialogHeader>
                 <SignaturePad
                   onSave={(data) => {
+                    setSignature(data);
                     setSignaturePadData(data);
                     setSignaturePadModalOpen(false);
                   }}

@@ -34,7 +34,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
         Print / Download PDF
       </Button>
       <Button className="btn btn-secondary" type="button" onClick={onSendEmail}>
-        Send via Email
+        Send Email
       </Button>
       <Button
         className="btn btn-primary flex items-center gap-2"

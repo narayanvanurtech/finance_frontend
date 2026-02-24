@@ -1,26 +1,31 @@
 import React, { useState } from "react";
 
 interface SendEmailModalProps {
+  title:string;
   open: boolean;
   onClose: () => void;
   to?: string;
   cc?: string;
   subject?: string;
+  id:string;
   message?: string;
   onSend: (data: {
     to: string;
     cc: string;
     subject: string;
     message: string;
+    id:string;
   }) => void;
 }
 
 const SendEmailModal: React.FC<SendEmailModalProps> = ({
+  title,
   open,
   onClose,
   to = "",
   cc = "",
   subject = "",
+  id="",
   message = "",
   onSend,
 }) => {
@@ -30,6 +35,7 @@ const SendEmailModal: React.FC<SendEmailModalProps> = ({
   const [emailMessage, setEmailMessage] = useState(message);
   const [sending, setSending] = useState(false);
 
+
   const handleSend = async () => {
     setSending(true);
     await onSend({
@@ -37,6 +43,7 @@ const SendEmailModal: React.FC<SendEmailModalProps> = ({
       cc: ccEmail,
       subject: emailSubject,
       message: emailMessage,
+      id,
     });
     setSending(false);
     onClose();
@@ -47,7 +54,7 @@ const SendEmailModal: React.FC<SendEmailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
-        <div className="text-xl font-semibold mb-4">Send Quotation Email</div>
+        <div className="text-xl font-semibold mb-4">{title || "Send Email"}</div>
         <div className="flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Send To</label>

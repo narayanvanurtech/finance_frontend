@@ -285,6 +285,7 @@ export default function EditInvoicePage() {
               })(),
               attachments: invoice.attachments as any,
               showSignature: invoice.showSignature || false,
+              signature:invoice.signature || "",
               // Handle phases - check all possible locations and formats
               phases: (() => {
                 // Check multiple possible field names
@@ -490,6 +491,7 @@ export default function EditInvoicePage() {
         terms: values.terms !== undefined && values.terms !== null ? String(values.terms) : "",
         notes: values.notes !== undefined && values.notes !== null ? String(values.notes) : "",
         showSignature: values.showSignature || false,
+        signature: values.signature || "",
       };
 
 
@@ -519,6 +521,7 @@ export default function EditInvoicePage() {
     <InvoiceForm
       initialValues={initialValues}
       onSubmit={handleUpdate}
+      
       mode="edit"
       mockClients={clients}
       mockProducts={items}

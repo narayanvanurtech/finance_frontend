@@ -106,6 +106,7 @@ export default function CreateQuotationPage() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
     phases: [],
   };
@@ -181,10 +182,10 @@ export default function CreateQuotationPage() {
             showInInvoice: cess.showInInvoice,
           })) || [],
       };
- await createQuotation(payload);
-     
+      const res = await createQuotation(payload);
+
       toast.success("Quotation created successfully");
-      router.push("/finance/quotations"); // Redirect to quotations listing
+      router.push(`/finance/quotations/preview/${res.id}`); // Redirect to quotations listing
     } catch (error: any) {
       toast.error(
         error?.message ||

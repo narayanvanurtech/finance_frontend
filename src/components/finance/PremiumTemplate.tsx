@@ -530,6 +530,8 @@ function PremiumTemplate({
     const hundreds = Math.floor((num % 1000) / 100);
     const remainder = num % 100;
 
+
+
     if (crores > 0) words += ones[crores] + " Crore ";
     if (lakhs > 0)
       words +=
@@ -1072,9 +1074,22 @@ function PremiumTemplate({
                 payment.
               </Text>
             </View>
-            <View style={styles.signatureSection}>
-              <Text style={styles.signatureLabel}>Authorised Signatory</Text>
-            </View>
+           <View style={styles.signatureSection}>
+  {/* Show Signature Image if exists */}
+  {quotation.signature && (
+    <Image
+      src={quotation.signature}
+      style={{
+        width: 120,
+        height: 60,
+        marginBottom: 6,
+        objectFit: "contain",
+      }}
+    />
+  )}
+
+  <Text style={styles.signatureLabel}>Authorised Signatory</Text>
+</View>
           </View>
 
           {/* Jurisdiction */}

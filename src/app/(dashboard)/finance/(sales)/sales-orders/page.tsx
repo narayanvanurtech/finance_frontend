@@ -28,6 +28,7 @@ import SalesOrderFilters, {
   SearchFilters,
 } from "@/components/finance/salesOrder/SalesOrderFilters";
 import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 // Helper to get client initials
 const getInitials = (name: string) => {
@@ -93,29 +94,29 @@ export default function SalesOrdersPage() {
   const pagination = useSalesOrderStore((state) => state.pagination);
   const loading = useSalesOrderStore((state) => state.loading);
   const fetchSalesOrders = useSalesOrderStore(
-    (state) => state.fetchSalesOrders
+    (state) => state.fetchSalesOrders,
   );
   const setCompanyId = useSalesOrderStore((state) => state.setCompanyId);
   const duplicateSalesOrder = useSalesOrderStore(
-    (state) => state.duplicateSalesOrder
+    (state) => state.duplicateSalesOrder,
   );
   const deleteSalesOrder = useSalesOrderStore(
-    (state) => state.deleteSalesOrder
+    (state) => state.deleteSalesOrder,
   );
 
   const convertToInvoice = useSalesOrderStore(
-    (state) => state.convertToInvoice
+    (state) => state.convertToInvoice,
   );
 
   const updateSalesOrderStatus = useSalesOrderStore(
-    (state) => state.updateSalesOrderStatus
+    (state) => state.updateSalesOrderStatus,
   );
   const bulkAction = useSalesOrderStore((state) => state.bulkAction);
   const searchSalesOrders = useSalesOrderStore(
-    (state) => state.searchSalesOrders
+    (state) => state.searchSalesOrders,
   );
   const getSalesOrderStats = useSalesOrderStore(
-    (state) => state.getSalesOrderStats
+    (state) => state.getSalesOrderStats,
   );
 
   const [mounted, setMounted] = React.useState(false);
@@ -211,7 +212,7 @@ export default function SalesOrdersPage() {
 
       // Check if there are active filters
       const hasActiveFilters = Object.values(currentFilters).some(
-        (value) => value && value.length > 0
+        (value) => value && value.length > 0,
       );
 
       const params: any = {
@@ -231,7 +232,16 @@ export default function SalesOrdersPage() {
 
       loadStats();
     }
-  }, [user?.companyId, mounted, currentPage, itemsPerPage, currentFilters, setCompanyId, searchSalesOrders, loadStats]);
+  }, [
+    user?.companyId,
+    mounted,
+    currentPage,
+    itemsPerPage,
+    currentFilters,
+    setCompanyId,
+    searchSalesOrders,
+    loadStats,
+  ]);
 
   // Handle search and filters
   const handleSearch = useCallback((filters: SearchFilters) => {
@@ -255,7 +265,7 @@ export default function SalesOrdersPage() {
         | "processing"
         | "shipped"
         | "delivered"
-        | "cancelled"
+        | "cancelled",
     ) => {
       let filters: SearchFilters = {};
 
@@ -266,7 +276,7 @@ export default function SalesOrdersPage() {
       setCurrentFilters(filters);
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   const isEmpty = !salesOrders || salesOrders.length === 0;
@@ -318,7 +328,7 @@ export default function SalesOrdersPage() {
             allowedTransitions.length > 0
               ? allowedTransitions.join(", ")
               : "none (terminal state)"
-          }`
+          }`,
         );
         return;
       }
@@ -412,12 +422,12 @@ export default function SalesOrdersPage() {
     // Check if any selected sales order is not draft
     const nonDraftCount = salesOrders.filter(
       (order) =>
-        selectedOrders.includes(order?._id || "") && order?.status !== "draft"
+        selectedOrders.includes(order?._id || "") && order?.status !== "draft",
     ).length;
 
     if (nonDraftCount > 0) {
       toast.error(
-        `Cannot delete ${nonDraftCount} sales order(s). Only draft sales orders can be deleted.`
+        `Cannot delete ${nonDraftCount} sales order(s). Only draft sales orders can be deleted.`,
       );
       return;
     }
@@ -434,7 +444,7 @@ export default function SalesOrdersPage() {
       setSelectedOrders([]);
       setBulkDeleteDialog({ open: false, loading: false });
       toast.success(
-        `Successfully deleted ${selectedOrders.length} sales order(s)`
+        `Successfully deleted ${selectedOrders.length} sales order(s)`,
       );
       // Refresh stats after bulk deletion
       loadStats();
@@ -448,33 +458,10 @@ export default function SalesOrdersPage() {
     setBulkDeleteDialog({ open: false, loading: false });
   };
 
-
   //send Email
-    const handleSendEmail = async (salesOrderId: string) => {
-      const token = localStorage.getItem("token")
-      console.log("handleSendEmail",salesOrderId)
-      
-    try {
-      const res = await axiosInstance.post(
-        `/api/v1/email/send-salesOrder`,
-        { salesOrderId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
-      toast.success("salesOrder email sent");
-      console.log(res.data);
-  
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to send salesOrder email");
-    }
+  const handleSaleOrdersSendEmail = async (salesOrderId: string) => {
+      router.push(`/finance/sales-orders/email/${salesOrderId}`)
   };
-  
-
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -591,6 +578,11 @@ export default function SalesOrdersPage() {
                   </tr>
                 ) : (
                   salesOrders.map((order, idx) => {
+                    const isEditDisabled =
+                      order?.status === "confirmed" ||
+                      order?.status === "cancelled" ||
+                      order?.status === "shipped" ||
+                      order?.status === "delivered";
                     const orderNumber =
                       (order as any)?.salesOrderNumber ||
                       order?.orderNumber ||
@@ -630,7 +622,7 @@ export default function SalesOrdersPage() {
                             onChange={(e) =>
                               handleSelectOrder(
                                 order._id || "",
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                             disabled={order?.status !== "draft"}
@@ -688,10 +680,17 @@ export default function SalesOrdersPage() {
                         >
                           <span className="inline-flex items-center gap-2">
                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold text-sm">
-                              {getInitials(clientName)}
+                              {getInitials(
+                                (typeof order?.clientId === "object" &&
+                                  (order?.clientId as any)?.email) ||
+                                  order?.clientDetails?.name ||
+                                  "?",
+                              )}
                             </span>
                             <span className="flex flex-col">
-                              <span className="font-medium">{clientName}</span>
+                              <span className="font-medium">
+                               {order?.clientId?.name}
+                              </span>
                               {clientEmail && (
                                 <span className="text-xs text-gray-500">
                                   {clientEmail}
@@ -718,7 +717,7 @@ export default function SalesOrdersPage() {
                               {order?.orderDate
                                 ? format(
                                     new Date(order.orderDate),
-                                    "MMM d, yyyy"
+                                    "MMM d, yyyy",
                                   )
                                 : "-"}
                             </span>
@@ -727,7 +726,7 @@ export default function SalesOrdersPage() {
                                 Due:{" "}
                                 {format(
                                   new Date(order.deliveryDate),
-                                  "MMM d, yyyy"
+                                  "MMM d, yyyy",
                                 )}
                               </span>
                             )}
@@ -737,9 +736,9 @@ export default function SalesOrdersPage() {
                                   Expected:{" "}
                                   {format(
                                     new Date(
-                                      (order as any).expectedDeliveryDate
+                                      (order as any).expectedDeliveryDate,
                                     ),
-                                    "MMM d, yyyy"
+                                    "MMM d, yyyy",
                                   )}
                                 </span>
                               )}
@@ -817,7 +816,7 @@ export default function SalesOrdersPage() {
                             open={openPopoverId === order?._id}
                             onOpenChange={(isOpen) =>
                               setOpenPopoverId(
-                                isOpen ? order?._id || null : null
+                                isOpen ? order?._id || null : null,
                               )
                             }
                           >
@@ -841,37 +840,37 @@ export default function SalesOrdersPage() {
                                   Preview
                                 </Link>
                                 <Link
-                                  href={`/finance/sales-orders/edit/${order?._id}`}
-                                  onClick={() => setOpenPopoverId(null)}
+                                  href={
+                                    isEditDisabled
+                                      ? "#"
+                                      : `/finance/sales-orders/edit/${order?._id}`
+                                  }
+                                  onClick={(e) => {
+                                    if (isEditDisabled) {
+                                      e.preventDefault();
+                                      return;
+                                    }
+                                    setOpenPopoverId(null);
+                                  }}
                                   className={`px-3 py-2 rounded text-sm text-left ${
-                                    order?.status === "confirmed" ||
-                                    order?.status === "cancelled" ||
-                                    order?.status === "shipped" ||
-                                    order?.status === "delivered"
-                                      ? "text-gray-400 cursor-not-allowed pointer-events-none"
+                                    isEditDisabled
+                                      ? "text-gray-400 cursor-not-allowed"
                                       : "hover:bg-gray-100 text-gray-700"
                                   }`}
-                                  aria-label="Edit Sales Order"
-                                  {...(order?.status === "confirmed" ||
-                                  order?.status === "cancelled" ||
-                                  order?.status === "shipped" ||
-                                  order?.status === "delivered"
-                                    ? {
-                                        onClick: (e: any) => e.preventDefault(),
-                                      }
-                                    : {})}
+                                  aria-disabled={isEditDisabled}
                                 >
                                   Edit
                                 </Link>
 
                                  <button
-                              onClick={()=>{
-                                handleSendEmail(order._id)
+                              onClick={() => {
+                                
+                                handleSaleOrdersSendEmail(order._id);
                               }}
                               className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
                               aria-label="Send"
                             >
-                             Send Email
+                              Send Email
                             </button>
                                 <button
                                   onClick={(e) => {
@@ -894,7 +893,7 @@ export default function SalesOrdersPage() {
                                       if (id) {
                                         await handleStatusChange(
                                           id,
-                                          "confirmed"
+                                          "confirmed",
                                         );
                                       }
 
@@ -916,7 +915,7 @@ export default function SalesOrdersPage() {
                                       if (id) {
                                         await handleStatusChange(
                                           id,
-                                          "processing"
+                                          "processing",
                                         );
                                       }
                                       setOpenPopoverId(null);
@@ -951,7 +950,7 @@ export default function SalesOrdersPage() {
                                       if (id) {
                                         await handleStatusChange(
                                           id,
-                                          "delivered"
+                                          "delivered",
                                         );
                                       }
                                       setOpenPopoverId(null);
@@ -973,7 +972,7 @@ export default function SalesOrdersPage() {
                                       if (id) {
                                         await handleStatusChange(
                                           id,
-                                          "cancelled"
+                                          "cancelled",
                                         );
                                       }
                                       setOpenPopoverId(null);
@@ -1000,7 +999,7 @@ export default function SalesOrdersPage() {
                                           setShowConvertMenu(
                                             showConvertMenu === id
                                               ? null
-                                              : id || null
+                                              : id || null,
                                           );
                                         }}
                                         className="w-full px-3 py-2 rounded hover:bg-gray-100 text-purple-600 text-sm text-left flex items-center justify-between"
@@ -1151,7 +1150,7 @@ export default function SalesOrdersPage() {
                       );
                     }
                     return null;
-                  }
+                  },
                 )}
               </div>
 

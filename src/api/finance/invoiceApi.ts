@@ -140,6 +140,7 @@ export interface CreateInvoicePayload {
   notes?: string;
   attachments?: File[];
   showSignature: boolean;
+  signature:string;
   phases?: any[];
   status?:
     | "draft"
@@ -171,6 +172,7 @@ export interface UpdateInvoicePayload {
   terms?: string;
   notes?: string;
   showSignature?: boolean;
+  signature:string;
   phases?: any[];
   status?:
     | "draft"

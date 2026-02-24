@@ -84,6 +84,7 @@ export default function CreateQuotationPage() {
     notes: "",
     attachments: [],
     showSignature: false,
+    signature:"",
     phases: [],
   };
 

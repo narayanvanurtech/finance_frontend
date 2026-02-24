@@ -28,6 +28,7 @@ import InvoiceFilters, {
 import type { InvoiceFormValues } from "@/components/finance/invoice/InvoiceForm";
 import { useInvoiceStore } from "@/stores/financeStore/useInvoiceStore";
 import axiosInstance from "@/utils/axios";
+import { handleSendEmail } from "@/api/sendEmailApi";
 
 // Valid status transitions
 const validTransitions = {
@@ -445,27 +446,8 @@ export default function InvoicesPage() {
   };
 
 
-   const handleSendEmail = async (invoiceId: string) => {
-      const token = localStorage.getItem("token");
-      console.log("handleSendEmail", invoiceId);
-  
-      try {
-        const res = await axiosInstance.post(
-          `/api/v1/email/send-invoice`,
-          { invoiceId },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
-  
-        toast.success("Performa Invoice email sent");
-        console.log(res.data);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to send quotation email");
-      }
+   const handleInvoiceSendEmail = async (invoiceId: string) => {
+            router.push(`/finance/invoices/email/${invoiceId}`)
     };
     
   return (
@@ -683,6 +665,9 @@ export default function InvoicesPage() {
                             </span>
                             <span className="flex flex-col">
                               <span className="font-medium">
+                               {inv.clientId?.name}
+                              </span>
+                              <span className="font-medium">
                                 {(typeof inv?.clientId === "object" &&
                                   (inv?.clientId as any)?.email) ||
                                   inv?.clientDetails?.name ||
@@ -841,16 +826,15 @@ export default function InvoicesPage() {
                                 </Link>
 
 
-<button
-                              onClick={()=>{
-                              
-                                handleSendEmail(inv._id)
-                              }}
-                              className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
-                              aria-label="Send"
-                            >
-                             Send Email
-                            </button>
+                                 <button
+                                  onClick={() => {
+                                    handleInvoiceSendEmail(inv._id);
+                                  }}
+                                  className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
+                                  aria-label="Send"
+                                >
+                                  Send Email
+                                </button>
 
                                 <button
                                   onClick={(e) => {

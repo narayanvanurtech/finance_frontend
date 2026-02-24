@@ -148,6 +148,7 @@ export default function CreateInvoicePage() {
     notes: "",
     attachments: [],
     showSignature: false,
+    signature:"",
     phases: [],
   };
 
@@ -187,10 +188,10 @@ export default function CreateInvoicePage() {
         shipping: Number(values.shipping) || 0,
       };
 
-      await createInvoice(payload);
+     const res =  await createInvoice(payload);
 
-      toast.success("Invoice created successfully!");
-      router.push("/finance/invoices");
+      toast.success(res.message)
+      router.push(`/finance/invoices/preview/${res.data.id}`);
     } catch (error: any) {
       toast.error(
         error?.message ||

@@ -154,6 +154,7 @@ export type CreateClientForm = {
   street: string;
   alias: string;
   uniqueKey: string;
+  name:String;
   email: string;
   showEmail: boolean;
   phone: string;
@@ -189,6 +190,7 @@ const initialForm: CreateClientForm = {
   street: "",
   alias: "",
   uniqueKey: "",
+  name:"",
   email: "",
   showEmail: false,
   phone: "",
@@ -287,6 +289,8 @@ export default function CreateClientPage() {
       errs.email = "Please enter a valid email address";
     }
 
+  
+
     // Optional validations for better UX
     if (
       form.phone &&
@@ -360,6 +364,7 @@ export default function CreateClientPage() {
       const clientData: CreateClientPayload = {
         businessName: form.businessName,
         companyId: user.companyId,
+        name:form.name,
         email: form.email,
         phone: form.phone || "",
         whatsappNo: form.whatsappNo || "",
@@ -633,6 +638,21 @@ export default function CreateClientPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Client Name
+                  </label>
+                  <Input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => handleChange("name", e.target.value)}
+                    placeholder="Enter Client Name"
+                    className={errors.name ? "border-red-300" : ""}
+                  />
+                  {errors.name && (
+                    <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email Address *
                   </label>
                   <Input
@@ -685,22 +705,7 @@ export default function CreateClientPage() {
                     >
                       Show phone in invoices
                     </label>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Checkbox
-                        checked={form.phoneSameAsWhatsappNo}
-                        onCheckedChange={(v) =>
-                          handleChange("phoneSameAsWhatsappNo", Boolean(v))
-                        }
-                        id="phoneSameAsWhatsappNo"
-                      />
-
-                      <label
-                        htmlFor="phoneSameAsWhatsappNo"
-                        className="text-sm text-gray-600"
-                      >
-                        Same as WhatsApp Number
-                      </label>
-                    </div>
+                    
                   </div>
                 </div>
 
@@ -733,7 +738,25 @@ export default function CreateClientPage() {
   <p className="text-xs text-red-500 mt-1">{errors.whatsappNo}</p>
 )}
 
+<div className="flex items-center gap-2 mt-2">
+                      <Checkbox
+                        checked={form.phoneSameAsWhatsappNo}
+                        onCheckedChange={(v) =>
+                          handleChange("phoneSameAsWhatsappNo", Boolean(v))
+                        }
+                        id="phoneSameAsWhatsappNo"
+                      />
+
+                      <label
+                        htmlFor="phoneSameAsWhatsappNo"
+                        className="text-sm text-gray-600"
+                      >
+                        Same as WhatsApp Number
+                      </label>
+                    </div>
+
                 </div>
+                
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

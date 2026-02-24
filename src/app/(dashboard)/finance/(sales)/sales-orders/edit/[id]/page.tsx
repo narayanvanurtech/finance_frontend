@@ -183,6 +183,7 @@ const items = itemsData?.result?.items || [];
               notes: order.notes || "",
               attachments: [],
               showSignature: order.showSignature === true,
+              signature:order.signature
             });
 
             console.log("✅ Initial Values Set");
@@ -245,6 +246,7 @@ const items = itemsData?.result?.items || [];
         terms: values.terms,
         notes: values.notes,
         showSignature: values.showSignature,
+        signature:values.signature
       };
 
       await updateSalesOrder(orderId, user.companyId, payload);

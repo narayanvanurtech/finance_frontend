@@ -14,6 +14,7 @@ import type { Cess } from "@/components/finance/ConfigureTax";
 import PerformaInvoiceHeaderBar from "./HeaderBar";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
+import { useParams, useRouter } from "next/navigation";
 
 export type PerformaInvoiceFormValues = {
   type: "invoice" | "performa";
@@ -59,6 +60,7 @@ export type PerformaInvoiceFormValues = {
   notes: string;
   attachments: File[];
   showSignature: boolean;
+  signature:string;
   cessList: Cess[];
   phases: PaymentPhase[];
 
@@ -98,7 +100,7 @@ const PerformaInvoiceForm: React.FC<any> = ({
   onSuccess,
   loading,
 }) => {
-  console.log("Initial Values:", initialValues);
+ 
   const mockClientsFromProps = mockClients || [];
   const products = mockProducts || [];
   const clients = useClientStore((state) => state.clients);
@@ -147,6 +149,9 @@ const PerformaInvoiceForm: React.FC<any> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+  const [signature, setSignature] = useState<string>(
+  initialValues.signature || ""
+);
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
   );
@@ -226,36 +231,41 @@ const PerformaInvoiceForm: React.FC<any> = ({
   }, [clientId, clients.length]); // Only depend on clientId and clients array length
 
   // Update form state when initialValues change (for edit mode)
-  useEffect(() => {
-    if (mode === "edit" && initialValues) {
-      setInvoiceTitle(initialValues.performaInvoiceTitle);
-      setDate(initialValues.date);
-      setDueDate(initialValues.dueDate);
-      setClientId(initialValues.clientId);
-      setClientDetails(initialValues.clientDetails);
-      setBusinessDetails(initialValues.businessDetails);
-      setTaxConfiguration(
-        initialValues.taxType === "IGST" ? "IGST" : "SGST_CGST"
-      );
-      setItems(initialValues.items);
-      setDiscountType(initialValues.discountType);
-      setDiscountValue(initialValues.discountValue);
-      setShipping(initialValues.shipping);
-      setRoundOff(initialValues.roundOff);
-      setShowHSN(initialValues.showHSN);
-      setShowUnit(initialValues.showUnit);
-      setTerms(initialValues.terms || "dueOnReceipt");
-      setNotes(initialValues.notes);
-      setAttachments(initialValues.attachments);
-      setShowSignature(initialValues.showSignature);
-      setCessList(initialValues.cessList || []);
-      setPhases(initialValues.phases || []);
-    }
-  }, [initialValues, mode]);
+useEffect(() => {
+  if (mode === "edit" && initialValues) {
+    setInvoiceTitle(initialValues.performaInvoiceTitle);
+    setDate(initialValues.date);
+    setDueDate(initialValues.dueDate);
+    setClientId(initialValues.clientId);
+    setClientDetails(initialValues.clientDetails);
+    setBusinessDetails(initialValues.businessDetails);
+    setTaxConfiguration(
+      initialValues.taxType === "IGST" ? "IGST" : "SGST_CGST"
+    );
+    setItems(initialValues.items);
+    setDiscountType(initialValues.discountType);
+    setDiscountValue(initialValues.discountValue);
+    setShipping(initialValues.shipping);
+    setRoundOff(initialValues.roundOff);
+    setShowHSN(initialValues.showHSN);
+    setShowUnit(initialValues.showUnit);
+    setTerms(initialValues.terms || "dueOnReceipt");
+    setNotes(initialValues.notes);
+    setAttachments(initialValues.attachments || []);
+    setShowSignature(initialValues.showSignature || false);
+
+
+    setSignature(initialValues.signature || "");
+
+    setCessList(initialValues.cessList || []);
+    setPhases(initialValues.phases || []);
+  }
+}, [initialValues, mode]);
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const router =  useRouter()
 
   const handleItemChange = (idx: number, field: string, value: any) => {
     console.log(
@@ -492,6 +502,7 @@ const PerformaInvoiceForm: React.FC<any> = ({
       notes,
       attachments,
       showSignature,
+      signature,
       cessList,
       phases,
     };
@@ -501,9 +512,20 @@ const PerformaInvoiceForm: React.FC<any> = ({
     console.log("Items count:", items.length);
     console.log("Business Details:", businessDetails);
     console.log("Calling onSubmit with form data");
+
     onSubmit(formData);
+
     if (onSuccess) onSuccess();
   };
+
+      console.log("📤 Sending Signature:", signature);
+console.log("📤 Signature Length:", signature?.length);
+console.log("📤 Show Signature:", showSignature);
+ const {id} = useParams()
+ 
+const submitEmail =()=>{
+    router.push(`/finance/performa-invoices/email/${id}`)
+}
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -623,12 +645,15 @@ const PerformaInvoiceForm: React.FC<any> = ({
         attachments={attachments}
         handleAttachment={handleAttachment}
         showSignature={showSignature}
+        signature={signature}
+        setSignature={setSignature}
         setShowSignature={setShowSignature}
       />
 
       <ActionBar
         mode={mode}
         onSubmit={handleFormSubmit}
+        onSendEmail={submitEmail}
         loading={loading}
         onPrintDownload={handlePrintDownload}
         onCancel={handleCancel}

@@ -602,6 +602,8 @@ function EliteTemplate({
     0
   );
 
+  console.log("quotation.....details",quotation)
+
   const roundOffAmount = quotation?.roundOff
     ? Math.round(quotation.total) - quotation.total
     : 0;
@@ -683,6 +685,8 @@ function EliteTemplate({
   };
 
   const amountInWords = `INR ${numberToWords(Math.floor(finalTotal))} Only`;
+
+  console.log("preview",quotation)
 
   return (
     <Document>

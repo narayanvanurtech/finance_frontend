@@ -14,6 +14,7 @@ import type { Cess } from "@/components/finance/ConfigureTax";
 import InvoiceHeaderBar from "./HeaderBar";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
+import { useParams, useRouter } from "next/navigation";
 // InvoiceHeaderBar will be created next
 
 export type InvoiceFormValues = {
@@ -51,6 +52,7 @@ export type InvoiceFormValues = {
   notes: string;
   attachments: File[];
   showSignature: boolean;
+  signature:string;
   cessList: Cess[];
   phases: PaymentPhase[];
 
@@ -99,6 +101,9 @@ const InvoiceForm: React.FC<any> = ({
   const [dueDate, setDueDate] = useState(initialValues.dueDate);
   const [clientId, setClientId] = useState(initialValues.clientId);
   const [showAddClient, setShowAddClient] = useState(false);
+ const router =  useRouter()
+ const {id}=useParams()
+
   const [clientDetails, setClientDetails] = useState(
     initialValues.clientDetails
   );
@@ -175,6 +180,9 @@ const InvoiceForm: React.FC<any> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+  const [signature, setSignature] = useState<string>(
+  initialValues.signature || ""
+);
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
   );
@@ -240,6 +248,7 @@ const InvoiceForm: React.FC<any> = ({
       setNotes(notesValue);
       setAttachments(initialValues.attachments);
       setShowSignature(initialValues.showSignature);
+      setSignature(initialValues.signature);
       setCessList(initialValues.cessList || []);
       setPhases(phasesValue);
     }
@@ -563,11 +572,17 @@ const InvoiceForm: React.FC<any> = ({
       notes,
       attachments,
       showSignature,
+      signature,
       cessList,
       phases,
     });
     if (onSuccess) onSuccess();
   };
+
+  const submitEmail =()=>{
+    router.push(`/finance/invoices/email/${id}`)
+}
+
 
   console.log("Invoice ProductS",products)
   return (
@@ -692,6 +707,8 @@ const InvoiceForm: React.FC<any> = ({
         setNotes={setNotes}
         attachments={attachments}
         handleAttachment={handleAttachment}
+        signature={signature}
+        setSignature={setSignature}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
         mode={mode}
@@ -699,6 +716,7 @@ const InvoiceForm: React.FC<any> = ({
       <ActionBar
         mode={mode}
         onSubmit={handleFormSubmit}
+        onSendEmail={submitEmail}
         loading={loading}
         onPrintDownload={handlePrintDownload}
         onCancel={handleCancel}

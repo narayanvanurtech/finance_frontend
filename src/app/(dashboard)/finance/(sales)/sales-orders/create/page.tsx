@@ -161,6 +161,7 @@ export default function CreateSalesOrderPage() {
         notes: "",
         attachments: [],
         showSignature: false,
+        signature:""
       };
 
   const handleCreate = async (values: SalesOrderFormValues) => {
@@ -207,17 +208,18 @@ export default function CreateSalesOrderPage() {
         terms: values.terms || undefined,
         notes: values.notes || undefined,
         status: "draft",
+        signature:values.signature,
+        showSignature:values.showSignature
       };
 
-      await createSalesOrder(payload, user.companyId);
-
+     const res =  await createSalesOrder(payload, user.companyId);
       clearDraft();
       setCompanyId(user.companyId);
       await fetchSalesOrders();
 
       toast.success("Sales Order created successfully");
 
-      router.push("/finance/sales-orders");
+      router.push(`/finance/sales-orders/preview/${res.id || res._id}`);
     } catch (error: any) {
       toast.error(
         error?.message ||

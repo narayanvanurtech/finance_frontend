@@ -50,6 +50,7 @@ export type QuotationFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
   phases: PaymentPhase[];
   status?: "draft" | "sent" | "accepted" | "rejected" | "expired" | "converted";
@@ -186,6 +187,8 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+
+  const [signature,setSignature]=useState(initialValues.signature)
   const [phases, setPhases] = useState<PaymentPhase[]>(initialValues.phases);
   // Use businessDetails from initialValues
   const [businessDetails, setBusinessDetails] = useState<BusinessDetails>(
@@ -198,6 +201,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
     }
   );
 
+  // console.log("Signature....",signature)
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
     if (initialValues) {
@@ -260,6 +264,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
       setNotes(initialValues.notes || "");
       setAttachments(initialValues.attachments || []);
       setShowSignature(initialValues.showSignature || false);
+      setSignature(initialValues.signature || "")
       setPhases(initialValues.phases || []);
     }
   }, [initialValues]);
@@ -618,9 +623,12 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
       phases: convertPhasesToApiFormat(phases),
     };
+
+    console.log("Signature inside the form submit",signature)
 
     console.log("✅ Form validation passed!");
     console.log("Form data prepared:", formData);
@@ -658,6 +666,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
       window.history.back();
     }
   };
+
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -858,6 +867,8 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
         attachments={attachments}
         handleAttachment={handleAttachment}
         showSignature={showSignature}
+        setSignature={setSignature}
+        signature={signature}
         setShowSignature={setShowSignature}
       />
       <ActionBar

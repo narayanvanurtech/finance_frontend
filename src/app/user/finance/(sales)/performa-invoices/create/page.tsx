@@ -111,6 +111,7 @@ export default function CreatePerformaInvoicePage() {
     notes: "",
     attachments: [],
     showSignature: false,
+    signature:"",
     phases: [],
   };
 
@@ -136,7 +137,7 @@ export default function CreatePerformaInvoicePage() {
         return;
       }
 
-      await createPerformaInvoice(values);
+     const res =  await createPerformaInvoice(values);
       // Success toast is already shown in the store
       router.push("/user/finance/performa-invoices");
     } catch (error: any) {

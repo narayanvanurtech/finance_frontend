@@ -110,6 +110,8 @@ export interface CreateSalesOrderPayload {
   shippingAddress?: ShippingAddress;
   terms?: string;
   notes?: string;
+  showSignature:boolean,
+  signature:string,
   status?:
     | "draft"
     | "confirmed"
@@ -139,6 +141,7 @@ export interface UpdateSalesOrderPayload {
   terms?: string;
   notes?: string;
   showSignature?: boolean;
+  signature?:string;
 }
 
 // API Response interfaces

@@ -10,6 +10,7 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import type { Vendor } from "@/stores/financeStore/useVendorStore";
 import AddVendorModal from "@/components/finance//AddVendorModal";
+import { useParams, useRouter } from "next/navigation";
 
 export type ExpenseFormValues = {
   expenseNo: string;
@@ -29,6 +30,7 @@ export type ExpenseFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
   expenseCategory: string;
   paymentMode: string;
@@ -99,8 +101,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   const [attachments, setAttachments] = useState<File[]>(
     initialValues.attachments
   );
+
+  const router = useRouter()
+  const {id} =  useParams()
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
+  );
+   const [signature, setSignature] = useState<string>(
+    initialValues.signature || ""
   );
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
@@ -416,6 +424,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
       expenseCategory,
       paymentMode,
@@ -424,6 +433,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
     });
     if (onSuccess) onSuccess();
   };
+
+const handleCancel=()=>{
+  window.history.back()
+}
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -596,6 +609,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
             Add Payment Milestones/Phases
           </label>
         </div>
+
 
         {showPhases && (
           <div className="mt-3 pt-3 border-t border-gray-200">
@@ -880,6 +894,8 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         total={total}
       />
       <AdditionalInputs
+       signature={signature}
+       setSignature={setSignature}
         terms={terms}
         setTerms={setTerms}
         notes={notes}
@@ -889,7 +905,12 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         showSignature={showSignature}
         setShowSignature={setShowSignature}
       />
-      <ActionBar mode={mode} onSubmit={handleFormSubmit} loading={loading} />
+      <ActionBar
+        mode={mode}
+        onSubmit={handleFormSubmit}
+     onCancel={handleCancel}
+        loading={loading}
+      />
       <AddItemModal
         open={showAddItemModal}
         onClose={() => setShowAddItemModal(false)}
