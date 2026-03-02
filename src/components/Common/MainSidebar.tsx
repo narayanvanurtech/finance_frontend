@@ -31,8 +31,10 @@ import {
 } from "lucide-react";
 import Profilesheet from "@/components/sales-crm/Profilesheet";
 import ConfirmationDialog from "@/components/sales-crm/ConfirmationDialog";
+import { toast } from "sonner";
 
 interface MainSidebarProps {
+  
   activeTab: string;
   setActiveTab: (tab: string) => void;
   collapsed: boolean;
@@ -46,10 +48,12 @@ interface NavigationItem {
 }
 
 interface SettingsItem {
+
   href: string;
   icon: React.ReactNode;
   label: string;
 }
+
 
 export default function MainSidebar({
   activeTab,
@@ -71,11 +75,6 @@ export default function MainSidebar({
   const [reportsExpanded, setReportsExpanded] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const [isClient,setIsClinet]=useState(false)
-
-  useEffect(()=>{
-    setIsClinet(true)
-  },[])
 
   const basePath = user?.role === "admin" ? "/sales-crm" : "/user/sales-crm";
 
@@ -440,13 +439,19 @@ export default function MainSidebar({
     router.push(path);
   }, [router]);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback( async () => {
     try {
-      await logoutUser(fcmToken);
+      console.log("token",fcmToken)
+     await logoutUser(fcmToken);
+   
+    
+      toast.success("Logout Successfully !")
+     
       router.push("/auth/login");
+      
     } catch (error) {
       router.push("/auth/login")
-      console.error("Logout failed:", error);
+      toast.error(`Logout failed: ${error}`);
     }
   }, [logoutUser, fcmToken, router]);
 
@@ -1255,7 +1260,7 @@ export default function MainSidebar({
               {!collapsed && (
                 <div className="text-left min-w-0 flex-1">
                   <div className="font-semibold text-sm text-gray-900 truncate">
-                    {(user?.name && isClient) ? user?.name : "User"}
+                    {user?.name || "User"}
                   </div>
                   <div className="text-xs text-gray-500 truncate">
                     {user?.email || "user@crm.com"}

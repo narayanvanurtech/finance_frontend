@@ -12,66 +12,54 @@ import { Button } from "@/components/ui/button";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import AddBussinessModal from "@/components/finance/AddBussinessModal";
 
-export type BusinessDetails = {
-  name: string;
-  gstin: string;
-  address: string;
-  contact: string;
-  email: string;
-  igstn?: string;
+
+export interface BankDetails {
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branchName?: string;
+}
+
+export interface BusinessDetails {
+  _id?: string;
+  businessName?: string;
+  gstin?: string;
   state?: string;
-};
+  contact?: string;
+  website?: string;
+  qrcode?: string;
+  bankDetails?: BankDetails;
+}
 
 export type YourDetailsSectionProps = {
   businessId?: string;
   onBusinessSelect?: (value: string) => void;
   showAddBusiness?: boolean;
   setShowAddBusiness?: React.Dispatch<React.SetStateAction<boolean>>;
-  businessDetails: BusinessDetails;
-  setBusinessDetails?: React.Dispatch<React.SetStateAction<BusinessDetails>>;
-  handleAddBusiness?: () => void;
   mockBusinesses?: {
     id: number;
     name: string;
-    gstin: string;
-    address: string;
-    contact: string;
-    email: string;
   }[];
   hideSelector?: boolean;
 };
 
 const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
-  const businessStoreDetails = useBussinessStore((s) => s.details);
-
-  // Check if props.businessDetails has any valid values
-  const hasValidPropDetails =
-    props.businessDetails &&
-    (props.businessDetails.name ||
-      props.businessDetails.gstin ||
-      props.businessDetails.address);
-
-  // Prefer prop if it has valid data, otherwise fallback to store
-  const businessDetails = hasValidPropDetails
-    ? props.businessDetails
-    : businessStoreDetails
-    ? {
-        name: businessStoreDetails.businessName,
-        gstin: businessStoreDetails.gstNumber || "",
-        address: businessStoreDetails.website || "",
-        contact: businessStoreDetails.phone,
-        email: "",
-      }
-    : undefined;
-
+  const businessStoreDetails: BusinessDetails | null =
+  useBussinessStore((s: any) => s.details);
   const [businessSearch, setBusinessSearch] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+
   const filteredBusinesses =
     props.mockBusinesses?.filter((b) =>
       b.name.toLowerCase().includes(businessSearch.toLowerCase())
     ) || [];
-  const [editOpen, setEditOpen] = useState(false);
+
+    console.log("businessStoreDetails:::_=>",businessStoreDetails)
+
   return (
     <>
+      {/* Edit Modal */}
       {businessStoreDetails && (
         <AddBussinessModal
           open={editOpen}
@@ -79,19 +67,23 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
           initialValues={businessStoreDetails}
         />
       )}
+
+      {/* Business Selector */}
       {!props.hideSelector && (
         <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6">
           <div className="flex-1">
             <label className="block text-sm font-semibold mb-2 text-gray-700">
               Select Business
             </label>
+
             <Select
-              onValueChange={props.onBusinessSelect!}
+              onValueChange={props.onBusinessSelect}
               value={props.businessId}
             >
-              <SelectTrigger className="w-full h-11 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+              <SelectTrigger className="w-full h-11">
                 <SelectValue placeholder="-- Select Business --" />
               </SelectTrigger>
+
               <SelectContent>
                 <div className="px-2 py-2">
                   <Input
@@ -102,18 +94,21 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
                     onKeyDown={(e) => e.stopPropagation()}
                   />
                 </div>
+
                 {filteredBusinesses.map((b) => (
                   <SelectItem key={b.id} value={b.id.toString()}>
                     {b.name}
                   </SelectItem>
                 ))}
+
                 <SelectItem value="new">+ Add New Business</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
           {props.businessId === "new" && props.setShowAddBusiness && (
             <Button
-              className="h-11 font-semibold px-6 rounded-lg border border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+              className="h-11 px-6"
               onClick={() => props.setShowAddBusiness!(true)}
             >
               + Add New Business
@@ -121,44 +116,109 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
           )}
         </div>
       )}
-      {businessDetails && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
-          <div>
-            <div className="text-xs text-gray-500">Company Name</div>
-            <div className="font-medium text-base">
-              {businessDetails.name || "-"}
+
+      
+     {/* Business Details Display */}
+{businessStoreDetails && (
+  <Card className="p-4 sm:p-6 shadow-sm border rounded-xl">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+      <h2 className="text-lg font-semibold">Business Details</h2>
+
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setEditOpen(true)}
+        className="w-full cursor-pointer text-white bg-[#3B82F6] sm:w-auto"
+      >
+        Edit
+      </Button>
+    </div>
+
+    {/* Main Grid */}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      {/* Left Section - Business Info */}
+      <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Detail label="Business Name" value={businessStoreDetails.businessName} />
+          <Detail label="GST Number" value={businessStoreDetails.gstin} />
+          <Detail label="State" value={businessStoreDetails.state} />
+          <Detail label="Phone" value={businessStoreDetails.contact} />
+          <Detail label="Website" value={businessStoreDetails.website} />
+          <Detail label="GSTIN" value={businessStoreDetails.gstin} />
+        </div>
+
+        {/* Bank Details */}
+        {businessStoreDetails.bankDetails && (
+          <div className="mt-8 border-t pt-6">
+            <h3 className="text-sm font-semibold mb-4">Bank Details</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Detail
+                label="Bank Name"
+                value={businessStoreDetails.bankDetails.bankName}
+              />
+              <Detail
+                label="Account Holder"
+                value={businessStoreDetails.bankDetails.accountHolderName}
+              />
+              <Detail
+                label="Account Number"
+                value={businessStoreDetails.bankDetails.accountNumber}
+              />
+              <Detail
+                label="IFSC Code"
+                value={businessStoreDetails.bankDetails.ifscCode}
+              />
+              <Detail
+                label="Branch"
+                value={businessStoreDetails.bankDetails.branchName}
+              />
             </div>
           </div>
-          <div>
-            <div className="text-xs text-gray-500">GSTIN</div>
-            <div className="font-medium text-base">
-              {businessDetails.gstin || businessDetails.igstn || "-"}
-            </div>
-          </div>
-          {(businessStoreDetails?.state || businessDetails.state) && (
-            <div>
-              <div className="text-xs text-gray-500">State</div>
-              <div className="font-medium text-base">
-                {businessStoreDetails?.state || businessDetails.state}
-              </div>
-            </div>
-          )}
-          <div>
-            <div className="text-xs text-gray-500">Billing Address</div>
-            <div className="font-medium text-base">
-              {businessDetails.address || "-"}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Contact Person</div>
-            <div className="font-medium text-base">
-              {businessDetails.contact || "-"}
-            </div>
-          </div>
+        )}
+      </div>
+
+      {/* Right Section - QR Code Only */}
+      {businessStoreDetails.qrcode && (
+        <div className="flex flex-col items-center justify-start">
+          <h3 className="text-sm font-semibold mb-4">QR Code</h3>
+<div className="w-full flex justify-center lg:justify-end">
+  <div className="w-full max-w-xl bg-white rounded-2xl shadow-md border border-gray-200 p-2 transition-all duration-300 hover:shadow-lg">
+
+   
+      <img
+        src={businessStoreDetails.qrcode}
+        alt="QR Code"
+        className="w-full rounded-2xl h-full object-contain "
+      />
+   
+
+  </div>
+</div>
+          
         </div>
       )}
+
+    </div>
+  </Card>
+)}
     </>
   );
 };
 
 export default YourDetailsSection;
+
+/* Reusable Detail Component */
+const Detail = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string;
+}) => (
+  <div>
+    <div className="text-xs text-gray-500">{label}</div>
+    <div className="font-medium text-base">{value || "-"}</div>
+  </div>
+);

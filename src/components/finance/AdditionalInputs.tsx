@@ -77,35 +77,45 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   // Terms and Notes are always visible now
 
   // Validate signature file
-  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    // Check file type
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "image/webp",
-    ];
-    if (!validTypes.includes(file.type)) {
-      setSignatureError("Only image files (JPEG, PNG, GIF, WEBP) are allowed");
-      e.target.value = "";
-      return;
-    }
+  const validTypes = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+  ];
 
-    // Check file size (2MB = 2 * 1024 * 1024 bytes)
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setSignatureError("File size must be less than 2MB");
-      e.target.value = "";
-      return;
-    }
+  if (!validTypes.includes(file.type)) {
+    setSignatureError("Only image files allowed");
+    return;
+  }
 
-    setSignatureError("");
-    setSignatureFile(file);
+  const maxSize = 2 * 1024 * 1024;
+  if (file.size > maxSize) {
+    setSignatureError("File must be under 2MB");
+    return;
+  }
+
+  setSignatureError("");
+
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    const base64String = reader.result as string;
+
+    // 👇 This will be same type as signaturePad
+    setSignature(base64String);
+    setSignaturePadData(base64String);
   };
+
+  console.log("File Details",signature)
+
+  reader.readAsDataURL(file);
+};
 
   useEffect(() => {
   // If signature already exists (edit mode / fetched data)

@@ -814,7 +814,7 @@ export default function ClientsPage() {
                   {/* Business Name */}
                   <td
                     className="px-4 py-4 font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
-                    onClick={() => handleEditClientNavigation(client._id,client.companyId)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
                     {client?.businessName}
                   </td>

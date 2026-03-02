@@ -84,6 +84,8 @@ export default function LoginPage() {
       }
     };
   }, [step, isAnimating, nextStep]);
+  
+  const isBusinessFormFilled = localStorage.getItem("isBusinessFormFilled")
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -94,7 +96,15 @@ export default function LoginPage() {
       if (!deviceToken) {
         deviceToken = await generateFCMToken();
       }
+
+
+
       await loginUser(email, password, deviceToken || "sfslalj38395sfk");
+      if(isBusinessFormFilled===null){
+        localStorage.setItem("isBusinessFormFilled","false")
+      }else{
+        localStorage.setItem("isBusinessFormFilled","true")
+      }
       toast.success("Login successful!", {
         position: "top-center",
         style: { background: "#4caf50", color: "#fff" },
@@ -104,7 +114,7 @@ export default function LoginPage() {
 
       if (role === "superadmin" ||  role === "admin") {
       // if (role === "admin") {
-        router.push("/sales-crm/home");
+        router.push(isBusinessFormFilled==="false" || isBusinessFormFilled===null ? "/finance/bussiness":"/sales-crm/home");
       } else if (role === "manager") {
         router.push("/manager/sales-crm/home");
       } else if (role === "user") {

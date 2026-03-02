@@ -38,6 +38,9 @@ const PDFDownloadLink = dynamicImport(
 
 import ClassicTemplate from "@/components/finance/ClassicTemplate";
 import { useState } from "react";
+import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
+
+    const business = useBussinessStore((s: any) => s.details);
 
 // Mock data (same as before)
 const quotation = {
@@ -52,13 +55,23 @@ const quotation = {
     contact: "John Doe",
     email: "john@acme.com",
   },
-  business: {
-    name: "My Business",
-    gstin: "29ABCDE1234F1Z5",
-    address: "456 Business Ave, City, State",
-    contact: "+91 1234567890",
-    email: "info@mybusiness.com",
-  },
+  business: business
+    ? {
+        name: business.businessName,
+        gstin: business.gstin || business.igstn,
+        address: business.state || "",
+        contact: business.contact,
+        email: business.website || "",
+        logo: business.logo || null,
+        qrcode: business.qrcode || null,
+      }
+    : {
+        name: "",
+        gstin: "",
+        address: "",
+        contact: "",
+        email: "",
+      },
   items: [
     {
       name: "Consulting",
@@ -102,6 +115,8 @@ const phases = [
   { name: "Development", dueDate: "2024-06-10", amount: 3000 },
   { name: "Final Payment", dueDate: "2024-06-15", amount: 1830 },
 ];
+
+
 
 const styles = StyleSheet.create({
   page: {
@@ -269,6 +284,7 @@ export default function QuotationPreviewPage() {
     ) : (
       <ClassicTemplate quotation={quotation} phases={phases} />
     );
+
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-2 min-h-screen flex flex-col gap-6">

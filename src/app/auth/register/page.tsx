@@ -149,14 +149,32 @@ export default function RegisterPage() {
           // Move to company setup step
           setActiveStep(1);
         } else {
-          setError(response.message);
-        }
-      } catch (err: any) {
-        setError(
-          err?.response?.data?.message ||
-            "Registration failed. Please try again."
-        );
-      } finally {
+  if (response.errors && Array.isArray(response.errors)) {
+    const errorMessages = response.errors
+      .map((err: any) => err.message)
+      .join(", ");
+
+    setError(errorMessages);
+  } else {
+    setError(response.message || "Something went wrong");
+  }
+}
+      }catch (err: any) {
+  const apiError = err?.response?.data;
+
+  if (apiError?.errors && Array.isArray(apiError.errors)) {
+    
+    const errorMessages = apiError.errors
+      .map((e: any) => e.message)
+      .join(", ");
+
+    setError(errorMessages);
+  } else {
+    setError(
+      apiError?.message || "Registration failed. Please try again."
+    );
+  }
+} finally {
         setLoading(false);
       }
       return;

@@ -698,7 +698,7 @@ function EliteTemplate({
               <Image src="/venurtechLogo.png" style={styles.companyLogo} />
               <View style={styles.companyDetails}>
                 <Text style={styles.companyName}>
-                  {quotation.business?.name || "VANURTECH MEDIA PVT. LTD."}
+                  {quotation.business?.businessName || "VANURTECH MEDIA PVT. LTD."}
                 </Text>
                 <Text style={styles.companyTagline}>
                   Deals in: Apps, CRMs, Website, MERN Stack Development
@@ -1100,7 +1100,7 @@ function EliteTemplate({
                     { marginTop: 2, fontWeight: "bold" },
                   ]}
                 >
-                  for {quotation.business?.name || "VANURTECH MEDIA"}
+                  for {quotation.business?.businessName || "VANURTECH MEDIA"}
                 </Text>
               </View>
             </View>

@@ -14,6 +14,7 @@ export type BusinessDetails = {
   igstn?: string;
   igstnState?: string;
   state?: string;
+  _id?:string;
 };
 
 interface BussinessStore {

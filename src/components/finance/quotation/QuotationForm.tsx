@@ -16,7 +16,7 @@ import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { useQuotationStore } from "@/stores/financeStore/useQuotationStore";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   QuotationItem,
@@ -272,7 +272,8 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
   // Add modal state for AddClientModal, AddItemModal, AddItemBulkModal
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
-
+const router = useRouter();
+  const pathname = usePathname();
   // Error state for validation
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -661,12 +662,14 @@ const QuotationForm: React.FC<QuotationFormProps> = ({
     // await sendQuotationEmail(quotationId, emailData);
   };
 
-  const handleCancel = () => {
-    if (typeof window !== "undefined") {
-      window.history.back();
-    }
-  };
-
+const handleCancel = () => {
+  const segments = pathname.split("/").filter(Boolean);
+console.log("segments---->>>",segments)
+  // Keep first 3 segments: finance / sales / quotation
+  const parentPath = "/" + segments.slice(0, 3).join("/") + "/";
+  console.log("parentPath====>",parentPath)
+  router.push(parentPath);
+};
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">

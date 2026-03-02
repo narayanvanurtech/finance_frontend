@@ -68,6 +68,7 @@ import { useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { CreateClientPayload } from "@/api/finance/clientApi";
+import { toast } from "sonner";
 
 const industries = [
   "IT",
@@ -418,8 +419,12 @@ export default function CreateClientPage() {
 
       // Redirect back to clients list with success message
       router.push("/finance/clients?created=true");
+      toast.success("Client Created Successfully !")
     } catch (error) {
       console.error("Error creating client:", error);
+      toast.error(error instanceof Error
+            ? error.message
+            : "Failed to create client. Please try again.")
       setErrors({
         general:
           error instanceof Error
@@ -460,23 +465,7 @@ export default function CreateClientPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                {isSubmitting ? "Creating..." : "Create Client"}
-              </Button>
-            </div>
+           
           </div>
         </div>
       </div>
@@ -751,7 +740,7 @@ export default function CreateClientPage() {
                         htmlFor="phoneSameAsWhatsappNo"
                         className="text-sm text-gray-600"
                       >
-                        Same as WhatsApp Number
+                        Same as Phone Number
                       </label>
                     </div>
 
@@ -1132,6 +1121,25 @@ export default function CreateClientPage() {
               </CardContent>
             )}
           </Card>
+           <div className="flex items-center justify-end w-full">
+            <div className="flex items-center space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                {isSubmitting ? "Creating..." : "Create Client"}
+              </Button>
+            </div>
+           </div>
         </form>
       </div>
     </div>
