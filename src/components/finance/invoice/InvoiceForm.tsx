@@ -490,7 +490,7 @@ const InvoiceForm: React.FC<any> = ({
   };
 
   const handleCancel = () => {
-    window.history.back();
+    router.push("/finance/invoices")
   };
 
   const handleFormSubmit = () => {

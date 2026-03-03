@@ -12,6 +12,7 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import type { Cess } from "@/components/finance/ConfigureTax";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
+import { useRouter } from "next/navigation";
 
 export type DeliveryChallanFormValues = {
   quotationTitle?: string;
@@ -36,6 +37,7 @@ export type DeliveryChallanFormValues = {
     address: string;
     contact: string;
     email: string;
+     state?: string;
   };
   taxType: "inclusive" | "exclusive";
   taxConfiguration?: "IGST" | "SGST_CGST";
@@ -49,6 +51,7 @@ export type DeliveryChallanFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
   cessList: Cess[];
   phases?: any[];
@@ -141,6 +144,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
     "IGST" | "SGST_CGST"
   >(initialValues.taxConfiguration || "SGST_CGST");
 
+    const [signature,setSignature]=useState(initialValues.signature)
   // Transport Details
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [transportMode, setTransportMode] = useState("Road");
@@ -152,6 +156,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const [returnDate, setReturnDate] = useState("");
   const [purpose, setPurpose] = useState("For Delivery");
 
+  const router = useRouter()
   // Function to calculate item amount based on current tax settings
   const calculateItemAmount = (item: any) => {
     // Support both qty and quantity fields
@@ -401,7 +406,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   };
 
   const handleCancel = () => {
-    window.history.back();
+     router.push("/finance/delivery-challans") 
   };
 
   const handleFormSubmit = () => {
@@ -440,6 +445,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
       terms: terms, // Send actual terms value instead of challanType
       notes: notes, // Send actual notes value instead of reference
       attachments,
+      signature,
       showSignature,
       phases: [],
       // Transport Details
@@ -739,6 +745,8 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
         setNotes={setNotes}
         attachments={attachments}
         handleAttachment={handleAttachment}
+        setSignature={setSignature}
+        signature={signature}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
       />

@@ -112,10 +112,12 @@ const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSignaturePadData(base64String);
   };
 
-  console.log("File Details",signature)
+
 
   reader.readAsDataURL(file);
 };
+
+
 
   useEffect(() => {
   // If signature already exists (edit mode / fetched data)

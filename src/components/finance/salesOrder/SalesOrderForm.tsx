@@ -425,7 +425,7 @@ const SalesOrderForm: React.FC<any> = ({
 
 
   const handleCancel = () => {
-    window.history.back();
+    router.push("/finance/sales-orders")
   };
 
   const handleFormSubmit = () => {

@@ -119,6 +119,7 @@ export default function EditPurchaseOrderPage() {
     terms: purchaseOrder.terms || "",
     notes: purchaseOrder.notes || "",
     attachments: [],
+    signature:purchaseOrder.signature || "",
     existingAttachments: purchaseOrder.attachments || [],
     showSignature: false,
   };

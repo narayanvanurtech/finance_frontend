@@ -796,7 +796,7 @@ export default function ClientsPage() {
                     <div className="flex items-center justify-start">
                       {client?.logoUrl ? (
                         <img
-                          src={getLogoUrl(client.logoUrl) || ""}
+                          src={client.logoUrl || ""}
                           alt={`${client.businessName} logo`}
                           className="w-8 h-8 rounded-full object-cover border border-gray-200"
                         />
@@ -822,7 +822,7 @@ export default function ClientsPage() {
                   {/* GSTIN */}
                   <td
                     className="px-4 py-4 text-[var(--color-muted-foreground)] cursor-pointer"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
                     {client?.gstin || "-"}
                   </td>
@@ -830,7 +830,7 @@ export default function ClientsPage() {
                   {/* Address */}
                   <td
                     className="px-4 py-4 text-[var(--color-muted-foreground)] cursor-pointer"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
                     {client?.address
                       ? `${client?.address?.street || ""} ${
@@ -842,15 +842,15 @@ export default function ClientsPage() {
                   {/* Contact */}
                   <td
                     className="px-4 py-4 text-[var(--color-muted-foreground)] cursor-pointer"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
-                    {client?.alias || client?.businessName}
+                    {client?.phone || client?.whatsappNo}
                   </td>
 
                   {/* Email */}
                   <td
                     className="px-4 py-4 text-[var(--color-muted-foreground)] cursor-pointer"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
                     {client?.email}
                   </td>

@@ -384,53 +384,7 @@ const ClientDetailsPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <Info className="w-8 h-8 text-red-600" />
-            </div>
-            <p className="text-red-600 mb-4">Error: {error}</p>
-            <Button
-              onClick={handleBack}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              Back to Clients
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  if (!currentClient) {
-    if (!isLoading && !error) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center py-12">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Info className="w-8 h-8 text-gray-600" />
-              </div>
-              <p className="text-gray-600 mb-4">Client not found</p>
-              <p className="text-sm text-gray-500 mb-4">
-                Client ID: {clientId} | Company ID: {user?.companyId}
-              </p>
-              <Button
-                onClick={handleBack}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                Back to Clients
-              </Button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  }
 
 
   console.log("formData.logoUrl", formData.logoUrl);
@@ -443,13 +397,7 @@ const ClientDetailsPage = () => {
         <div className="mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
-              <button
-                className="flex items-center space-x-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-200 cursor-pointer"
-                onClick={handleBack}
-              >
-                <ArrowLeft size={18} />
-                <span className="font-medium">Back to Clients</span>
-              </button>
+              
 
               <div className="w-px h-8 bg-slate-300"></div>
 

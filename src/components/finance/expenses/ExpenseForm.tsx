@@ -435,7 +435,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
   };
 
 const handleCancel=()=>{
-  window.history.back()
+  router.push("/finance/expenses")
 }
 
   return (

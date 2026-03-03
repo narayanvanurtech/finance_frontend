@@ -663,12 +663,7 @@ const router = useRouter();
   };
 
 const handleCancel = () => {
-  const segments = pathname.split("/").filter(Boolean);
-console.log("segments---->>>",segments)
-  // Keep first 3 segments: finance / sales / quotation
-  const parentPath = "/" + segments.slice(0, 3).join("/") + "/";
-  console.log("parentPath====>",parentPath)
-  router.push(parentPath);
+       router.push("/finance/quotations")
 };
 
   return (

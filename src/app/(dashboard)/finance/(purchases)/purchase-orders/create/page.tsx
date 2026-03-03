@@ -95,6 +95,7 @@ export default function CreatePurchaseOrderPage() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
   };
 

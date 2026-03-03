@@ -58,6 +58,7 @@ interface Purchase {
   roundOff: boolean;
   showHSN: boolean;
   showUnit: boolean;
+  signature:string;
   showSignature: boolean;
   purchaseType: "goods" | "services";
   priority: "low" | "medium" | "high";
@@ -85,6 +86,7 @@ interface CreatePurchasePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   purchaseType?: "goods" | "services";
   priority?: "low" | "medium" | "high";
@@ -104,6 +106,7 @@ interface UpdatePurchasePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   purchaseType?: "goods" | "services";
   priority?: "low" | "medium" | "high";

@@ -4,7 +4,6 @@ import { toast } from "sonner";
  export const handleSendEmail = async (id: string,baseurl:string,subject:string,message:string,cc:string,email:string) => {
     console.log(id)
     const token = localStorage.getItem("token");
-    console.log("handleSendEmail", id);
 
     try {
       const res = await axiosInstance.post(
@@ -17,6 +16,7 @@ import { toast } from "sonner";
         },
       );
 
+      console.log("Quotation Email====>",res)
      
           if(res.data.success){
             toast.success(res.data.message)

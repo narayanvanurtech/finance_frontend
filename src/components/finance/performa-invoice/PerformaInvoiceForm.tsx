@@ -424,7 +424,7 @@ useEffect(() => {
   };
 
   const handleCancel = () => {
-    window.history.back();
+    router.push("/finance/performa-invoices")
   };
 
   const handleFormSubmit = () => {

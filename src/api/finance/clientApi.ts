@@ -278,28 +278,40 @@ const clientApi = {
   },
 
   // Update client details
-  updateClientDetails: async (
-    companyId: string,
-    clientId: string,
-    clientData: UpdateClientPayload,
-  ): Promise<ClientResponse> => {
-    try {
-      const response = await axios.put<ClientResponse>(
-        `/api/v1/finance/sales/client/updateClientDetails/${companyId}/${clientId}`,
-        clientData,
-      );
-      console.log("Client Updated SuccessFully ", response.data);
-      if (response.data.message === "Client updated successfully") {
-        setTimeout(() => {
-          toast.success(response.data.message);
-        }, 1000);
-        return response.data;
-      }
-    } catch (error) {
-      toast.error(error.response.data.message || response.data.message || "Failed to Updated Client")
-      throw error;
+updateClientDetails: async (
+  companyId: string,
+  clientId: string,
+  clientData: UpdateClientPayload,
+): Promise<ClientResponse> => {
+  try {
+    const response = await axios.put<ClientResponse>(
+      `/api/v1/finance/sales/client/updateClientDetails/${companyId}/${clientId}`,
+      clientData,
+    );
+
+    console.log("Client Updated Successfully", response.data);
+
+    if (response.data?.message) {
+      toast.success(response.data.message);
     }
-  },
+
+    return response.data;
+
+  } catch (error: any) {
+    console.error("Update Client Error:", error);
+
+    const backendData = error?.response?.data;
+
+    // 🔥 If validation errors exist → throw clean backend object
+    if (backendData?.errors) {
+      throw backendData;
+    }
+
+    toast.error(backendData?.message || "Failed to update client");
+
+    throw backendData || error; // IMPORTANT
+  }
+},
 
   // Delete a client
   deleteClient: async (

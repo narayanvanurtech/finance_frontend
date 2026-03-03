@@ -14,6 +14,7 @@ import {
   useAddAttachment,
   useRemoveAttachment,
 } from "@/hooks/usePurchaseOrderQueries";
+import { sign } from "crypto";
 
 export type PurchaseOrderFormValues = {
   purchaseOrderNo: string;
@@ -41,6 +42,7 @@ export type PurchaseOrderFormValues = {
   notes: string;
   attachments: File[];
   existingAttachments?: string[];
+  signature:string;
   showSignature: boolean;
 };
 
@@ -132,6 +134,8 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+
+    const [signature,setSignature]=useState(initialValues.signature)
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -281,6 +285,7 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
     });
     if (onSuccess) onSuccess();
@@ -407,6 +412,8 @@ const PurchaseOrderForm: React.FC<PurchaseOrderFormProps> = ({
         setNotes={setNotes}
         attachments={attachments}
         handleAttachment={handleAttachment}
+        signature={signature}
+        setSignature={setSignature}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
         purchaseOrderId={purchaseOrderId}

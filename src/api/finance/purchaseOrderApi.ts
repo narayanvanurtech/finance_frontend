@@ -64,6 +64,8 @@ export interface CreatePurchaseOrderPayload {
   terms?: string;
   notes?: string;
   attachments?: string[]; // Array of attachment URLs (optional)
+  signature?:string;
+  showSignature?:boolean;
 }
 
 export interface UpdatePurchaseOrderPayload {
@@ -83,6 +85,8 @@ export interface UpdatePurchaseOrderPayload {
   notes?: string;
   vendorDetails?: VendorDetails;
   businessDetails?: BusinessDetails;
+  signature?:string;
+  showSignature?:boolean;
 }
 
 export interface UpdateApprovalStatusPayload {
@@ -119,6 +123,8 @@ export interface PurchaseOrder {
   terms?: string;
   notes?: string;
   attachments?: string[];
+  signature?:string;
+  showSignature?:boolean;
   subtotal?: number;
   totalTax?: number;
   totalCess?: number;

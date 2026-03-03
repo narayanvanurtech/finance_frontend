@@ -25,7 +25,7 @@ export default function QuotationEmailPage() {
   const handleSend = async (data: { to: string; cc: string; subject: string; message: string , id:string }) => {
     const {to,cc,subject,message,id} = data
        handleSendEmail(id,"send-purchaseorders",subject,message,cc,to)
-      window.history.back()
+       router.push(`/finance/purchase-orders`);
   };
 
   return (

@@ -231,6 +231,8 @@ export default function UpdateCreditNote() {
       terms: (creditNote as any).terms || "",
       notes: (creditNote as any).notes || "",
       attachments: [],
+      signature: (creditNote as any).signature || "",
+      reason:(creditNote as any).reason || "",
       showSignature:
         (creditNote as any).showSignature !== undefined
           ? (creditNote as any).showSignature
@@ -349,6 +351,8 @@ export default function UpdateCreditNote() {
         roundOff: values.roundOff,
         showHSN: values.showHSN,
         showUnit: values.showUnit,
+        reason:values.reason,
+        signature:values.signature,
         showSignature: values.showSignature,
         terms: values.terms,
         notes: values.notes,

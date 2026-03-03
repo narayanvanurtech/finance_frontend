@@ -113,6 +113,7 @@ export default function CreateCreditNote() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
     cessList: [],
   };
@@ -244,6 +245,7 @@ export default function CreateCreditNote() {
         roundOff: values.roundOff,
         showHSN: values.showHSN,
         showUnit: values.showUnit,
+        signature:values.signature,
         showSignature: values.showSignature,
         priority: "high" as const,
         terms: values.terms,

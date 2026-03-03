@@ -68,7 +68,6 @@ import { useRouter } from "next/navigation";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
 import { CreateClientPayload } from "@/api/finance/clientApi";
-import { toast } from "sonner";
 
 const industries = [
   "IT",
@@ -323,118 +322,117 @@ export default function CreateClientPage() {
     return errs;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
 
-    const validationErrors = validate();
-    setErrors(validationErrors);
+  const toBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
-    if (Object.keys(validationErrors).length > 0 || logoError) {
-      return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  const validationErrors = validate();
+  setErrors(validationErrors);
+
+  if (Object.keys(validationErrors).length > 0 || logoError) {
+    return;
+  }
+
+  if (!user?.companyId) {
+    setErrors({ general: "Company ID is required" });
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    // ✅ Convert logo to base64 (if exists)
+    let logoBase64 = "";
+    if (form.logo) {
+      logoBase64 = await toBase64(form.logo);
     }
 
-    console.log(user?.companyId);
+    // ✅ Build accountDetails properly
+    const accountDetailsPayload =
+      form.accountHolderName ||
+      form.bankName ||
+      form.bankAccountNumber ||
+      form.ifscCode ||
+      form.branchName ||
+      form.accountType
+        ? {
+            accountHolderName: form.accountHolderName || undefined,
+            bankName: form.bankName || undefined,
+            accountNumber: form.bankAccountNumber || undefined,
+            ifscCode: form.ifscCode || undefined,
+            branchName: form.branchName || undefined,
+            accountType: form.accountType || undefined,
+          }
+        : form.customFields || "";
 
-    if (!user?.companyId) {
-      setErrors({ general: "Company ID is required" });
-      return;
-    }
+    const clientData: CreateClientPayload = {
+      businessName: form.businessName,
+      companyId: user.companyId,
+      name: form.name,
+      email: form.email,
+      phone: form.phone || "",
+      whatsappNo: form.whatsappNo || "",
+      industry: form.industry || "",
+      clientType: form.clientType as "Company" | "Individual",
+      taxTreatment: form.taxTreatment
+        ? (form.taxTreatment as
+            | "Registered Business"
+            | "Unregistered Business"
+            | "Consumer"
+            | "Overseas")
+        : undefined,
+      gstin: form.gstin || "",
+      pan: form.pan || "",
+      alias: form.alias || "",
+      showEmail: form.showEmail,
+      showPhone: form.showPhone,
+      gstType: form.gstType,
+      address: {
+        street: form.street || "",
+        city: form.addressCity || "",
+        state: form.addressState || "",
+        postalCode: form.postalCode || "",
+        country: form.addressCountry || "India",
+      },
 
-    setIsSubmitting(true);
+      bankAccountNumber: form.bankAccountNumber || "",
+      accountHolderName: form.accountHolderName || "",
+      bankName: form.bankName || "",
+      ifscCode: form.ifscCode || "",
+      branchName: form.branchName || "",
+      accountType: form.accountType || "",
+      accountDetails: accountDetailsPayload,
 
-    try {
-      // Build accountDetails: if structured bank fields are provided, prefer structured object,
-      // otherwise send the free-text customFields string for backwards compatibility.
-      const accountDetailsPayload =
-        form.accountHolderName ||
-        form.bankName ||
-        form.bankAccountNumber ||
-        form.ifscCode ||
-        form.branchName ||
-        form.accountType
-          ? {
-              accountHolderName: form.accountHolderName || undefined,
-              bankName: form.bankName || undefined,
-              accountNumber: form.bankAccountNumber || undefined,
-              ifscCode: form.ifscCode || undefined,
-              branchName: form.branchName || undefined,
-              accountType: form.accountType || undefined,
-            }
-          : form.customFields || "";
+      ownerId: form.ownerId || undefined,
+      tags: form.tags && form.tags.length > 0 ? form.tags : undefined,
 
-      const clientData: CreateClientPayload = {
-        businessName: form.businessName,
-        companyId: user.companyId,
-        name:form.name,
-        email: form.email,
-        phone: form.phone || "",
-        whatsappNo: form.whatsappNo || "",
-        industry: form.industry || "",
-        clientType: form.clientType as "Company" | "Individual",
-        taxTreatment: form.taxTreatment
-          ? (form.taxTreatment as
-              | "Registered Business"
-              | "Unregistered Business"
-              | "Consumer"
-              | "Overseas")
-          : undefined,
-        gstin: form.gstin || "",
-        pan: form.pan || "",
-        alias: form.alias || "",
-        showEmail: form.showEmail,
-        showPhone: form.showPhone,
-        gstType: form.gstType,
-        address: {
-          street: form.street || "",
-          city: form.addressCity || "",
-          state: form.addressState || "",
-          postalCode: form.postalCode || "",
-          country: form.addressCountry || "India",
-        },
-        // Keep older flat bank fields for compatibility
-        bankAccountNumber: form.bankAccountNumber || "",
-        accountHolderName: form.accountHolderName || "",
-        bankName: form.bankName || "",
-        ifscCode: form.ifscCode || "",
-        branchName: form.branchName || "",
-        accountType: form.accountType || "",
-        // accountDetails can be string or structured object
-        accountDetails: accountDetailsPayload,
-        // ownerId and tags from the form (optional)
-        ownerId: form.ownerId || undefined,
-        tags: form.tags && form.tags.length > 0 ? form.tags : undefined,
-      };
+      // ✅ Save logo directly
+      logoUrl: logoBase64,
+    };
 
-      const createdClientResponse = await createClient(clientData);
+    await createClient(clientData);
 
-      // If there's a logo to upload, upload it after client creation
-      if (form.logo && createdClientResponse?.result?._id) {
-        try {
-          await uploadClientLogo(createdClientResponse.result._id, form.logo);
-        } catch (logoError) {
-          console.error("Error uploading logo:", logoError);
-          // Don't fail the entire process if logo upload fails
-        }
-      }
-
-      // Redirect back to clients list with success message
-      router.push("/finance/clients?created=true");
-      toast.success("Client Created Successfully !")
-    } catch (error) {
-      console.error("Error creating client:", error);
-      toast.error(error instanceof Error
-            ? error.message
-            : "Failed to create client. Please try again.")
-      setErrors({
-        general:
-          error instanceof Error
-            ? error.message
-            : "Failed to create client. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    router.push("/finance/clients?created=true");
+  } catch (error) {
+    console.error("Error creating client:", error);
+    setErrors({
+      general:
+        error instanceof Error
+          ? error.message
+          : "Failed to create client. Please try again.",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleCancel = () => {
     router.push("/finance/clients");

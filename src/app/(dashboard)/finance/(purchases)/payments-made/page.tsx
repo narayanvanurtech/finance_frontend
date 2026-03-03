@@ -119,6 +119,10 @@ export default function PaymentsMadeListPage() {
   const stats = statsData?.result || {};
   const pagination = paymentsData?.result?.pagination;
 
+  console.log("Stats result",statsData)
+  console.log("Stats",  stats)
+
+
   /** Mount + Load **/
   useEffect(() => {
     setMounted(true);

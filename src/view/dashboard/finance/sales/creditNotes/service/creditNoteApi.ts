@@ -69,6 +69,7 @@ export interface CreateCreditNotePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   priority?: "low" | "medium" | "high" | "urgent";
   terms?: string;
@@ -103,6 +104,7 @@ export interface UpdateCreditNotePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   priority?: "low" | "medium" | "high" | "urgent";
   terms?: string;
@@ -178,6 +180,7 @@ export interface CreditNote {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   priority?: "low" | "medium" | "high" | "urgent";
   terms?: string;

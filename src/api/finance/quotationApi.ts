@@ -101,6 +101,7 @@ export interface Quotation {
   terms?: string;
   notes?: string;
   attachments: string[];
+  signature:string;
   showSignature: boolean;
   phases: PaymentPhase[];
   status: "draft" | "sent" | "accepted" | "rejected" | "expired" | "converted";

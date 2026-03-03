@@ -80,6 +80,7 @@ export interface SalesOrder {
   terms?: string;
   notes?: string;
   attachments: string[];
+  signature:string;
   showSignature: boolean;
   status:
     | "draft"

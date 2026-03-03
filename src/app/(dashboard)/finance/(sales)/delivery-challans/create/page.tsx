@@ -91,6 +91,7 @@ export default function CreateDeliveryChallanPage() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
     phases: [],
   };

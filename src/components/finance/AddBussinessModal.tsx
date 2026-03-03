@@ -432,7 +432,7 @@ export function AddBussinessModal({
                 </label>
                 <Input
                 type="text"
-                  placeholder="Enter Your Business Email"
+                  placeholder="Enter Address"
                   value={form.address}
                   onChange={(e) => handleChange("address", e.target.value)}
                   aria-invalid={!!errors.address}

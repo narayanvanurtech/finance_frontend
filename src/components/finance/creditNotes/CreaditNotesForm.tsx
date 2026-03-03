@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import HeaderBar from "./HeaderBar";
 import ClientSection from "../ClientSection";
 import ItemTable from "../ItemTable";
@@ -136,6 +136,7 @@ export type CreditNoteFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
   cessList: Cess[];
 };
@@ -268,13 +269,22 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+    const [signature,setSignature]=useState(initialValues.signature)
   const [businessDetails] = useState(initialValues.businessDetails);
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
   );
+  
+  console.log("Signature=====>>..mn ch ",signature)
+
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+
+  useEffect(() => {
+  setSignature(initialValues.signature || "");
+}, [initialValues.signature]);
 
   // Handler for tax configuration change to reset tax values
   const handleTaxConfigurationChange = (newConfig: "IGST" | "SGST_CGST") => {
@@ -667,12 +677,16 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
       cessList,
     });
 
     if (onSuccess) onSuccess();
   };
+
+
+  console.log("Credit Signature",signature)
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
@@ -951,6 +965,8 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
         attachments={attachments}
         handleAttachment={handleAttachment}
         showSignature={showSignature}
+        setSignature={setSignature}
+        signature={signature}
         setShowSignature={setShowSignature}
       />
 

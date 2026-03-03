@@ -99,7 +99,10 @@ export const transformFormToCreatePayload = (
       }),
     terms: formValues.terms,
     notes: formValues.notes,
+  
     attachments: [], // Send empty array for attachments (files will be uploaded separately if needed)
+      signature:formValues.signature,
+    showSignature:formValues.showSignature,
   };
 };
 
@@ -146,7 +149,8 @@ export const transformFormToUpdatePayload = (
   // Additional fields
   if (formValues.terms) payload.terms = formValues.terms;
   if (formValues.notes) payload.notes = formValues.notes;
-
+if(formValues.signature) payload.signature =formValues.signature;
+if(formValues.showSignature) payload.showSignature =  formValues.showSignature ;
   // Items
   if (formValues.items && formValues.items.length > 0) {
     payload.items = formValues.items
@@ -241,6 +245,7 @@ export const transformApiToFormValues = (
     terms: apiPO.terms || "",
     notes: apiPO.notes || "",
     attachments: [], // File attachments not supported in this transformation
+    signature:"",
     showSignature: false, // Default value
   };
 };

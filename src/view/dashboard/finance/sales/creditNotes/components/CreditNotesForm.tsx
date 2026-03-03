@@ -141,6 +141,7 @@ export type CreditNoteFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
   cessList: Cess[];
 };
@@ -273,6 +274,7 @@ const CreditNotesForm: React.FC<CreditNotesFormProps> = ({
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
+  const [signature,setSignature] = useState(initialValues.signature)
   const [businessDetails] = useState(initialValues.businessDetails);
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
@@ -712,6 +714,7 @@ const CreditNotesForm: React.FC<CreditNotesFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
       cessList,
     });
@@ -997,6 +1000,8 @@ const CreditNotesForm: React.FC<CreditNotesFormProps> = ({
         setNotes={setNotes}
         attachments={attachments}
         handleAttachment={handleAttachment}
+        signature={signature}
+        setSignature={setSignature}
         showSignature={showSignature}
         setShowSignature={setShowSignature}
       />

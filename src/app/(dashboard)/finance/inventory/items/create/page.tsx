@@ -66,7 +66,7 @@ export default function CreateItemPage() {
     width: "",
     height: "",
     dimensionUnit: "cm",
-    image: null as File | null,
+ imageBase64: "",
     // Sales Information
     sellingPrice: "",
     salesDescription: "",
@@ -292,22 +292,12 @@ export default function CreateItemPage() {
           itemData.preferredVendor = vendorObj._id;
         }
 
+
+        console.log("Items Data =====>>>>>>>",itemData)
+
         const response = await createItem(itemData);
 
         // Upload image if present
-        if (form.image && response?.result?._id) {
-          try {
-            const uploadResponse = await uploadItemImage({
-              itemId: response.result._id,
-              file: form.image,
-            });
-            // If backend returns imageUrl in upload response, we could update the item
-            // For now, the separate upload endpoint handles it
-          } catch (imageError) {
-            console.error("Failed to upload image:", imageError);
-            // Don't block the flow if image upload fails
-          }
-        }
 
         // Reset form on success
         setForm({
@@ -327,7 +317,7 @@ export default function CreateItemPage() {
           width: "",
           height: "",
           dimensionUnit: "cm",
-          image: null,
+          image: form.imageBase64 || null,
           sellingPrice: "",
           salesDescription: "",
           costPrice: "",
@@ -1247,11 +1237,20 @@ function DragDropImageUpload({
       setError("Image must be less than 2MB.");
       return;
     }
-    setForm((f: any) => ({ ...f, image: file }));
+   
     setFileInfo({ name: file.name, size: file.size });
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+reader.onloadend = () => {
+  const base64String = reader.result as string;
+
+  setImagePreview(base64String);
+
+  setForm((f: any) => ({
+    ...f,
+    imageBase64: base64String,
+  }));
+};
+reader.readAsDataURL(file);
   };
 
   const handleRemove = (e: React.MouseEvent) => {

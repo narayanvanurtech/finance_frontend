@@ -79,6 +79,7 @@ export default function CreateCreditNotePage() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
     cessList: [],
   };

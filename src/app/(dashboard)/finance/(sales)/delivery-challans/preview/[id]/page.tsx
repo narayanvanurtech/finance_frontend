@@ -106,7 +106,7 @@ export default function DeliveryChallanPreviewPage() {
       notes: singleChallan.notes || "",
       terms: singleChallan.terms || "",
       attachments: singleChallan.attachments || [],
-
+      signature:singleChallan.signature || "",
       // Transport details
       vehicleNumber: singleChallan.vehicleNumber,
       transportMode: singleChallan.transportMode,

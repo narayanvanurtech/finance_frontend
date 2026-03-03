@@ -73,14 +73,12 @@ const ClientDetailsPage = () => {
     getClientById,
     deleteClient,
     clearCurrentClient,
-    uploadClientLogo,
-    deleteClientLogo,
     updateClient,
   } = useClientStore();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [sameAsPhone, setSameAsPhone] = useState(false);
-
+const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showLogoUploadModal, setShowLogoUploadModal] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDeletingLogo, setIsDeletingLogo] = useState(false);
@@ -191,64 +189,82 @@ const ClientDetailsPage = () => {
       clearCurrentClient();
     };
   }, [companyId, clientId, getClientById, clearCurrentClient]);
+  const toBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
-  const handleSave = async () => {
-    if (!companyId || !clientId) return;
+const handleSave = async () => {
+  if (!companyId || !clientId) return;
 
-    console.log("CompanyId with clientId",companyId , clientId)
+  setIsSaving(true);
 
-    setIsSaving(true);
-    try {
-     await updateClient(companyId, clientId, {
-        businessName: formData.businessName,
-        clientType: formData.clientType as "Individual" | "Company",
-        industry: formData.industry || undefined,
-        name:formData.name,
-        email: formData.email,
-        phone: formData.phone || undefined,
-  whatsappNo: sameAsPhone
-    ? formData.phone || undefined
-    : formData.whatsappNo || undefined,
-  phoneSameAsWhatsappNo: sameAsPhone,
-        address: {
-          street: formData.street || undefined,
-          city: formData.city || undefined,
-          state: formData.state || undefined,
-          postalCode: formData.postalCode || undefined,
-          country: formData.country || undefined,
-        },
-        gstin: formData.gstin || undefined,
-        pan: formData.pan || undefined,
-        taxTreatment: formData.taxTreatment
-          ? (formData.taxTreatment as
-              | "Registered Business"
-              | "Unregistered Business"
-              | "Consumer"
-              | "Overseas")
-          : undefined,
-        gstType: formData.gstType,
-        accountDetails: {
-          accountHolderName: formData.accountHolderName || undefined,
-          bankName: formData.bankName || undefined,
-          accountNumber: formData.bankAccountNumber || undefined,
-          ifscCode: formData.ifscCode || undefined,
-          branchName: formData.branchName || undefined,
-          accountType: formData.accountType || undefined,
-        },
-      });
+  try {
+    let logoBase64: string | undefined = undefined;
 
- 
-     await getClientById(companyId, clientId);
-   
-      // 👇 Redirect after update
-      
-      router.push("/finance/clients");
-    } catch (error) {
-      console.error("Error updating client:", error);
-    } finally {
-      setIsSaving(false);
+    // ✅ If new logo selected → convert to base64
+    if (logoFile) {
+      logoBase64 = await toBase64(logoFile);
     }
-  };
+
+    await updateClient(companyId, clientId, {
+      businessName: formData.businessName,
+      clientType: formData.clientType as "Individual" | "Company",
+      industry: formData.industry || undefined,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || undefined,
+      whatsappNo: sameAsPhone
+        ? formData.phone || undefined
+        : formData.whatsappNo || undefined,
+      phoneSameAsWhatsappNo: sameAsPhone,
+      address: {
+        street: formData.street || undefined,
+        city: formData.city || undefined,
+        state: formData.state || undefined,
+        postalCode: formData.postalCode || undefined,
+        country: formData.country || undefined,
+      },
+      gstin: formData.gstin || undefined,
+      pan: formData.pan || undefined,
+      taxTreatment: formData.taxTreatment
+        ? (formData.taxTreatment as
+            | "Registered Business"
+            | "Unregistered Business"
+            | "Consumer"
+            | "Overseas")
+        : undefined,
+      gstType: formData.gstType,
+      accountDetails: {
+        accountHolderName: formData.accountHolderName || undefined,
+        bankName: formData.bankName || undefined,
+        accountNumber: formData.bankAccountNumber || undefined,
+        ifscCode: formData.ifscCode || undefined,
+        branchName: formData.branchName || undefined,
+        accountType: formData.accountType || undefined,
+      },
+
+      // ✅ IMPORTANT — send logo only if changed
+      ...(logoBase64 && { logoUrl: logoBase64 }),
+    });
+
+    router.push("/finance/clients");
+  } catch (error: any) {
+    if (error?.errors) {
+      const formattedErrors: Record<string, string> = {};
+      error.errors.forEach((err: any) => {
+        formattedErrors[err.field] = err.message;
+      });
+      setValidationErrors(formattedErrors);
+      return;
+    }
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const handleDelete = async () => {
     if (!companyId || !clientId) return;
@@ -623,6 +639,7 @@ const ClientDetailsPage = () => {
                       value={formData.clientType}
                       onChange={(e) =>
                         setFormData({ ...formData, clientType: e.target.value })
+                        
                       }
                       className=" border-gray-200"
                       placeholder="Enter client type"
@@ -1377,7 +1394,10 @@ const ClientDetailsPage = () => {
               {/* Delete Current Logo */}
               {currentClient.logoUrl && (
                 <button
-                  onClick={handleLogoDelete}
+                 onClick={() => {
+  setLogoFile(null);
+  setLogoPreview(null);
+}}
                   disabled={isDeletingLogo}
                   className="w-full mt-3 px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >

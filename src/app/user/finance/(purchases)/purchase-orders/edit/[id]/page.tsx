@@ -88,6 +88,7 @@ export default function EditPurchaseOrderPage() {
     notes: purchaseOrder.notes || "",
     attachments: [],
     existingAttachments: purchaseOrder.attachments || [], // ✅ Add this
+    signature:"",
     showSignature: false,
   };
 
