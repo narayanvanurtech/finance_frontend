@@ -4,8 +4,9 @@ import "../globals.css";
 import LenisProvider from "@/components/Common/LenisProvider";
 import Header from "@/components/Common/Header";
 import Faq from "@/components/Common/Faq";
-import { Footer } from "react-day-picker";
+
 import FloatingChatButton from "@/components/Common/FloatingChatButton";
+import Footer from "@/components/Common/Footer";
 
 // import PushNotificationProvider from "@/components/common/PushNotificationProvider";
 

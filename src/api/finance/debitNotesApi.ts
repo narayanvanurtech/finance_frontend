@@ -63,6 +63,7 @@ export interface CreateDebitNotePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   items: DebitNoteItem[];
   terms?: string;
@@ -90,6 +91,7 @@ export interface UpdateDebitNotePayload {
   roundOff?: boolean;
   showHSN?: boolean;
   showUnit?: boolean;
+  signature?:string;
   showSignature?: boolean;
   items?: DebitNoteItem[];
   terms?: string;
@@ -141,6 +143,7 @@ export interface DebitNote {
   roundOff: boolean;
   showHSN: boolean;
   showUnit: boolean;
+  signature:string;
   showSignature: boolean;
   terms?: string;
   notes?: string;

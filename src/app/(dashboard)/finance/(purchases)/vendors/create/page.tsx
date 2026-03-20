@@ -90,7 +90,7 @@ export default function CreateVendorPage() {
           setShowToast(true);
           setTimeout(() => {
             setShowToast(false);
-            router.push("/finance/vendors");
+             window.history.back()
           }, 1200);
         },
         onError: (error: any) => {

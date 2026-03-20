@@ -16,11 +16,14 @@ import {
   FiSearch,
   FiAlertCircle,
 } from "react-icons/fi";
+import { Button } from "@mui/material";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function DebugVendorsPage() {
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
-
+  const router = useRouter()
   // Fetch all vendors
   const {
     data: vendorsData,
@@ -111,7 +114,15 @@ export default function DebugVendorsPage() {
             <div className="text-center py-8 text-gray-500">
               {searchTerm
                 ? "No vendors found matching your search"
-                : "No vendors available"}
+                : (<Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-2"
+                    onClick={() => router.push("/finance/vendors/create")}
+                  >
+                    <Plus className="w-4 h-4" /> <h1>Add New Vendor</h1>
+                  </Button>)}
             </div>
           ) : (
             <div className="space-y-2 max-h-[600px] overflow-y-auto">

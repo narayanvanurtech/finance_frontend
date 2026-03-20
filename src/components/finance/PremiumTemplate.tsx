@@ -95,11 +95,13 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica",
     backgroundColor: "#fff",
   },
-  // Header Section
+
+  // ── Outer border wrapper ──
   headerBorder: {
     border: "2 solid #000",
-    marginBottom: 0,
   },
+
+  // ── Title bar ──
   headerTitle: {
     backgroundColor: "#d3d3d3",
     textAlign: "center",
@@ -108,6 +110,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     borderBottom: "1 solid #000",
   },
+
+  // ── Company header ──
   headerContent: {
     flexDirection: "row",
     borderBottom: "1 solid #000",
@@ -146,7 +150,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 1,
   },
-  // Buyer and Invoice Info Row
+
+  // ── Buyer / Invoice info row ──
   infoRow: {
     flexDirection: "row",
     borderBottom: "1 solid #000",
@@ -191,7 +196,8 @@ const styles = StyleSheet.create({
     width: "50%",
     textAlign: "left",
   },
-  // Items Table
+
+  // ── Items Table ──
   table: {
     width: "100%",
   },
@@ -250,7 +256,8 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontStyle: "italic",
   },
-  // Tax Summary Rows
+
+  // ── Tax Summary Rows ──
   taxSummarySection: {
     borderBottom: "1 solid #000",
   },
@@ -282,7 +289,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 9,
   },
-  // Total Section
+
+  // ── Grand Total Row ──
   totalRow: {
     flexDirection: "row",
     backgroundColor: "#f0f0f0",
@@ -316,7 +324,8 @@ const styles = StyleSheet.create({
     textAlign: "right",
     fontSize: 10,
   },
-  // Amount in Words
+
+  // ── Amount in Words ──
   amountWordsRow: {
     borderBottom: "1 solid #000",
     padding: 6,
@@ -329,7 +338,8 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "bold",
   },
-  // Footer Section
+
+  // ── Footer: QR + Tax Breakdown + Bank ──
   footerRow: {
     flexDirection: "row",
     borderBottom: "1 solid #000",
@@ -360,16 +370,6 @@ const styles = StyleSheet.create({
     borderBottom: "1 solid #000",
     fontSize: 7,
   },
-  taxBreakdownLabel: {
-    width: "40%",
-    padding: 2,
-    borderRight: "1 solid #000",
-  },
-  taxBreakdownValue: {
-    width: "60%",
-    textAlign: "right",
-    padding: 2,
-  },
   taxBreakdownCell: {
     padding: 2,
     borderRight: "1 solid #000",
@@ -387,7 +387,8 @@ const styles = StyleSheet.create({
     fontSize: 7,
     marginBottom: 1,
   },
-  // Declaration and Terms
+
+  // ── Declaration + Signature ──
   declarationRow: {
     flexDirection: "row",
     borderBottom: "1 solid #000",
@@ -411,22 +412,51 @@ const styles = StyleSheet.create({
     fontSize: 7,
     marginBottom: 1,
   },
-  termsTitle: {
-    fontSize: 8,
-    fontWeight: "bold",
-    marginTop: 6,
-    marginBottom: 3,
-  },
-  termText: {
-    fontSize: 7,
-    marginBottom: 1,
-  },
   signatureLabel: {
     fontSize: 8,
     fontWeight: "bold",
     marginTop: 20,
   },
-  // Final Footer
+
+  // ── TERMS & NOTES — always last ──
+  termsNotesRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",    // each card sizes to its own content
+    borderBottom: "1 solid #000",
+  },
+  termsBlock: {
+    width: "50%",
+    padding: 8,
+    borderRight: "1 solid #000",
+  },
+  notesBlock: {
+    width: "50%",
+    padding: 8,
+  },
+  termsTitle: {
+    fontSize: 8,
+    fontWeight: "bold",
+    marginBottom: 3,
+    textTransform: "uppercase",
+  },
+  termText: {
+    fontSize: 7,
+    marginBottom: 1,
+    lineHeight: 1.3,
+  },
+  notesTitle: {
+    fontSize: 8,
+    fontWeight: "bold",
+    marginBottom: 3,
+    textTransform: "uppercase",
+  },
+  notesText: {
+    fontSize: 7,
+    marginBottom: 1,
+    lineHeight: 1.3,
+  },
+
+  // ── Jurisdiction / Computer-Generated ──
   jurisdictionRow: {
     textAlign: "center",
     padding: 4,
@@ -452,108 +482,47 @@ function PremiumTemplate({
   quotation: QuotationType;
   phases: PhaseType[];
 }) {
-  console.log("📄 PREMIUM QUOTATION DATA → ", quotation);
-  console.log("📄 PREMIUM PHASES → ", phases);
+  const labels = DOC_LABELS[documentType || "quotation"];
 
-  // Calculate totals
   const totalQty = quotation.items.reduce((sum, item) => sum + item.qty, 0);
   const subtotalBeforeTax = quotation.items.reduce(
     (sum, item) => sum + (item.qty * item.rate - item.discount),
     0
   );
-
-  // Calculate tax components
-  const cgstTotal = quotation.items.reduce((sum, item) => {
-    return sum + (item.cgstAmount || 0);
-  }, 0);
-  const sgstTotal = quotation.items.reduce((sum, item) => {
-    return sum + (item.sgstAmount || 0);
-  }, 0);
-  const igstTotal = quotation.items.reduce((sum, item) => {
-    return sum + (item.igstAmount || 0);
-  }, 0);
+  const cgstTotal = quotation.items.reduce((sum, item) => sum + (item.cgstAmount || 0), 0);
+  const sgstTotal = quotation.items.reduce((sum, item) => sum + (item.sgstAmount || 0), 0);
+  const igstTotal = quotation.items.reduce((sum, item) => sum + (item.igstAmount || 0), 0);
 
   const roundOffAmount = quotation?.roundOff
     ? Math.round(quotation.total) - quotation.total
     : 0;
   const finalTotal = quotation?.roundOff
     ? Math.round(quotation.total)
-    : quotation?.total
-    ? quotation.total
-    : 0;
+    : quotation?.total || 0;
 
-  // Convert number to words (simplified version)
   const numberToWords = (num: number): string => {
-    const ones = [
-      "",
-      "One",
-      "Two",
-      "Three",
-      "Four",
-      "Five",
-      "Six",
-      "Seven",
-      "Eight",
-      "Nine",
-    ];
-    const tens = [
-      "",
-      "",
-      "Twenty",
-      "Thirty",
-      "Forty",
-      "Fifty",
-      "Sixty",
-      "Seventy",
-      "Eighty",
-      "Ninety",
-    ];
-    const teens = [
-      "Ten",
-      "Eleven",
-      "Twelve",
-      "Thirteen",
-      "Fourteen",
-      "Fifteen",
-      "Sixteen",
-      "Seventeen",
-      "Eighteen",
-      "Nineteen",
-    ];
-
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
     if (num === 0) return "Zero";
-
     let words = "";
     const crores = Math.floor(num / 10000000);
     const lakhs = Math.floor((num % 10000000) / 100000);
     const thousands = Math.floor((num % 100000) / 1000);
     const hundreds = Math.floor((num % 1000) / 100);
     const remainder = num % 100;
-
-
-
     if (crores > 0) words += ones[crores] + " Crore ";
     if (lakhs > 0)
-      words +=
-        (lakhs < 10
-          ? ones[lakhs]
-          : tens[Math.floor(lakhs / 10)] + " " + ones[lakhs % 10]) + " Lakh ";
+      words += (lakhs < 10 ? ones[lakhs] : tens[Math.floor(lakhs / 10)] + " " + ones[lakhs % 10]) + " Lakh ";
     if (thousands > 0)
-      words +=
-        (thousands < 10
-          ? ones[thousands]
-          : tens[Math.floor(thousands / 10)] + " " + ones[thousands % 10]) +
-        " Thousand ";
+      words += (thousands < 10 ? ones[thousands] : tens[Math.floor(thousands / 10)] + " " + ones[thousands % 10]) + " Thousand ";
     if (hundreds > 0) words += ones[hundreds] + " Hundred ";
-
     if (remainder >= 10 && remainder < 20) {
       words += teens[remainder - 10] + " ";
     } else {
-      if (Math.floor(remainder / 10) > 0)
-        words += tens[Math.floor(remainder / 10)] + " ";
+      if (Math.floor(remainder / 10) > 0) words += tens[Math.floor(remainder / 10)] + " ";
       if (remainder % 10 > 0) words += ones[remainder % 10] + " ";
     }
-
     return words.trim();
   };
 
@@ -563,13 +532,18 @@ function PremiumTemplate({
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.headerBorder}>
-          {/* Header Title */}
-          <View style={styles.headerTitle}>
-            <Text>{DOC_LABELS[documentType || "quotation"].title}</Text>
+
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              TITLE — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.headerTitle} wrap={false}>
+            <Text>{labels.title}</Text>
           </View>
 
-          {/* Company Info with Logo */}
-          <View style={styles.headerContent}>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              COMPANY HEADER — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.headerContent} wrap={false}>
             <View style={styles.logoSection}>
               <Image src="/venurtechLogo.png" style={styles.logo} />
             </View>
@@ -583,72 +557,46 @@ function PremiumTemplate({
               <Text style={styles.companyAddress}>
                 {quotation.business?.address || "Plot No 376, Gobindaprasad"}
               </Text>
-              <Text style={styles.companyAddress}>
-                Cuttack Road, G.G.P Colony
-              </Text>
-              <Text style={styles.companyAddress}>
-                Khorda, Bhubaneswar, India, 751025
-              </Text>
+              <Text style={styles.companyAddress}>Cuttack Road, G.G.P Colony</Text>
+              <Text style={styles.companyAddress}>Khorda, Bhubaneswar, India, 751025</Text>
               <Text style={styles.companyAddress}>Odisha - 751025, India</Text>
               <Text style={styles.companyAddress}>
                 GSTIN/UIN: {quotation.business?.gstin || "21AAJCV7420K1Z9"}
               </Text>
+              <Text style={styles.companyAddress}>State Name : Odisha, Code : 21</Text>
               <Text style={styles.companyAddress}>
-                State Name : Odisha, Code : 21
+                Contact : {quotation.business?.contact || "7077004890,7978874959"}
               </Text>
               <Text style={styles.companyAddress}>
-                Contact :{" "}
-                {quotation.business?.contact || "7077004890,7978874959"}
-              </Text>
-              <Text style={styles.companyAddress}>
-                E-Mail :{" "}
-                {quotation.business?.email ||
-                  "vanurtechmediaofficial@gmail.com"}
+                E-Mail : {quotation.business?.email || "vanurtechmediaofficial@gmail.com"}
               </Text>
             </View>
           </View>
 
-          {/* Buyer and Invoice Info */}
-          <View style={styles.infoRow}>
-            {/* Buyer Section */}
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              BUYER + INVOICE INFO — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.infoRow} wrap={false}>
             <View style={styles.buyerSection}>
               <Text style={styles.buyerTitle}>Buyer (Bill to)</Text>
               <Text style={styles.buyerName}>{quotation.client.name}</Text>
               <Text style={styles.buyerDetail}>{quotation.client.address}</Text>
-              <Text style={styles.buyerDetail}>
-                GSTIN/UIN : {quotation.client.gstin}
-              </Text>
-              <Text style={styles.buyerDetail}>
-                State Name : Odisha, Code : 21
-              </Text>
-              <Text style={styles.buyerDetail}>
-                Contact person : {quotation.client.name}
-              </Text>
-              <Text style={styles.buyerDetail}>
-                Contact : {quotation.client.contact}
-              </Text>
-              <Text style={styles.buyerDetail}>
-                Email : {quotation.client.email}
-              </Text>
+              <Text style={styles.buyerDetail}>GSTIN/UIN : {quotation.client.gstin}</Text>
+              <Text style={styles.buyerDetail}>State Name : Odisha, Code : 21</Text>
+              <Text style={styles.buyerDetail}>Contact person : {quotation.client.name}</Text>
+              <Text style={styles.buyerDetail}>Contact : {quotation.client.contact}</Text>
+              <Text style={styles.buyerDetail}>Email : {quotation.client.email}</Text>
             </View>
-
-            {/* Invoice Details */}
             <View style={styles.invoiceSection}>
               <View style={styles.invoiceRow}>
-                <Text style={styles.invoiceLabel}>
-                  {DOC_LABELS[documentType || "quotation"].number}
-                </Text>
+                <Text style={styles.invoiceLabel}>{labels.number}</Text>
                 <Text style={styles.invoiceValue}>{quotation.number}</Text>
               </View>
               <View style={styles.invoiceRow}>
-                <Text style={styles.invoiceLabel}>
-                  {DOC_LABELS[documentType || "quotation"].date}
-                </Text>
+                <Text style={styles.invoiceLabel}>{labels.date}</Text>
                 <Text style={styles.invoiceValue}>
                   {new Date(quotation.date).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "2-digit",
+                    day: "2-digit", month: "short", year: "2-digit",
                   })}
                 </Text>
               </View>
@@ -671,10 +619,15 @@ function PremiumTemplate({
             </View>
           </View>
 
-          {/* Items Table */}
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              ITEMS TABLE
+              • Header row: wrap=false (never orphaned).
+              • Each data row: wrap=false (never cut in half).
+              • Table as a whole flows naturally across pages —
+                breaks happen cleanly BETWEEN rows only.
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
           <View style={styles.table}>
-            {/* Table Header */}
-            <View style={styles.tableHeader}>
+            <View style={styles.tableHeader} wrap={false}>
               <Text style={styles.slCol}>Sl No.</Text>
               <Text style={styles.descCol}>Description of Goods</Text>
               <Text style={styles.gstCol}>GST Rate</Text>
@@ -685,9 +638,12 @@ function PremiumTemplate({
               <Text style={styles.amountCol}>Amount</Text>
             </View>
 
-            {/* Table Rows */}
             {quotation.items.map((item, idx) => (
-              <View style={styles.tableRow} key={idx}>
+              <View
+                key={idx}
+                wrap={false}   // row never splits; page break only between rows
+                style={styles.tableRow}
+              >
                 <Text style={styles.slCol}>{idx + 1}</Text>
                 <View style={styles.descCol}>
                   <Text style={styles.itemName}>{item.name}</Text>
@@ -696,9 +652,7 @@ function PremiumTemplate({
                   )}
                 </View>
                 <Text style={styles.gstCol}>{item.igst} %</Text>
-                <Text style={styles.qtyCol}>
-                  {item.qty} {item.unit}
-                </Text>
+                <Text style={styles.qtyCol}>{item.qty} {item.unit}</Text>
                 <Text style={styles.rateCol}>
                   {(item.rate * (1 + item.igst / 100)).toFixed(2)}
                 </Text>
@@ -709,50 +663,40 @@ function PremiumTemplate({
             ))}
           </View>
 
-          {/* Tax Summary Rows */}
-          <View style={styles.taxSummarySection}>
-            {/* Empty Row for Subtotal */}
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              TAX SUMMARY ROWS — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.taxSummarySection} wrap={false}>
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}></Text>
               <Text style={styles.emptyCol}></Text>
               <Text style={styles.emptyCol}></Text>
-              <Text style={styles.totalAmountCol}>
-                {subtotalBeforeTax.toFixed(2)}
-              </Text>
+              <Text style={styles.totalAmountCol}>{subtotalBeforeTax.toFixed(2)}</Text>
             </View>
-
-            {/* CGST Row */}
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}>CGST 9 %</Text>
               <Text style={styles.emptyCol}></Text>
               <Text style={styles.taxValueCol}>9 %</Text>
               <Text style={styles.totalAmountCol}>{cgstTotal.toFixed(2)}</Text>
             </View>
-
-            {/* SGST Row */}
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}>SGST 9 %</Text>
               <Text style={styles.emptyCol}></Text>
               <Text style={styles.taxValueCol}>9 %</Text>
               <Text style={styles.totalAmountCol}>{sgstTotal.toFixed(2)}</Text>
             </View>
-
-            {/* Additional Tax Rows if needed */}
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}>CGST 2.5 %</Text>
               <Text style={styles.emptyCol}></Text>
               <Text style={styles.taxValueCol}>2.50 %</Text>
               <Text style={styles.totalAmountCol}>0.00</Text>
             </View>
-
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}>SGST 2.5 %</Text>
               <Text style={styles.emptyCol}></Text>
               <Text style={styles.taxValueCol}>2.50 %</Text>
               <Text style={styles.totalAmountCol}>0.00</Text>
             </View>
-
-            {/* Round Off Row */}
             <View style={styles.taxRow}>
               <Text style={styles.taxLabelCol}>Less : Round Off</Text>
               <Text style={styles.emptyCol}></Text>
@@ -764,25 +708,30 @@ function PremiumTemplate({
             </View>
           </View>
 
-          {/* Total Row */}
-          <View style={styles.totalRow}>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              GRAND TOTAL ROW — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.totalRow} wrap={false}>
             <Text style={styles.totalLabelCol}>Total</Text>
             <Text style={styles.totalQtyCol}>{totalQty} PCS</Text>
             <Text style={styles.totalPriceCol}></Text>
             <Text style={styles.totalFinalCol}>₹ {finalTotal.toFixed(2)}</Text>
           </View>
 
-          {/* Amount in Words */}
-          <View style={styles.amountWordsRow}>
-            <Text style={styles.amountWordsLabel}>
-              Amount Chargeable (in words)
-            </Text>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              AMOUNT IN WORDS — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.amountWordsRow} wrap={false}>
+            <Text style={styles.amountWordsLabel}>Amount Chargeable (in words)</Text>
             <Text style={styles.amountWords}>{amountInWords}</Text>
           </View>
 
-          {/* Footer with QR, Tax Breakdown, and Bank Details */}
-          <View style={styles.footerRow}>
-            {/* QR Code Section */}
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              FOOTER: QR + Tax Breakdown + Bank
+              Never split across pages.
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.footerRow} wrap={false}>
+            {/* QR Code */}
             <View style={styles.qrSection}>
               <Image src="/scanToPay.png" style={styles.qrImage} />
               <Text style={styles.qrLabel}>Scan to pay</Text>
@@ -790,321 +739,141 @@ function PremiumTemplate({
 
             {/* Tax Breakdown */}
             <View style={styles.taxBreakdownSection}>
-              {/* Header Row 1 */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold" },
-                  ]}
-                >
-                  Taxable
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold", textAlign: "center" },
-                  ]}
-                >
-                  CGST
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold", textAlign: "center" },
-                  ]}
-                >
-                  SGST/UTGST
-                </Text>
-                <Text
-                  style={[
-                    {
-                      width: "25%",
-                      fontWeight: "bold",
-                      textAlign: "right",
-                      padding: 2,
-                    },
-                  ]}
-                >
-                  Total
-                </Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold" }]}>Taxable</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold", textAlign: "center" }]}>CGST</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold", textAlign: "center" }]}>SGST/UTGST</Text>
+                <Text style={[{ width: "25%", fontWeight: "bold", textAlign: "right", padding: 2 }]}>Total</Text>
               </View>
-              {/* Header Row 2 */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold" },
-                  ]}
-                >
-                  Value
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold", textAlign: "center" },
-                  ]}
-                >
-                  Rate
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold", textAlign: "center" },
-                  ]}
-                >
-                  Rate
-                </Text>
-                <Text
-                  style={[
-                    {
-                      width: "25%",
-                      fontWeight: "bold",
-                      textAlign: "right",
-                      padding: 2,
-                    },
-                  ]}
-                >
-                  Tax Amount
-                </Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold" }]}>Value</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold", textAlign: "center" }]}>Rate</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold", textAlign: "center" }]}>Rate</Text>
+                <Text style={[{ width: "25%", fontWeight: "bold", textAlign: "right", padding: 2 }]}>Tax Amount</Text>
               </View>
-
-              {/* Sub Header Row */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[styles.taxBreakdownCell, { width: "25%" }]}
-                ></Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  Amount
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  Amount
-                </Text>
-                <Text
-                  style={[{ width: "25%", textAlign: "right", padding: 2 }]}
-                ></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%" }]}></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>Amount</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>Amount</Text>
+                <Text style={[{ width: "25%", textAlign: "right", padding: 2 }]}></Text>
               </View>
-
-              {/* Data Row - Rates */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "left" },
-                  ]}
-                >
-                  {subtotalBeforeTax.toFixed(2)}
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  9%
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  9%
-                </Text>
-                <Text
-                  style={[{ width: "25%", textAlign: "right", padding: 2 }]}
-                ></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "left" }]}>{subtotalBeforeTax.toFixed(2)}</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>9%</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>9%</Text>
+                <Text style={[{ width: "25%", textAlign: "right", padding: 2 }]}></Text>
               </View>
-
-              {/* Data Row - Amounts */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "left" },
-                  ]}
-                ></Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  {cgstTotal.toFixed(2)}
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                >
-                  {sgstTotal.toFixed(2)}
-                </Text>
-                <Text
-                  style={[{ width: "25%", textAlign: "right", padding: 2 }]}
-                ></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "left" }]}></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>{cgstTotal.toFixed(2)}</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}>{sgstTotal.toFixed(2)}</Text>
+                <Text style={[{ width: "25%", textAlign: "right", padding: 2 }]}></Text>
               </View>
-
-              {/* Total Label Row */}
               <View style={styles.taxBreakdownRow}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", fontWeight: "bold" },
-                  ]}
-                >
-                  Total:
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                ></Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center" },
-                  ]}
-                ></Text>
-                <Text
-                  style={[{ width: "25%", textAlign: "right", padding: 2 }]}
-                ></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", fontWeight: "bold" }]}>Total:</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}></Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center" }]}></Text>
+                <Text style={[{ width: "25%", textAlign: "right", padding: 2 }]}></Text>
               </View>
-
-              {/* Total Values Row */}
               <View style={[styles.taxBreakdownRow, { borderBottom: 0 }]}>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "left", fontWeight: "bold" },
-                  ]}
-                >
-                  {subtotalBeforeTax.toFixed(2)}
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center", fontWeight: "bold" },
-                  ]}
-                >
-                  {cgstTotal.toFixed(2)}
-                </Text>
-                <Text
-                  style={[
-                    styles.taxBreakdownCell,
-                    { width: "25%", textAlign: "center", fontWeight: "bold" },
-                  ]}
-                >
-                  {sgstTotal.toFixed(2)}
-                </Text>
-                <Text
-                  style={[
-                    {
-                      width: "25%",
-                      textAlign: "right",
-                      padding: 2,
-                      fontWeight: "bold",
-                    },
-                  ]}
-                >
-                  {(cgstTotal + sgstTotal).toFixed(2)}
-                </Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "left", fontWeight: "bold" }]}>{subtotalBeforeTax.toFixed(2)}</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center", fontWeight: "bold" }]}>{cgstTotal.toFixed(2)}</Text>
+                <Text style={[styles.taxBreakdownCell, { width: "25%", textAlign: "center", fontWeight: "bold" }]}>{sgstTotal.toFixed(2)}</Text>
+                <Text style={[{ width: "25%", textAlign: "right", padding: 2, fontWeight: "bold" }]}>{(cgstTotal + sgstTotal).toFixed(2)}</Text>
               </View>
             </View>
 
             {/* Bank Details */}
             <View style={styles.bankDetailsSection}>
               <Text style={styles.sectionTitle}>
-                Company's Bank Details A/C Holder's Name : VANURTECH MEDIA PVT.
-                LTD.
+                Company's Bank Details A/C Holder's Name : VANURTECH MEDIA PVT. LTD.
               </Text>
               <Text style={styles.bankDetail}>Bank Name : ICICI Bank</Text>
               <Text style={styles.bankDetail}>A/c No. : 006105002368</Text>
-              <Text style={styles.bankDetail}>
-                Branch & IFS Code : Bhubaneswar & ICIC0000061
-              </Text>
-              <Text
-                style={[
-                  styles.bankDetail,
-                  { fontWeight: "bold", marginTop: 4 },
-                ]}
-              >
+              <Text style={styles.bankDetail}>Branch & IFS Code : Bhubaneswar & ICIC0000061</Text>
+              <Text style={[styles.bankDetail, { fontWeight: "bold", marginTop: 4 }]}>
                 for VANURTECH MEDIA PVT. LTD.
               </Text>
             </View>
           </View>
 
-          {/* Tax Amount in Words */}
-          <View style={styles.amountWordsRow}>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              TAX AMOUNT IN WORDS — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.amountWordsRow} wrap={false}>
             <Text style={styles.amountWordsLabel}>Tax Amount (in words) :</Text>
             <Text style={styles.amountWords}>
               INR {numberToWords(Math.floor(cgstTotal + sgstTotal))} paise Only
             </Text>
           </View>
 
-          {/* Declaration and Signature */}
-          <View style={styles.declarationRow}>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              DECLARATION + SIGNATURE — never split
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.declarationRow} wrap={false}>
             <View style={styles.declarationSection}>
               <Text style={styles.declarationTitle}>Declaration</Text>
               <Text style={styles.declarationText}>
                 We declare that this invoice shows the actual price of the
               </Text>
               <Text style={styles.declarationText}>
-                services described and that all particulars are true and
-                correct.
-              </Text>
-              <Text style={styles.termsTitle}>PAYMENT TERMS :-</Text>
-              <Text style={styles.termText}>
-                * Payment must be cleared within the same calendar month of{" "}
-                {DOC_LABELS[documentType || "quotation"].title} date.
-              </Text>
-              <Text style={styles.termText}>
-                * Delay beyond this will attract interest @10% per day until
-                payment.
+                services described and that all particulars are true and correct.
               </Text>
             </View>
-           <View style={styles.signatureSection}>
-  {/* Show Signature Image if exists */}
-  {quotation.signature && (
-    <Image
-      src={quotation.signature}
-      style={{
-        width: 120,
-        height: 60,
-        marginBottom: 6,
-        objectFit: "contain",
-      }}
-    />
-  )}
-
-  <Text style={styles.signatureLabel}>Authorised Signatory</Text>
-</View>
+            <View style={styles.signatureSection}>
+              {quotation.signature && (
+                <Image
+                  src={quotation.signature}
+                  style={{ width: 120, height: 60, marginBottom: 6, objectFit: "contain" }}
+                />
+              )}
+              <Text style={styles.signatureLabel}>Authorised Signatory</Text>
+            </View>
           </View>
 
-          {/* Jurisdiction */}
-          <View style={styles.jurisdictionRow}>
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              TERMS & CONDITIONS + NOTES
+              Always rendered LAST, never split.
+              Each side only grows to its own content
+              (alignItems: flex-start on the row).
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.termsNotesRow} wrap={false}>
+            {/* Terms & Conditions */}
+            <View style={styles.termsBlock}>
+              <Text style={styles.termsTitle}>PAYMENT TERMS</Text>
+              <Text style={styles.termText}>
+                {`* Payment must be cleared within the same calendar month of ${labels.title} date.`}
+              </Text>
+              <Text style={styles.termText}>
+                * Delay beyond this will attract interest @10% per day until payment.
+              </Text>
+              <Text style={styles.termText}>* Subject to Bhubaneswar jurisdiction.</Text>
+              <Text style={styles.termText}>* Goods once sold will not be taken back.</Text>
+              {quotation.terms ? (
+                <Text style={styles.termText}>* {quotation.terms}</Text>
+              ) : null}
+            </View>
+
+            {/* Notes — only shown when content exists */}
+            {quotation.notes ? (
+              <View style={styles.notesBlock}>
+                <Text style={styles.notesTitle}>NOTES</Text>
+                <Text style={styles.notesText}>{quotation.notes}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+              JURISDICTION + COMPUTER GENERATED
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+          <View style={styles.jurisdictionRow} wrap={false}>
             <Text>SUBJECT TO BHUBANESWAR JURISDICTION</Text>
           </View>
-
-          {/* Computer Generated */}
-          <View style={styles.computerGeneratedRow}>
-            <Text>
-              This is a Computer Generated{" "}
-              {DOC_LABELS[documentType || "quotation"].title}
-            </Text>
+          <View style={styles.computerGeneratedRow} wrap={false}>
+            <Text>This is a Computer Generated {labels.title}</Text>
           </View>
-        </View>
+
+        </View>{/* end headerBorder */}
       </Page>
     </Document>
   );

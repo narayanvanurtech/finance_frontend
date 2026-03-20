@@ -9,6 +9,9 @@ import AddVendorModal from "@/components/finance/AddVendorModal";
 import AddItemModal from "@/components/finance/AddItemModal";
 import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
+import { toast } from "sonner";
+import QrScanner from "@/utils/QrScanner";
+import axiosInstance from "@/utils/axios";
 
 // Types for invoices and reasons
 export type Invoice = {
@@ -42,6 +45,7 @@ export type DebitNoteFormValues = {
   terms: string;
   notes: string;
   attachments: File[];
+  signature:string;
   showSignature: boolean;
 };
 
@@ -141,6 +145,9 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const [attachments, setAttachments] = useState<File[]>(
     initialValues.attachments
   );
+   const [signature, setSignature] = useState<string>(
+      initialValues.signature || ""
+    );
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature
   );
@@ -148,6 +155,8 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    const [showScanner, setShowScanner] = useState(false);
 
   // Handlers for items
   const handleItemChange = (idx: number, field: string, value: any) => {
@@ -194,6 +203,71 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       return updated;
     });
   };
+
+
+     const handleQrScan = async (decodedText: string) => {
+    try {
+      // Parse QR data
+      const parsed = JSON.parse(decodedText);
+      const itemId = parsed.itemId;
+    let token = null
+
+if (typeof window !== "undefined") {
+  token = localStorage.getItem("token")
+}
+
+  
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+  
+      const companyId = localStorage.getItem("currentCompanyId");
+    console.log(companyId)
+      const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        },
+        withCredentials:true
+      })
+  
+      console.log("res,res,res===>",res)
+      const product = res?.data?.result || res?.data;
+  
+      console.log("Scanned product:", product);
+  
+      if (!product) {
+        toast.error("Item not found");
+        return;
+      }
+  
+      const newItem = {
+        itemId: product._id,
+        name: product.name,
+        description: product.description || "",
+        qty:  1,
+        rate: product.sellingPrice || 0,
+        discount: 0,
+        discountType: "flat",
+        unit: product.unit || "pcs",
+        hsn: product.hsn || "",
+        igst: product.igst || 0,
+        sgst: product.sgst || 0,
+        cgst: product.cgst || 0,
+        amount: product.sellingPrice || 0,
+        taxRate:0
+      };
+  
+      // Add item to table
+      setItems((prev) => [...prev, newItem]);
+  
+      toast.success("Item added successfully");
+  
+    } catch (err) {
+      console.log(err);
+      toast.error("Invalid QR Code");
+    }
+  
+    setShowScanner(false);
+  };
+
   const handleAddItem = () => {
     setItems((prev: any) => [
       ...prev,
@@ -381,10 +455,15 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
       terms,
       notes,
       attachments,
+      signature,
       showSignature,
     });
     if (onSuccess) onSuccess();
   };
+
+    const handleCloseScanner=()=>{
+  setShowScanner(false)
+}
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-3 md:px-8 bg-gradient-to-br from-gray-50 via-blue-50/20 to-white min-h-screen">
@@ -571,7 +650,13 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           mockProducts={products}
           businessState={businessDetails?.state}
           clientState={vendorDetails?.state}
+          setShowScanner={setShowScanner}
         />
+         {showScanner && (
+        <div className="p-4 bg-white rounded shadow mt-5 ">
+          <QrScanner onClose={handleCloseScanner}  onScan={handleQrScan} />
+        </div>
+      )}
         {/* Error message for items */}
         {errors.items && (
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg animate-in fade-in slide-in-from-top-2">
@@ -616,6 +701,8 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
           attachments={attachments}
           handleAttachment={handleAttachment}
           showSignature={showSignature}
+          signature={signature}
+          setSignature={setSignature}
           setShowSignature={setShowSignature}
         />
       </div>

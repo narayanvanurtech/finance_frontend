@@ -17,6 +17,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { X, Info } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 
 type Cess = {
   name: string;
@@ -75,6 +77,7 @@ export type ItemTableProps = {
   }[];
   businessState?: string;
   clientState?: string;
+  setShowScanner?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const ItemTable: React.FC<ItemTableProps> = ({
@@ -98,6 +101,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   mockProducts,
   businessState,
   clientState,
+  setShowScanner
 }) => {
   // Auto-select tax configuration based on state comparison
   React.useEffect(() => {
@@ -141,7 +145,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
   const [customUnits, setCustomUnits] = React.useState<{
     [key: number]: string;
   }>({});
-
+ const router = useRouter()
 
 
   return (
@@ -264,14 +268,19 @@ const ItemTable: React.FC<ItemTableProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.map((item, idx) => (
+           {items.map((item, idx) => {
+  const isItemSelected = !!item.name;
+
+  return (
               <tr
-                key={`item-row-${idx}-${item.discountType || "flat"}`}
-                className="even:bg-gray-50 hover:bg-blue-50 transition"
-              >
+  key={`item-row-${idx}-${item.discountType || "flat"}`}
+  className={`even:bg-gray-50 hover:bg-blue-50 transition ${
+    !isItemSelected ? "opacity-50" : ""
+  }`}
+>
                 {/* Item Name */}
                {/* Product Select */}
-<td className="px-3 py-3 align-top">
+           <td className="px-3 py-3 align-top">
   <Select
     value={item.name || ""}
     onValueChange={(value) => {
@@ -319,22 +328,31 @@ const ItemTable: React.FC<ItemTableProps> = ({
   >
     <SelectTrigger className="w-full min-w-[180px] h-10">
       <SelectValue placeholder="Select product" />
+      
     </SelectTrigger>
 
-    <SelectContent>
-      {mockProducts?.map((product) => (
+  <SelectContent>
+    {mockProducts?.length > 0 ? (
+      mockProducts.map((product) => (
         <SelectItem key={product.id || product._id} value={product.name}>
           {product.name}
         </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
+      ))
+    ) : (
+      <button className="text-gray-500 text-xs"  onClick={()=>router.push("/finance/inventory/items/create")}>
+        + Add New Item
+      </button>
+    )}
+  </SelectContent>
+</Select>
+    
 </td>
 
 
                 {/* Qty */}
                 <td className="px-3 py-3 align-top">
                   <Input
+                  disabled={!isItemSelected}
                     type="number"
                     className="w-full text-center h-10"
                     value={item.qty ?? item.quantity ?? 1}
@@ -350,6 +368,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   <div className="flex items-center justify-center h-10">
                     <span className="text-gray-500 mr-1 text-xs">₹</span>
                     <Input
+                    disabled={!isItemSelected}
                       type="number"
                       className="w-full text-center h-10"
                       value={item.rate}
@@ -365,6 +384,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                 <td className="px-3 py-3 align-top">
                   <div className="flex items-center justify-center gap-1 h-10">
                     <Select
+                    disabled={!isItemSelected}
                       key={`discount-select-${idx}-${
                         item.discountType || "flat"
                       }`}
@@ -383,6 +403,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     </Select>
 
                     <Input
+                    disabled={!isItemSelected}
                       type="number"
                       className="w-[70px] text-right h-10"
                       value={item.discount || 0}
@@ -404,6 +425,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   <>
                     <td className="px-3 py-3 align-top">
                       <Select
+                      disabled={!isItemSelected}
                         value={item.taxType || "cgst_sgst"}
                         onValueChange={(value) =>
                           handleItemChange(idx, "taxType", value)
@@ -421,6 +443,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                     </td>
                     <td className="px-3 py-3 align-top">
                       <Input
+                      disabled={!isItemSelected}
                         type="number"
                         className="w-full text-center h-10"
                         value={item.taxRate || 0}
@@ -440,6 +463,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   <td className="px-3 py-3 align-top">
                     <div className="w-full">
                       <Input
+                      disabled={!isItemSelected}
                         type="number"
                         className="w-full text-center h-10"
                         value={item.igst ?? 0}
@@ -636,7 +660,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
                   )}
                 </td>
               </tr>
-            ))}
+           )})}
           </tbody>
         </table>
       </div>
@@ -651,7 +675,15 @@ const ItemTable: React.FC<ItemTableProps> = ({
         >
           + Add Items in Bulk
         </Button>
+        <Button
+          className="btn btn-outline"
+          type="button"
+          onClick={() => setShowScanner(true)}
+        >
+         Scan Item QR
+        </Button>
       </div>
+      
     </Card>
   );
 };

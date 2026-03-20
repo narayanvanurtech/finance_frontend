@@ -16,6 +16,7 @@ import CreditNotesForm, {
 } from "../components/CreditNotesForm";
 import { useItems } from "@/hooks/useItemQueries";
 import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
+import { toast } from "sonner";
 
 export default function UpdateCreditNote() {
   const params = useParams();
@@ -53,7 +54,7 @@ export default function UpdateCreditNote() {
     error: fetchError,
   } = useGetCreditNoteById(creditNoteId);
   const creditNote = creditNoteResponse?.data;
-
+ console.log("object")
   // Debug logging
   useEffect(() => {
     if (creditNoteResponse) {
@@ -232,7 +233,6 @@ export default function UpdateCreditNote() {
       notes: (creditNote as any).notes || "",
       attachments: [],
       signature: (creditNote as any).signature || "",
-      reason:(creditNote as any).reason || "",
       showSignature:
         (creditNote as any).showSignature !== undefined
           ? (creditNote as any).showSignature
@@ -340,7 +340,7 @@ export default function UpdateCreditNote() {
           discount: i.discount || 0,
           taxType: i.taxType as "cgst_sgst" | "igst" | "none",
           taxRate: i.taxRate ?? i.igst ?? (i.cgst || 0) + (i.sgst || 0),
-          reason: i.reason || "",
+          reason: i.reason || values.reason ||  "",
           cess: i.cess || [],
         })),
         taxType: values.taxType,
@@ -351,17 +351,28 @@ export default function UpdateCreditNote() {
         roundOff: values.roundOff,
         showHSN: values.showHSN,
         showUnit: values.showUnit,
-        reason:values.reason,
         signature:values.signature,
         showSignature: values.showSignature,
         terms: values.terms,
         notes: values.notes,
       };
-      await updateMutation.mutateAsync(updatePayload);
-      router.push("/finance/credit-notes");
-    } catch (error) {
-      console.error("Failed to update credit note:", error);
-    }
+     const res =  await updateMutation.mutateAsync(updatePayload);
+     console.log("res.data credit updated ",res)
+if(res?.success){
+  toast.success(res?.message)
+  router.push("/finance/credit-notes");
+}else{
+  toast.error(res.message)
+}
+    } catch (err: any) {
+  console.error("Failed to update credit note:", err);
+
+  toast.error(
+    err?.response?.data?.message ||
+    err?.message ||
+    "Failed to update credit note"
+  );
+}
   };
 
   return (

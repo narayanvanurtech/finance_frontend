@@ -694,7 +694,7 @@ export default function EditItemPage() {
                         </SelectItem>
                       ) : categories.length === 0 ? (
                         <SelectItem value="none" disabled>
-                          No categories available
+                          No categories
                         </SelectItem>
                       ) : (
                         categories.map((cat: Category) => (
@@ -740,7 +740,7 @@ export default function EditItemPage() {
                             ? "Select category first"
                             : filteredSubcategories.length
                             ? "Select subcategory"
-                            : "No subcategories available"
+                            : "No subcategories "
                         }
                       />
                     </SelectTrigger>

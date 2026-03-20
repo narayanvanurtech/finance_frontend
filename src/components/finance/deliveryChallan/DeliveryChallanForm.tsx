@@ -13,6 +13,9 @@ import type { Cess } from "@/components/finance/ConfigureTax";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axios";
+import QrScanner from "@/utils/QrScanner";
 
 export type DeliveryChallanFormValues = {
   quotationTitle?: string;
@@ -155,6 +158,7 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const [returnable, setReturnable] = useState(false);
   const [returnDate, setReturnDate] = useState("");
   const [purpose, setPurpose] = useState("For Delivery");
+  const [showScanner, setShowScanner] = useState(false);
 
   const router = useRouter()
   // Function to calculate item amount based on current tax settings
@@ -299,6 +303,70 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const handleRemoveItem = (idx: number) => {
     setItems((prev: any) => prev.filter((_: any, i: any) => i !== idx));
   };
+
+ 
+
+   const handleQrScan = async (decodedText: string) => {
+    try {
+      // Parse QR data
+      const parsed = JSON.parse(decodedText);
+      const itemId = parsed.itemId;
+   let token = null
+
+if (typeof window !== "undefined") {
+  token = localStorage.getItem("token")
+}
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+  
+      const companyId = localStorage.getItem("currentCompanyId");
+    console.log(companyId)
+      const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        },
+        withCredentials:true
+      })
+  
+      console.log("res,res,res===>",res)
+      const product = res?.data?.result || res?.data;
+  
+      console.log("Scanned product:", product);
+  
+      if (!product) {
+        toast.error("Item not found");
+        return;
+      }
+  
+      const newItem = {
+        itemId: product._id,
+        name: product.name,
+        description: product.description || "",
+        quantity: 1,
+        rate: product.sellingPrice || 0,
+        discount: 0,
+        discountType: "flat",
+        unit: product.unit || "pcs",
+        hsn: product.hsn || "",
+        igst: product.igst || 0,
+        sgst: product.sgst || 0,
+        cgst: product.cgst || 0,
+        amount: product.sellingPrice || 0,
+        taxRate:0
+      };
+  
+      // Add item to table
+      setItems((prev) => [...prev, newItem]);
+  
+      toast.success("Item added successfully");
+  
+    } catch (err) {
+      console.log(err);
+      toast.error("Invalid QR Code");
+    }
+  
+    setShowScanner(false);
+  };
+
   const onAddNewItemClick = () => setShowAddItemModal(true);
   const openBulkModal = () => setShowAddItemBulkModal(true);
   const handleAddClient = () => setShowAddClient(true);
@@ -408,6 +476,10 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
   const handleCancel = () => {
      router.push("/finance/delivery-challans") 
   };
+
+  const handleCloseScanner=()=>{
+  setShowScanner(false)
+}
 
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
@@ -717,7 +789,13 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
         setTaxConfiguration={setTaxConfiguration}
         setCessList={setCessList as any}
         mockProducts={products}
+        setShowScanner={setShowScanner}
       />
+       {showScanner && (
+        <div className="p-4 bg-white rounded shadow mt-5 ">
+          <QrScanner onClose={handleCloseScanner}  onScan={handleQrScan} />
+        </div>
+      )}
       {/* Error message for items */}
       {errors.items && (
         <div className="text-red-500 text-xs mb-2">{errors.items}</div>

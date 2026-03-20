@@ -23,6 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import axiosInstance from "@/utils/axios";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
 
 const TEAM_SIZES = ["Just Me", "2-5", "6-20", "21-50", "51-200", "201+"];
 
@@ -52,6 +53,13 @@ export function AddBussinessModal({
   const [open, setOpen] = useState(false);
   const actualOpen = isControlled ? controlledOpen : open;
   const actualSetOpen = isControlled ? setControlledOpen : setOpen;
+
+  const searchParams = useSearchParams()
+   useEffect(() => {
+    if (searchParams.get("createBusiness") === "true") {
+      setOpen(true);
+    }
+  }, [searchParams]);
 
   console.log("initialValues::===>", initialValues);
 
@@ -228,19 +236,17 @@ export function AddBussinessModal({
     if (!form.country) newErrors.country = "Country is required";
     if (!form.currency) newErrors.currency = "Currency is required";
     if (!form.state) newErrors.state = "State is required";
-    if (form.hasGst && !form.gstin) newErrors.gstin = "GST Number is required";
-    if (form.igstn && form.igstn.length < 15)
-      newErrors.igstn = "IGSTN must be at least 15 characters";
+    // if (form.hasGst && !form.gstin) newErrors.gstin = "GST Number is required";
+    // if (form.igstn && form.igstn.length < 15)
+    //   newErrors.igstn = "IGSTN must be at least 15 characters";
     return newErrors;
   };
 
-  const token = localStorage.getItem("token");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const token = localStorage.getItem("token");
 
       let res;
 
@@ -249,24 +255,12 @@ export function AddBussinessModal({
         res = await axiosInstance.put(
           `/api/v1/finance/setting/business/${initialValues._id}`,
           form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          },
         );
       } else {
         // ✅ Create mode
         res = await axiosInstance.post(
           `/api/v1/finance/setting/business/create`,
           form,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          },
         );
       }
 
@@ -301,14 +295,23 @@ export function AddBussinessModal({
   }
 }
   };
-  const isBusinessFormFilled =
-    localStorage.getItem("isBusinessFormFilled") === "true";
+
+    const handleDialogChange = (nextOpen: boolean) => {
+  if (!nextOpen) {
+    const isBusinessFormFilled =
+      localStorage.getItem("isBusinessFormFilled") === "true";
+
+    if (!isBusinessFormFilled) {
+      toast.error("Please fill Business Details Form first");
+      return; // ❌ prevent closing
+    }
+  }
+
+  actualSetOpen(nextOpen);
+};
 
   return (
-    <Dialog
-      open={actualOpen || !isBusinessFormFilled}
-      onOpenChange={actualSetOpen}
-    >
+  <Dialog open={actualOpen} onOpenChange={handleDialogChange}>
       {!isControlled && (
         <DialogTrigger asChild>
           <Button variant="outline">Add Business</Button>

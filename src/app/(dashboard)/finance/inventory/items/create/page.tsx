@@ -71,6 +71,7 @@ export default function CreateItemPage() {
     sellingPrice: "",
     salesDescription: "",
     // Purchase Information
+    discount:"",
     costPrice: "",
     purchaseDescription: "",
     preferredVendor: "",
@@ -273,6 +274,7 @@ export default function CreateItemPage() {
           cgst: parseFloat(form.cgst) || 0,
           sellingPrice: parseFloat(form.sellingPrice) || 0,
           salesDescription: form.salesDescription,
+          discount:parseFloat(form.discount) || 0,
           costPrice: parseFloat(form.costPrice) || 0,
           purchaseDescription: form.purchaseDescription,
           trackInventory: form.trackInventory,
@@ -320,6 +322,7 @@ export default function CreateItemPage() {
           image: form.imageBase64 || null,
           sellingPrice: "",
           salesDescription: "",
+          discount:"",
           costPrice: "",
           purchaseDescription: "",
           preferredVendor: "",
@@ -333,7 +336,7 @@ export default function CreateItemPage() {
         setImagePreview(null);
 
         // Navigate back to items list
-        router.push("/finance/inventory/items");
+        window.history.back()
       } catch (error) {
         console.error("Failed to create item:", error);
       }
@@ -470,7 +473,7 @@ export default function CreateItemPage() {
                       onChange={handleChange}
                       className="accent-[var(--color-primary)]"
                     />
-                    Good
+                    Goods
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer font-medium">
                     <input
@@ -557,7 +560,7 @@ export default function CreateItemPage() {
                             ? "Loading subcategories..."
                             : filteredSubcategories.length
                             ? "Select subcategory"
-                            : "No subcategories available"
+                            : "No subcategories"
                         }
                       />
                     </SelectTrigger>
@@ -1028,6 +1031,19 @@ export default function CreateItemPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1">
+                  Discount (%)
+                </label>
+                <Input
+                  type="number"
+                  name="discount"
+                  value={form.discount}
+                  onChange={handleChange}
+                  min="0"
+                  placeholder="e.g. 100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">
                   Description
                 </label>
                 <Textarea
@@ -1078,7 +1094,15 @@ export default function CreateItemPage() {
                         <CommandEmpty>
                           {searchValue
                             ? "No vendors found."
-                            : "No vendors available"}
+                            : <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-2"
+                    onClick={() => router.push("/finance/vendors/create")}
+                  >
+                    <Plus className="w-4 h-4" /><h1>Add New Vendor</h1>
+                  </Button>}
                         </CommandEmpty>
                         {filteredVendors.length > 0 ? (
                           <CommandGroup>

@@ -20,7 +20,7 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onPrintDownload,
   onSendEmail,
   onCancel,
-  documentType = "quotation",
+  documentType = "Credit Notes",
   disabled = false,
 }) => {
   const updateButtonText =

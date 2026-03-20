@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -86,6 +86,7 @@ export default function AddClientModal({ open, onClose, onSubmit, initialValues,
   const [showAddress, setShowAddress] = useState(false);
   const [showAdditional, setShowAdditional] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (open && initialValues) {
@@ -126,7 +127,11 @@ export default function AddClientModal({ open, onClose, onSubmit, initialValues,
     img.src = URL.createObjectURL(file);
   };
 
-  const companyId = localStorage.getItem("currentCompanyId")
+ 
+
+useEffect(() => {
+  setCompanyId(localStorage.getItem("currentCompanyId"));
+}, []);
 
   const validate = () => {
     const errs: { [k: string]: string } = {};

@@ -1528,7 +1528,7 @@ function ItemsGrid({
     );
   }
 
-  // console.log("Items Details ",items)
+  console.log("Items Details ",items)
   
 
   return (

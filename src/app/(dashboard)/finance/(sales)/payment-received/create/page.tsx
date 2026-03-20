@@ -1,45 +1,20 @@
-"use client";
-import { useState } from "react";
-import PaymentReceivedForm, {
-  PaymentsMadeFormValues,
-} from "@/components/finance/paymentReceived/PaymentReivedForm";
-import { usePaymentReceivedStore } from "@/stores/financeStore/usePaymentReceivedStore";
-import { useAuthStore } from "@/stores/salesCrmStore/useAuthStore";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
-export default function PaymentReceivedCreatePage() {
-  const { createPayment, fetchPayments, setCompanyId } =
-    usePaymentReceivedStore();
-  const { user } = useAuthStore();
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+import PaymentReceivedCreatePage from "@/components/finance/sales/CreatePaymentReceipt";
+import { Suspense } from "react";
 
-  const handleSubmit = async (values: PaymentsMadeFormValues) => {
-    console.log("Values 123456787654321",values)
-    if (!user?.companyId) return toast.error("Company ID Required");
+// If your CreateInvoicePage is in a different location use the correct path, e.g:
+// import CreateInvoicePage from "@/components/finance/invoice/CreateInvoicePage";
 
-    setLoading(true);
-    try {
-      setCompanyId(user.companyId);
-
-    const res =   await createPayment(values);
-
-      await fetchPayments(); // refresh list before navigation
-      toast.success("Payment Recorded Successfully");
-      router.push(`/finance/payment-received/preview/${res._id}`);
-    } catch {
-      toast.error("Failed to add payment");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function Page() {
   return (
-    <PaymentReceivedForm
-      mode="create"
-      onSubmit={handleSubmit}
-      loading={loading}
-    />
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      }
+    >
+      <PaymentReceivedCreatePage/>
+    </Suspense>
   );
 }

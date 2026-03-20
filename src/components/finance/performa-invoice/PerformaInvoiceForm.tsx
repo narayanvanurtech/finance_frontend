@@ -15,6 +15,9 @@ import PerformaInvoiceHeaderBar from "./HeaderBar";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axios";
+import QrScanner from "@/utils/QrScanner";
 
 export type PerformaInvoiceFormValues = {
   type: "invoice" | "performa";
@@ -261,7 +264,7 @@ useEffect(() => {
     setPhases(initialValues.phases || []);
   }
 }, [initialValues, mode]);
-
+const [showScanner, setShowScanner] = useState(false);
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -305,6 +308,70 @@ useEffect(() => {
       updated[idx].amount = amount;
       return updated;
     });
+  };
+
+
+  let token = null
+
+if (typeof window !== "undefined") {
+  token = localStorage.getItem("token")
+}
+  
+  const handleQrScan = async (decodedText: string) => {
+    try {
+      // Parse QR data
+      const parsed = JSON.parse(decodedText);
+      const itemId = parsed.itemId;
+  
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+  
+      const companyId = localStorage.getItem("currentCompanyId");
+    console.log(companyId)
+      const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        },
+        withCredentials:true
+      })
+  
+      console.log("res,res,res===>",res)
+      const product = res?.data?.result || res?.data;
+  
+      console.log("Scanned product:", product);
+  
+      if (!product) {
+        toast.error("Item not found");
+        return;
+      }
+  
+      const newItem = {
+        itemId: product._id,
+        name: product.name,
+        description: product.description || "",
+        quantity: 1,
+        rate: product.sellingPrice || 0,
+        discount: 0,
+        discountType: "flat",
+        unit: product.unit || "pcs",
+        hsn: product.hsn || "",
+        igst: product.igst || 0,
+        sgst: product.sgst || 0,
+        cgst: product.cgst || 0,
+        amount: product.sellingPrice || 0,
+        taxRate:0
+      };
+  
+      // Add item to table
+      setItems((prev) => [...prev, newItem]);
+  
+      toast.success("Item added successfully");
+  
+    } catch (err) {
+      console.log(err);
+      toast.error("Invalid QR Code");
+    }
+  
+    setShowScanner(false);
   };
   const handleAddItem = () => {
     setItems((prev: any) => [
@@ -527,6 +594,10 @@ const submitEmail =()=>{
     router.push(`/finance/performa-invoices/email/${id}`)
 }
 
+const handleCloseScanner=()=>{
+  setShowScanner(false)
+}
+
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
       <PerformaInvoiceHeaderBar
@@ -608,7 +679,13 @@ const submitEmail =()=>{
         setTaxConfiguration={setTaxConfiguration}
         setCessList={setCessList as any}
         mockProducts={products}
+        setShowScanner={setShowScanner}
       />
+      {showScanner && (
+        <div className="p-4 bg-white rounded shadow mt-5 ">
+          <QrScanner onClose={handleCloseScanner}  onScan={handleQrScan} />
+        </div>
+      )}
       {errors.items && (
         <div className="text-red-500 text-xs mb-2 bg-red-50 p-2 rounded">
           {errors.items}

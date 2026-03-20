@@ -44,7 +44,7 @@ export function middleware(request: NextRequest) {
   if ((pathname === "/auth/login" || pathname === "/auth/register") && token) {
     // Redirect to dashboard based on role
     return NextResponse.redirect(
-      new URL("/dashboard/sales-crm/home", request.url)
+      new URL("/sales-crm/home", request.url)
     );
   }
 

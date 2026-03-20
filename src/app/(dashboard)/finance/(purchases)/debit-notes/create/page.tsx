@@ -103,6 +103,7 @@ export default function CreateDebitNotePage() {
     terms: "",
     notes: "",
     attachments: [],
+    signature:"",
     showSignature: false,
   };
 
@@ -147,6 +148,7 @@ export default function CreateDebitNotePage() {
         roundOff: values.roundOff,
         showHSN: values.showHSN,
         showUnit: values.showUnit,
+        signature:values.signature,
         showSignature: values.showSignature,
         items: values.items.map((item) => ({
           name: item.name,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import SendEmailModal from "@/components/finance/quotation/SendEmailModal";
 
@@ -20,7 +20,11 @@ export default function QuotationEmailPage() {
   const id=quotationId;
   const message = `Dear Client,\n\nThank you for contacting us. Your quote can be viewed, printed and downloaded as needed.\n\nRegards,\nYour Company`;
 
-  const token = localStorage.getItem("token")
+  let token = null
+
+if (typeof window !== "undefined") {
+  token = localStorage.getItem("token")
+}
   const handleSend = async (data: { to: string; cc: string; subject: string; message: string , id:string }) => {
     const {to,cc,subject,message,id} = data
        handleSendEmail(id,"send-perfomance",subject,message,cc,to)

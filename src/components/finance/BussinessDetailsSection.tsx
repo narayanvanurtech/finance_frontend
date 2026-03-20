@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import AddBussinessModal from "@/components/finance/AddBussinessModal";
+import axiosInstance from "@/utils/axios";
 
 
 export interface BankDetails {
@@ -49,11 +50,16 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
   useBussinessStore((s: any) => s.details);
   const [businessSearch, setBusinessSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
-
+const [addOpen, setAddOpen] = useState(false);
   const filteredBusinesses =
     props.mockBusinesses?.filter((b) =>
       b.name.toLowerCase().includes(businessSearch.toLowerCase())
     ) || [];
+
+
+    
+
+  
 
     console.log("businessStoreDetails:::_=>",businessStoreDetails)
 
@@ -67,6 +73,10 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
           initialValues={businessStoreDetails}
         />
       )}
+<AddBussinessModal
+  open={addOpen}
+  setOpen={setAddOpen}
+/>
 
       {/* Business Selector */}
       {!props.hideSelector && (
@@ -77,39 +87,47 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
             </label>
 
             <Select
-              onValueChange={props.onBusinessSelect}
-              value={props.businessId}
-            >
-              <SelectTrigger className="w-full h-11">
-                <SelectValue placeholder="-- Select Business --" />
-              </SelectTrigger>
+  value={props.businessId}
+  onValueChange={(value) => {
+    if (value === "new") {
+      setAddOpen(true);
+    } else {
+      props.onBusinessSelect?.(value);
+    }
+  }}
+>
+  <SelectTrigger className="w-full h-11">
+    <SelectValue placeholder="-- Select Business --" />
+  </SelectTrigger>
 
-              <SelectContent>
-                <div className="px-2 py-2">
-                  <Input
-                    placeholder="Search business..."
-                    value={businessSearch}
-                    onChange={(e) => setBusinessSearch(e.target.value)}
-                    className="mb-2 w-full h-10"
-                    onKeyDown={(e) => e.stopPropagation()}
-                  />
-                </div>
+  <SelectContent>
+    <div className="px-2 py-2">
+      <Input
+        placeholder="Search business..."
+        value={businessSearch}
+        onChange={(e) => setBusinessSearch(e.target.value)}
+        className="mb-2 w-full h-10"
+        onKeyDown={(e) => e.stopPropagation()}
+      />
+    </div>
 
-                {filteredBusinesses.map((b) => (
-                  <SelectItem key={b.id} value={b.id.toString()}>
-                    {b.name}
-                  </SelectItem>
-                ))}
+    {filteredBusinesses.map((b) => (
+      <SelectItem key={b.id} value={b.id.toString()}>
+        {b.name}
+      </SelectItem>
+    ))}
 
-                <SelectItem value="new">+ Add New Business</SelectItem>
-              </SelectContent>
-            </Select>
+    <SelectItem value="new">+ Add New Business</SelectItem>
+  </SelectContent>
+</Select>
           </div>
 
           {props.businessId === "new" && props.setShowAddBusiness && (
             <Button
               className="h-11 px-6"
-              onClick={() => props.setShowAddBusiness!(true)}
+               onClick={() => {
+          setAddOpen(true)
+        }}
             >
               + Add New Business
             </Button>
@@ -119,15 +137,19 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
 
       
      {/* Business Details Display */}
-{businessStoreDetails && (
+     {/* Business Details Display */}
+
+{businessStoreDetails ?  (
   <Card className="p-4 sm:p-6 shadow-sm border rounded-xl">
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
       <h2 className="text-lg font-semibold">Business Details</h2>
-
+       
       <Button
         size="sm"
         variant="outline"
-        onClick={() => setEditOpen(true)}
+        onClick={() => {
+          setEditOpen(true)
+        }}
         className="w-full cursor-pointer text-white bg-[#3B82F6] sm:w-auto"
       >
         Edit
@@ -139,7 +161,15 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
       
       {/* Left Section - Business Info */}
       <div className="lg:col-span-2">
+        <div className="flex flex-col gap-3 mb-5">
+          <h1 className="text-xl font-bold text-gray-900">Logo</h1>
+        <div className="w-10 h-10 rounded-full overflow-hidden">
+          
+        <img src={businessStoreDetails?.logo} alt="" />
+       </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          
           <Detail label="Business Name" value={businessStoreDetails.businessName} />
           <Detail label="GST Number" value={businessStoreDetails.gstin} />
           <Detail label="State" value={businessStoreDetails.state} />
@@ -180,10 +210,13 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
       </div>
 
       {/* Right Section - QR Code Only */}
-      {businessStoreDetails.qrcode && (
+ 
+
+    </div>
+         {businessStoreDetails.qrcode && (
         <div className="flex flex-col items-center justify-start">
           <h3 className="text-sm font-semibold mb-4">QR Code</h3>
-<div className="w-full flex justify-center lg:justify-end">
+<div className="w-40 flex justify-center lg:justify-end">
   <div className="w-full max-w-xl bg-white rounded-2xl shadow-md border border-gray-200 p-2 transition-all duration-300 hover:shadow-lg">
 
    
@@ -199,10 +232,32 @@ const YourDetailsSection: React.FC<YourDetailsSectionProps> = (props) => {
           
         </div>
       )}
-
-    </div>
   </Card>
+) : (
+
+  /* SHOW ADD BUSINESS */
+
+  <Card className="p-6 flex flex-col items-center justify-center text-center border-dashed border-2">
+
+    <h2 className="text-lg font-semibold mb-2">
+      No Business Added
+    </h2>
+
+    <p className="text-sm text-gray-500 mb-4">
+      Please add your business details to continue.
+    </p>
+
+    <Button
+  onClick={() => setAddOpen(true)}
+  className="bg-blue-600 text-white"
+>
+  + Add New Business
+</Button>
+
+  </Card>
+
 )}
+
     </>
   );
 };

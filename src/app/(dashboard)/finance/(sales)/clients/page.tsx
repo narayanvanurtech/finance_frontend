@@ -180,7 +180,7 @@ export default function ClientsPage() {
   }, [clients, selectedRows]);
 
   const handleViewClient = (clientId: string) => {
-    router.push(`/finance/clients/${clientId}`);
+    router.push(`/finance/clients/view/${clientId}`);
   };
 
   const handleEditClientNavigation = (clientId: string,companyId:string) => {
@@ -716,6 +716,8 @@ export default function ClientsPage() {
           </div>
         </Card>
 
+       
+
         <div className="overflow-x-auto rounded-lg shadow-lg border border-[var(--color-border)] mt-6">
           <table
             className="min-w-full divide-y rounded-lg overflow-hidden text-sm border-collapse"
@@ -791,7 +793,7 @@ export default function ClientsPage() {
                   {/* Logo */}
                   <td
                     className="px-4 py-4 cursor-pointer"
-                    onClick={() => handleEditClientNavigation(client._id)}
+                    onClick={() => handleEditClientNavigation(client._id,client.companyId._id)}
                   >
                     <div className="flex items-center justify-start">
                       {client?.logoUrl ? (
@@ -857,63 +859,46 @@ export default function ClientsPage() {
 
                   {/* Actions */}
                   <td className="px-4 py-4 text-left">
-                    <Popover
-                      open={openPopoverId === client._id}
-                      onOpenChange={(isOpen) =>
-                        setOpenPopoverId(isOpen ? client._id : null)
-                      }
-                    >
-                      <PopoverTrigger asChild>
-                        <button
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-500"
-                          aria-label="Client actions"
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </PopoverTrigger>
 
-                      <PopoverContent className="w-44 p-2" align="end">
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditClientNavigation(client._id,client.companyId._id);
-                              setOpenPopoverId(null);
-                            }}
-                            className="px-3 py-2 rounded hover:bg-gray-100 text-gray-700 text-sm text-left"
-                            aria-label="Edit Client"
-                          >
-                            Edit
-                          </button>
-                          {/* 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleViewClient(client._id);
-                              setOpenPopoverId(null);
-                            }}
-                            className="px-3 py-2 rounded hover:bg-gray-100 text-blue-600 text-sm text-left"
-                            aria-label="View Client"
-                          >
-                            View
-                          </button> */}
+                      <div className="flex items-center gap-2">
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClient(client);
-                              setOpenPopoverId(null);
-                            }}
-                            className="px-3 py-2 rounded hover:bg-gray-100 text-red-600 text-sm text-left flex items-center gap-2"
-                            aria-label="Delete Client"
-                          >
-                            <Trash2 size={14} />
-                            Delete
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+  {/* Edit */}
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleEditClientNavigation(client._id, client.companyId._id);
+    }}
+    className="p-2 rounded hover:bg-gray-100 cursor-pointer text-gray-600"
+    aria-label="Edit Client"
+  >
+    <Edit size={16} />
+  </button>
+
+  {/* View */}
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleViewClient(client._id);
+    }}
+    className="p-2 rounded hover:bg-gray-100 cursor-pointer text-blue-600"
+    aria-label="View Client"
+  >
+    <Eye size={16} />
+  </button>
+
+  {/* Delete */}
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      handleDeleteClient(client);
+    }}
+    className="p-2 rounded hover:bg-gray-100 cursor-pointer text-red-600"
+    aria-label="Delete Client"
+  >
+    <Trash2 size={16} />
+  </button>
+
+</div>
                   </td>
                 </tr>
               ))}

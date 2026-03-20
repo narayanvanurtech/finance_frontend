@@ -1,6 +1,6 @@
 // src/api/callsApi.ts
 import axiosInstance from "@/utils/axios";
-
+export const dynamic = "force-dynamic";
 // Types
 export interface Call {
   _id: string;

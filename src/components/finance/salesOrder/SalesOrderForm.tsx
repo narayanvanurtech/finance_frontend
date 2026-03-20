@@ -13,6 +13,9 @@ import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import { useBussinessStore } from "@/stores/financeStore/useBussinessStore";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import axiosInstance from "@/utils/axios";
+import QrScanner from "@/utils/QrScanner";
 
 // Cess type compatible with ItemTable
 type Cess = {
@@ -151,6 +154,7 @@ const SalesOrderForm: React.FC<any> = ({
   const [attachments, setAttachments] = useState<File[]>(
     initialValues.attachments
   );
+  const [showScanner, setShowScanner] = useState(false);
   const [showSignature, setShowSignature] = useState(
     initialValues.showSignature || false
   );
@@ -270,6 +274,65 @@ const SalesOrderForm: React.FC<any> = ({
       return updated;
     });
   };
+
+    const handleQrScan = async (decodedText: string) => {
+    try {
+      // Parse QR data
+      const parsed = JSON.parse(decodedText);
+      const itemId = parsed.itemId;
+  const token  = localStorage.getItem("token")
+  
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+  
+      const companyId = localStorage.getItem("currentCompanyId");
+    console.log(companyId)
+      const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        },
+        withCredentials:true
+      })
+  
+      console.log("res,res,res===>",res)
+      const product = res?.data?.result || res?.data;
+  
+      console.log("Scanned product:", product);
+  
+      if (!product) {
+        toast.error("Item not found");
+        return;
+      }
+  
+      const newItem = {
+        itemId: product._id,
+        name: product.name,
+        description: product.description || "",
+        qty: 1,
+        rate: product.sellingPrice || 0,
+        discount: 0,
+        discountType: "flat",
+        unit: product.unit || "pcs",
+        hsn: product.hsn || "",
+        igst: product.igst || 0,
+        sgst: product.sgst || 0,
+        cgst: product.cgst || 0,
+        amount: product.sellingPrice || 0,
+        taxRate:0
+      };
+  
+      // Add item to table
+      setItems((prev) => [...prev, newItem]);
+  
+      toast.success("Item added successfully");
+  
+    } catch (err) {
+      console.log(err);
+      toast.error("Invalid QR Code");
+    }
+  
+    setShowScanner(false);
+  };
+  
   const handleAddItem = () => {
     setItems((prev: any) => [
       ...prev,
@@ -295,6 +358,9 @@ const SalesOrderForm: React.FC<any> = ({
   };
   const onAddNewItemClick = () => setShowAddItemModal(true);
   const openBulkModal = () => setShowAddItemBulkModal(true);
+
+
+ 
 
   const handleAddClient = () => setShowAddClient(true);
 
@@ -428,6 +494,10 @@ const SalesOrderForm: React.FC<any> = ({
     router.push("/finance/sales-orders")
   };
 
+  const handleCloseScanner=()=>{
+  setShowScanner(false)
+}
+
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
     if (!orderTitle.trim()) newErrors.orderTitle = "Order title is required";
@@ -555,7 +625,13 @@ const SalesOrderForm: React.FC<any> = ({
           setTaxConfiguration={handleTaxConfigurationChange}
           setCessList={setCessList}
           mockProducts={products}
+          setShowScanner={setShowScanner}
         />
+         {showScanner && (
+        <div className="p-4 bg-white rounded shadow mt-5 ">
+          <QrScanner onClose={handleCloseScanner}  onScan={handleQrScan} />
+        </div>
+      )}
         {errors.items && (
           <div className="text-red-500 text-xs">{errors.items}</div>
         )}

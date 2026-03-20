@@ -224,6 +224,8 @@ export interface ConvertToInvoicePayload {
   invoiceTitle?: string;
   dueDate?: string;
   notes?: string;
+  signature?:string;
+  showSignature?:boolean;
 }
 
 export interface ConvertToProformaInvoicePayload {

@@ -25,7 +25,7 @@ export default function QuotationEmailPage() {
   const handleSend = async (data: { to: string; cc: string; subject: string; message: string , id:string }) => {
     const {to,cc,subject,message,id} = data
        handleSendEmail(id,"send-quotation",subject,message,cc,to)
-    router.push(`/finance/quotations`);
+      window.history.back()
   };
 
   return (
@@ -33,7 +33,7 @@ export default function QuotationEmailPage() {
       <SendEmailModal
       title="Send Quotation Email"
         open={open}
-        onClose={() => router.push(`/finance/quotations/edit/${quotationId}`)}
+        onClose={() => router.push("/finance/quotations")}
         to={to}
         cc={cc}
         id={id}

@@ -138,7 +138,7 @@ export default function EditDebitNotePage() {
       igst: item.igstAmount || 0,
       sgst: item.sgstAmount || 0,
       cgst: item.cgstAmount || 0,
-      reason: item.reason || "",
+      reason: item.reason || debitNote.reason || "",
     })),
     discountType: debitNote.discountType,
     discountValue: debitNote.discountValue,
@@ -152,6 +152,7 @@ export default function EditDebitNotePage() {
     terms: debitNote.terms || "",
     notes: debitNote.notes || "",
     attachments: [], // Attachments will need to be handled separately
+    signature:debitNote.signature || "",
     showSignature: debitNote.showSignature,
   };
 
@@ -176,6 +177,7 @@ const handleUpdate = async (values: DebitNoteFormValues) => {
       roundOff: values.roundOff,
       showHSN: values.showHSN,
       showUnit: values.showUnit,
+      signature:values.signature,
       showSignature: values.showSignature,
 
       items: values.items.map((item) => {
@@ -204,7 +206,7 @@ const handleUpdate = async (values: DebitNoteFormValues) => {
           discountType: item.discountType,
           taxType,
           taxRate,
-          reason: item.reason,
+          reason: item.reason || values.reason,
 
           // 🔥 IMPORTANT
           amount: calculated.amount,

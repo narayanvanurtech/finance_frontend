@@ -11,6 +11,9 @@ import AddItemBulkModal from "@/components/finance/AddItemBulkModal";
 import YourDetailsSection from "@/components/finance/BussinessDetailsSection";
 import { useClientStore } from "@/stores/financeStore/useClientStore";
 import type { Cess } from "@/components/finance/ConfigureTax";
+import { toast } from "sonner";
+import QrScanner from "@/utils/QrScanner";
+import axiosInstance from "@/utils/axios";
 
 // State Code to State Name mapping (GSTIN state codes)
 const STATE_CODE_TO_NAME: { [key: string]: string } = {
@@ -216,6 +219,7 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   );
   const [reason, setReason] = useState(initialValues.reason || "");
 
+
   // Other state
   const [clientId, setClientId] = useState(initialValues.clientId);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -274,6 +278,9 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   const [cessList, setCessList] = useState<Cess[]>(
     initialValues.cessList || []
   );
+
+  const [showScanner, setShowScanner] = useState(false);
+
   
   console.log("Signature=====>>..mn ch ",signature)
 
@@ -372,6 +379,71 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
       updated[idx] = item;
       return updated;
     });
+  };
+
+
+
+
+   const handleQrScan = async (decodedText: string) => {
+    try {
+      // Parse QR data
+      const parsed = JSON.parse(decodedText);
+      const itemId = parsed.itemId;
+  
+
+    let token = null
+
+if (typeof window !== "undefined") {
+  token = localStorage.getItem("token")
+}
+  
+      const companyId = localStorage.getItem("currentCompanyId");
+    console.log(companyId)
+      const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
+        headers:{
+          "Authorization":`Bearer ${token}`
+        },
+        withCredentials:true
+      })
+  
+      console.log("res,res,res===>",res)
+      const product = res?.data?.result || res?.data;
+  
+      console.log("Scanned product:", product);
+  
+      if (!product) {
+        toast.error("Item not found");
+        return;
+      }
+  
+      const newItem = {
+        itemId: product._id,
+        name: product.name,
+        description: product.description || "",
+        quantity: 1,
+        rate: product.sellingPrice || 0,
+        discount: 0,
+        discountType: "flat",
+        unit: product.unit || "pcs",
+        hsn: product.hsn || "",
+        igst: product.igst || 0,
+        sgst: product.sgst || 0,
+        cgst: product.cgst || 0,
+        amount: product.sellingPrice || 0,
+        taxRate:0
+      };
+  
+      // Add item to table
+      setItems((prev) => [...prev, newItem]);
+  
+      toast.success("Item added successfully");
+  
+    } catch (err) {
+      console.log(err);
+      toast.error("Invalid QR Code");
+    }
+  
+    setShowScanner(false);
   };
 
   const handleAddItem = () => {
@@ -628,6 +700,10 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
       setAttachments(Array.from(e.target.files));
     }
   };
+
+ const handleCloseScanner=()=>{
+  setShowScanner(false)
+} 
 
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
@@ -935,7 +1011,13 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
         setTaxConfiguration={handleTaxConfigurationChange}
         setCessList={setCessList as any}
         mockProducts={products}
+        setShowScanner={setShowScanner}
       />
+       {showScanner && (
+        <div className="p-4 bg-white rounded shadow mt-5 ">
+          <QrScanner onClose={handleCloseScanner}  onScan={handleQrScan} />
+        </div>
+      )}
 
       {errors.items && (
         <div className="text-red-500 text-xs mb-2">{errors.items}</div>
