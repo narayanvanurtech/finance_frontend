@@ -94,11 +94,11 @@ export default function ExpensesListPage() {
   // Debug: Log purchases when they load
   React.useEffect(() => {
     if (purchases && purchases.length > 0) {
-      //console.log("First purchase:", purchases[0]);
+      console.log("First purchase:", purchases[0]);
     } else {
-      //console.log("⚠️ No purchases data available");
+      console.log("⚠️ No purchases data available");
     }
-    //console.log("=========================");
+    console.log("=========================");
   }, [purchases, isLoading, isError, error]);
 
   const handleDeleteClick = (expense: any) => {
@@ -214,7 +214,7 @@ export default function ExpensesListPage() {
   };
 
    const handlePurchaseExpensesSendEmail = (purchaseId: string) => {
-    //console.log("purchaseId knkmnjnjvkmlv-00d99vhnfv",purchaseId)
+    console.log("purchaseId knkmnjnjvkmlv-00d99vhnfv",purchaseId)
         router.push(`/finance/expenses/email/${purchaseId}`)
     };
   
@@ -283,7 +283,7 @@ export default function ExpensesListPage() {
 
   /** Handle Filters **/
   const handleSearch = useCallback((filters: SearchFilters) => {
-    //console.log("🔍 handleSearch called with filters:", filters);
+    console.log("🔍 handleSearch called with filters:", filters);
     setCurrentFilters(filters);
     setCurrentPage(1); // React Query will auto-refetch when filters change
   }, []);
@@ -625,8 +625,8 @@ export default function ExpensesListPage() {
                               <Link
                                 href={`/finance/expenses/edit/${purchase._id}`}
                                 onClick={() => {
-                                  //console.log("Editing purchase:", purchase);
-                                  //console.log("Purchase ID:", purchase._id);
+                                  console.log("Editing purchase:", purchase);
+                                  console.log("Purchase ID:", purchase._id);
                                   setOpenPopoverId(null);
                                 }}
                                 className="px-3 py-2 rounded hover:bg-[var(--color-muted)]/60 text-[var(--color-foreground)] text-sm flex items-center gap-2"

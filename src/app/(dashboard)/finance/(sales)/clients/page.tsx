@@ -62,7 +62,7 @@ export default function ClientsPage() {
   });
 
 
-  //console.log("Clients5673890:83765nnbcbvdc :=>=>",clients)
+  console.log("Clients5673890:83765nnbcbvdc :=>=>",clients)
 
   // Separate state for search input to prevent losing focus
   const [searchInput, setSearchInput] = useState("");
@@ -184,7 +184,7 @@ export default function ClientsPage() {
   };
 
   const handleEditClientNavigation = (clientId: string,companyId:string) => {
-    //console.log("CompanyId....6ngfmn",companyId)
+    console.log("CompanyId....6ngfmn",companyId)
     router.push(`/finance/clients/${clientId}/${companyId}/edit`);
   };
 
@@ -303,7 +303,7 @@ export default function ClientsPage() {
     });
   };
 
-  //console.log("DeleteDialog",deleteDialog)
+  console.log("DeleteDialog",deleteDialog)
   const handleDeleteConfirm = async () => {
     if (!deleteDialog.client || !user?.companyId) return;
 
@@ -517,7 +517,7 @@ export default function ClientsPage() {
     );
   }
 
-  //console.log("Clients...4567",clients)
+  console.log("Clients...4567",clients)
 
   return (
     <div className="w-full">

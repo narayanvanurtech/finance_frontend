@@ -117,7 +117,7 @@ export default function CreateInvoicePage() {
     phases: [],
   };
 
-  //console.log(defaultInitialValues);
+  console.log(defaultInitialValues);
 
   const handleCreate = async (values: InvoiceFormValues) => {
     setLoading(true);

@@ -34,12 +34,12 @@ export default function EditQuotationPage() {
 
         // If not found in store, fetch from API using the quotation number as ID
         if (!foundQuotation) {
-          //console.log("Quotation not found in store, fetching from API...");
+          console.log("Quotation not found in store, fetching from API...");
           const result = await fetchQuotationById(quotationNumber);
           if (result) foundQuotation = result;
         }
 
-        //console.log("Loaded quotation:", foundQuotation);
+        console.log("Loaded quotation:", foundQuotation);
         setQuotation(foundQuotation);
       } catch (error) {
         console.error("Error loading quotation:", error);
@@ -198,19 +198,19 @@ export default function EditQuotationPage() {
   };
 
   // DETAILED DEBUGGING
-  //console.log("🔍 RAW QUOTATION DATA:", quotation);
-  //console.log("🔍 RAW clientDetails type:", typeof quotation.clientDetails);
-  //console.log("🔍 RAW clientDetails value:", quotation.clientDetails);
-  //console.log("🔍 RAW attachments type:", typeof quotation.attachments);
-  //console.log("🔍 RAW attachments value:", quotation.attachments);
-  //console.log("🔍 RAW showSignature type:", typeof quotation.showSignature);
-  //console.log("🔍 RAW showSignature value:", quotation.showSignature);
+  console.log("🔍 RAW QUOTATION DATA:", quotation);
+  console.log("🔍 RAW clientDetails type:", typeof quotation.clientDetails);
+  console.log("🔍 RAW clientDetails value:", quotation.clientDetails);
+  console.log("🔍 RAW attachments type:", typeof quotation.attachments);
+  console.log("🔍 RAW attachments value:", quotation.attachments);
+  console.log("🔍 RAW showSignature type:", typeof quotation.showSignature);
+  console.log("🔍 RAW showSignature value:", quotation.showSignature);
 
-  //console.log("\n📝 PARSED Initial Values:", initialValues);
-  //console.log("📎 PARSED Attachments:", initialValues.attachments);
-  //console.log("✍️ PARSED Signature:", initialValues.showSignature);
-  //console.log("👤 PARSED Client Details:", initialValues.clientDetails);
-  //console.log("🏢 PARSED Business Details:", initialValues.businessDetails);
+  console.log("\n📝 PARSED Initial Values:", initialValues);
+  console.log("📎 PARSED Attachments:", initialValues.attachments);
+  console.log("✍️ PARSED Signature:", initialValues.showSignature);
+  console.log("👤 PARSED Client Details:", initialValues.clientDetails);
+  console.log("🏢 PARSED Business Details:", initialValues.businessDetails);
 
   const handleUpdate = async (values: QuotationFormValues) => {
     setLoading(true);

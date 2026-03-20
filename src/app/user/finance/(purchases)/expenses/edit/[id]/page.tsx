@@ -34,11 +34,11 @@ export default function EditExpensePage() {
 
   // Debug logging
   useEffect(() => {
-    //console.log("Purchase ID:", purchaseId);
-    //console.log("Purchase Data:", purchaseData);
-    //console.log("Is Loading:", isLoading);
-    //console.log("Is Error:", isError);
-    //console.log("Error:", error);
+    console.log("Purchase ID:", purchaseId);
+    console.log("Purchase Data:", purchaseData);
+    console.log("Is Loading:", isLoading);
+    console.log("Is Error:", isError);
+    console.log("Error:", error);
   }, [purchaseId, purchaseData, isLoading, isError, error]);
 
   // Early return if no purchase ID
@@ -115,7 +115,7 @@ export default function EditExpensePage() {
         paymentMode: purchase.paymentStatus || "pending",
       };
 
-      //console.log("📦 Mapped Vendor Details:", vendorDetails);
+      console.log("📦 Mapped Vendor Details:", vendorDetails);
       setInitialValues(formValues);
     }
   }, [purchaseData]);

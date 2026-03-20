@@ -72,7 +72,7 @@ export default function SupportPage() {
     }
   };
 
-  //console.log(companyTickets)
+  console.log(companyTickets)
 
   return (
     <div className="container mx-auto p-6 max-w-7xl my-8">

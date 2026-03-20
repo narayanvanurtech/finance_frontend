@@ -50,7 +50,7 @@ export interface GetTemplateByIdResponse {
 
 export const getTemplateById = async (templateId: string): Promise<GetTemplateByIdResponse> => {
   try {
-    //console.log(`API: Fetching template with ID ${templateId}`);
+    console.log(`API: Fetching template with ID ${templateId}`);
     const response = await axiosInstance.get(`/api/v1/email/getEmailTemplateById/${templateId}`);
     
     if (!response.data.success) {

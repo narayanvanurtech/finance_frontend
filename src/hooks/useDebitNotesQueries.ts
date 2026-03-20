@@ -28,7 +28,7 @@ export const useGetDebitNotes = (filters?: any) => {
   return useQuery({
     queryKey: debitNoteKeys.list(filters),
     queryFn: () => {
-      //console.log("🔥 Query function called with filters:", filters);
+      console.log("🔥 Query function called with filters:", filters);
       return debitNotesApi.getAllDebitNotes(filters);
     },
     staleTime: 0,

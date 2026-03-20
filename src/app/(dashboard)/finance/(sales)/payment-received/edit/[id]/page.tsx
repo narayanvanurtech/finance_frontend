@@ -28,7 +28,7 @@ export default function PaymentReceivedEditPage() {
         return;
       }
 
-      //console.log("data...14324",data)
+      console.log("data...14324",data)
 
       // 🟢 FORMAT RESPONSE FOR FORM
       const firstPaymentRecord = data.paymentRecords?.[0] || {};
@@ -53,7 +53,7 @@ export default function PaymentReceivedEditPage() {
         paymentRecords: data.paymentRecords || [],
       };
 
-  //console.log("Formatted ,,...u347342",formatted);
+  console.log("Formatted ,,...u347342",formatted);
 
       setPayment(formatted);
       setLoading(false);

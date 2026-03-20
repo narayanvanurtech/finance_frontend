@@ -201,7 +201,7 @@ const BookingForm = () => {
         scheduledAt: scheduledAt
       };
 
-      //console.log('Submitting:', requestData); // For debugging
+      console.log('Submitting:', requestData); // For debugging
 
       
       const response = await bookDemo(requestData);

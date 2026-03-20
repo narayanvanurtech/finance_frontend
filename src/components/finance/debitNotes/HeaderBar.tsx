@@ -75,11 +75,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
       {/** Debug logs for purchase orders visibility */}
       {(() => {
         if (typeof window !== "undefined") {
-          //console.log("HeaderBar: selectedVendorId:", selectedVendorId);
-          //console.log(
-            "HeaderBar: purchaseOrders count:",
-            purchaseOrders.length
-          );
+          console.log("HeaderBar: selectedVendorId:", selectedVendorId);
         }
         return null;
       })()}

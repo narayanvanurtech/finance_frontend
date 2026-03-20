@@ -39,8 +39,8 @@ export default function CreateQuotationPage() {
   };
 
   // Log for debugging
-  //console.log("businessStoreDetails", businessStoreDetails);
-  //console.log("mappedBusinessDetails", mappedBusinessDetails);
+  console.log("businessStoreDetails", businessStoreDetails);
+  console.log("mappedBusinessDetails", mappedBusinessDetails);
 
   const defaultInitialValues: QuotationFormValues = {
     quotationTitle: "",

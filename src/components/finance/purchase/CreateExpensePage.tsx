@@ -166,7 +166,7 @@ const items = itemsData?.result?.items || [];
               { purchaseId: newPurchaseId, data: { file } },
               {
                 onSuccess: () => {
-                  //console.log(`Attachment ${file.name} uploaded successfully`);
+                  console.log(`Attachment ${file.name} uploaded successfully`);
                 },
                 onError: (error) => {
                   console.error(`Failed to upload ${file.name}:`, error);

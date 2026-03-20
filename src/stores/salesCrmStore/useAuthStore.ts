@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthStore>()((set) => ({
     Cookies.set("token", userData.tokens, COOKIE_OPTIONS);
     Cookies.set("refreshToken", userData.refreshTokens, COOKIE_OPTIONS);
     Cookies.set("user", JSON.stringify(userObj), COOKIE_OPTIONS);
-    //console.log(userObj);
+    console.log(userObj);
   },
 
   logoutUser: async (deviceToken?: string) => {

@@ -49,7 +49,7 @@ const EditMeetingPage = () => {
 
   // Get user's company ID
   const userCompanyId = user?.companyId || "";
-  //console.log("Initial user company ID:", userCompanyId);
+  console.log("Initial user company ID:", userCompanyId);
 
   const [formData, setFormData] = useState<CreateMeetingRequest>({
     meetingVenue: "",
@@ -82,7 +82,7 @@ const EditMeetingPage = () => {
   // Update form data when meeting is fetched
   useEffect(() => {
     if (currentMeeting) {
-      //console.log("Loading meeting data:", currentMeeting);
+      console.log("Loading meeting data:", currentMeeting);
 
       // Handle leadId - could be either an object (with _id) or a string
       const leadId =
@@ -92,7 +92,7 @@ const EditMeetingPage = () => {
 
       // Build formData with all required fields - prioritize user's companyId
       const companyId = user?.companyId || currentMeeting.companyId || "";
-      //console.log(
+      console.log(
         "Using company ID:",
         companyId,
         "from user:",
@@ -239,13 +239,13 @@ const EditMeetingPage = () => {
         meetingDataToSubmit.notes = formData.notes;
       }
 
-      //console.log(
+      console.log(
         "Updating meeting with ID:",
         id,
         "company ID:",
         meetingDataToSubmit.companyId
       );
-      //console.log("Full meeting data:", meetingDataToSubmit);
+      console.log("Full meeting data:", meetingDataToSubmit);
       await updateMeeting(id, meetingDataToSubmit);
 
       // Show success message

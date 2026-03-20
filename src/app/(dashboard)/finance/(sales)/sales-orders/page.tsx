@@ -180,7 +180,7 @@ export default function SalesOrdersPage() {
     setStatsLoading(true);
     try {
       const statsData = await getSalesOrderStats(user.companyId, "30");
-      //console.log("📊 Raw Stats Data:", statsData); // Debug ke liye
+      console.log("📊 Raw Stats Data:", statsData); // Debug ke liye
 
       // API response ke actual field names ko UI ke expected field names se map karein
       setStats({
@@ -207,7 +207,7 @@ export default function SalesOrdersPage() {
 
   useEffect(() => {
     if (user?.companyId && mounted) {
-      //console.log("🔄 Setting companyId and fetching...");
+      console.log("🔄 Setting companyId and fetching...");
       setCompanyId(user.companyId);
 
       // Check if there are active filters
@@ -364,7 +364,7 @@ export default function SalesOrdersPage() {
   };
 
   const handleDeleteClick = (order: any) => {
-    //console.log("clickdelete", order);
+    console.log("clickdelete", order);
 
     setDeleteDialog({
       open: true,

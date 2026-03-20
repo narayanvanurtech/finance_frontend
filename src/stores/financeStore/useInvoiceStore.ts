@@ -50,7 +50,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
           if (!companyId) {
             throw new Error("Company ID not found");
           }
-          //console.log("company debugg", user);
+          console.log("company debugg", user);
 
           // Validate that clientId is provided
           if (!invoice.clientId) {
@@ -187,7 +187,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             signature: invoice.signature || "",
           };
 
-          //console.log(
+          console.log(
             "📦 Create Invoice Payload:",
             JSON.stringify(payload, null, 2)
           );
@@ -241,7 +241,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
             invoices: [mappedInvoice, ...state.invoices],
           }));
 
-          //console.log(
+          console.log(
             "🟢 createInvoice CALLED. Updated invoices:",
             get().invoices
           );
@@ -265,7 +265,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
               (inv as any)._id === invoiceId ? { ...inv, ...updated } : inv
             ),
           }));
-          //console.log(
+          console.log(
             "🟢 updateInvoice CALLED. Updated invoices:",
             get().invoices
           );
@@ -295,7 +295,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
               (inv) => inv.invoiceNumber !== invoiceNumber
             ),
           }));
-          //console.log(
+          console.log(
             "🟢 removeInvoice CALLED. Updated invoices:",
             get().invoices
           );
@@ -307,7 +307,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       updateInvoiceStatus: async (invoiceId: string, status: string) => {
         try {
-          //console.log("🔄 Updating invoice status...", invoiceId, status);
+          console.log("🔄 Updating invoice status...", invoiceId, status);
 
           const response = await invoiceApi.updateInvoiceStatus(
             invoiceId,
@@ -322,7 +322,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
               ),
             }));
 
-            //console.log("✅ Status updated:", status);
+            console.log("✅ Status updated:", status);
             toast.success("Status updated");
           } else {
             throw new Error(response.message || "Failed to update status");
@@ -338,7 +338,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
       deleteInvoice: async (invoiceId) => {
         try {
-          //console.log("🔍 Deleting invoice...", invoiceId);
+          console.log("🔍 Deleting invoice...", invoiceId);
 
           // Find the invoice to get quotationId before deletion
           const invoiceToDelete = get().invoices.find(
@@ -347,14 +347,14 @@ export const useInvoiceStore = create<InvoiceStore>()(
           const quotationId = (invoiceToDelete as any)?.quotationId;
 
           const response = await invoiceApi.deleteInvoice(invoiceId);
-          //console.log("📦 Delete API Response:", response);
+          console.log("📦 Delete API Response:", response);
 
           if (response.success) {
-            //console.log("✅ Invoice deleted");
+            console.log("✅ Invoice deleted");
 
             // If this was converted from a quotation, refresh quotations
             if (quotationId) {
-              //console.log(
+              console.log(
                 "🔄 Refreshing quotations to update conversion status..."
               );
               try {
@@ -366,7 +366,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
                 // Refresh quotations to get updated data from backend
                 await quotationStore.fetchQuotations();
 
-                //console.log("✅ Quotations refreshed successfully");
+                console.log("✅ Quotations refreshed successfully");
               } catch (err) {
                 console.error("⚠️ Failed to refresh quotations:", err);
                 // Don't throw error, invoice is already deleted
@@ -379,7 +379,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
                 (inv) => (inv as any)._id !== invoiceId
               ),
             }));
-            //console.log(
+            console.log(
               "🟢 deleteInvoice CALLED. Updated invoices:",
               get().invoices
             );
@@ -388,7 +388,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
 
             // Refresh from backend after a small delay to avoid race conditions
             setTimeout(() => {
-              //console.log("🔄 Refreshing invoices after delete...");
+              console.log("🔄 Refreshing invoices after delete...");
               get()
                 .fetchInvoices()
                 .catch((err) => {
@@ -414,13 +414,13 @@ export const useInvoiceStore = create<InvoiceStore>()(
       getInvoices: () => get().invoices,
       fetchInvoices: async (page = 1, limit = 10) => {
         try {
-          //console.log("🔍 Fetching invoices from API...", { page, limit });
+          console.log("🔍 Fetching invoices from API...", { page, limit });
           const response = await invoiceApi.getAllInvoices({ page, limit });
-          //console.log("📦 API Response:", response);
+          console.log("📦 API Response:", response);
 
           if (response.success && response.data) {
-            //console.log("✅ Data received:", response.data);
-            //console.log("📄 Pagination:", response.pagination);
+            console.log("✅ Data received:", response.data);
+            console.log("📄 Pagination:", response.pagination);
 
             // Map API pagination to store pagination format
             const paginationData = response.pagination
@@ -436,7 +436,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
               invoices: response.data as any,
               pagination: paginationData,
             });
-            //console.log(
+            console.log(
               "🟢 fetchInvoices CALLED. Invoices fetched:",
               response.data
             );
@@ -453,13 +453,13 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
       searchInvoices: async (params: InvoiceQueryParams) => {
         try {
-          //console.log("🔍 Searching invoices with params...", params);
+          console.log("🔍 Searching invoices with params...", params);
           const response = await invoiceApi.searchInvoices(params);
-          //console.log("📦 Search API Response:", response);
+          console.log("📦 Search API Response:", response);
 
           if (response.success && response.data) {
-            //console.log("✅ Search results received:", response.data);
-            //console.log("📄 Pagination:", response.pagination);
+            console.log("✅ Search results received:", response.data);
+            console.log("📄 Pagination:", response.pagination);
 
             // Map API pagination to store pagination format
             const paginationData = response.pagination
@@ -475,7 +475,7 @@ export const useInvoiceStore = create<InvoiceStore>()(
               invoices: response.data as any,
               pagination: paginationData,
             });
-            //console.log(
+            console.log(
               "🟢 searchInvoices CALLED. Search results:",
               response.data
             );
@@ -492,15 +492,15 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
       fetchInvoiceById: async (invoiceId) => {
         try {
-          //console.log("🔍 Fetching invoice by ID...", invoiceId);
+          console.log("🔍 Fetching invoice by ID...", invoiceId);
           const response = await invoiceApi.getInvoiceById(invoiceId);
-          //console.log("📦 API Response:", response);
+          console.log("📦 API Response:", response);
 
           if (response.success && response.data) {
-            //console.log("✅ Invoice received:", response.data);
+            console.log("✅ Invoice received:", response.data);
             const invoiceData = response.data as any;
             set({ currentInvoice: invoiceData });
-            //console.log(
+            console.log(
               "🟢 fetchInvoiceById CALLED. Current invoice set:",
               invoiceData
             );
@@ -518,12 +518,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
       },
       duplicateInvoice: async (invoiceId) => {
         try {
-          //console.log("🔍 Duplicating invoice...", invoiceId);
+          console.log("🔍 Duplicating invoice...", invoiceId);
           const response = await invoiceApi.duplicateInvoice(invoiceId);
-          //console.log("📦 Duplicate API Response:", response);
+          console.log("📦 Duplicate API Response:", response);
 
           if (response.success && response.data) {
-            //console.log("✅ Invoice duplicated:", response.data);
+            console.log("✅ Invoice duplicated:", response.data);
 
             toast.success("Invoice duplicated successfully");
 
@@ -551,16 +551,16 @@ export const useInvoiceStore = create<InvoiceStore>()(
       // ===========================
       bulkAction: async (action, invoiceIds, data) => {
         try {
-          //console.log("🔍 Performing bulk action...", action, invoiceIds);
+          console.log("🔍 Performing bulk action...", action, invoiceIds);
           const response = await invoiceApi.bulkAction(
             action,
             invoiceIds,
             data
           );
-          //console.log("📦 Bulk action API Response:", response);
+          console.log("📦 Bulk action API Response:", response);
 
           if (response.success) {
-            //console.log("✅ Bulk action completed:", action);
+            console.log("✅ Bulk action completed:", action);
             toast.success(`Bulk action "${action}" completed successfully`);
 
             // Refresh invoices after bulk action
@@ -584,12 +584,12 @@ export const useInvoiceStore = create<InvoiceStore>()(
       // ===========================
       getInvoiceStats: async (period = "30") => {
         try {
-          //console.log("🔍 Fetching invoice stats...", period);
+          console.log("🔍 Fetching invoice stats...", period);
           const response = await invoiceApi.getInvoiceStats(period);
-          //console.log("📦 Stats API Response:", response);
+          console.log("📦 Stats API Response:", response);
 
           if (response.success && response.data) {
-            //console.log("✅ Stats received:", response.data);
+            console.log("✅ Stats received:", response.data);
             return response.data;
           } else {
             console.warn("⚠️ API returned success=false or no data:", response);

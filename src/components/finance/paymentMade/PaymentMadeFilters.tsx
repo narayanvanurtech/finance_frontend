@@ -98,7 +98,7 @@ const PaymentMadeFilters: React.FC<PaymentMadeFiltersProps> = ({
       }
     });
 
-    //console.log("🧹 Cleaned filters being sent:", cleanedFilters);
+    console.log("🧹 Cleaned filters being sent:", cleanedFilters);
     onSearch(cleanedFilters);
   }, [filters, onSearch]);
 

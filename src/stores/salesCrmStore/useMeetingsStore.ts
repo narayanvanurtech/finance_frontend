@@ -106,7 +106,7 @@ export const useMeetingsStore = create<MeetingsStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await getAllMeetings(filters);
-      //console.log("Full API response in store:", response);
+      console.log("Full API response in store:", response);
 
       if (response?.result && Array.isArray(response.result.meetings)) {
         set({
@@ -142,10 +142,10 @@ export const useMeetingsStore = create<MeetingsStore>((set, get) => ({
       }
       
       const response = await getUserMeetings(filters);
-      //console.log("User meetings API response:", response);
+      console.log("User meetings API response:", response);
 
       if (response && response.result && Array.isArray(response.result.meetings)) {
-        //console.log("Setting user meetings from response.result.meetings");
+        console.log("Setting user meetings from response.result.meetings");
         set({
           meetings: response.result.meetings,
           totalMeetings: response.result.total,
@@ -347,9 +347,9 @@ export const useMeetingsStore = create<MeetingsStore>((set, get) => ({
   deleteAllMeetings: async () => {
   set({ isLoading: true, error: null });
   try {
-    //console.log('Attempting to delete all meetings...');
+    console.log('Attempting to delete all meetings...');
     const response = await deleteAllMeetings();
-    //console.log('Delete all meetings response:', response);
+    console.log('Delete all meetings response:', response);
 
     if (response.success && response.statusCode === 200) {
       setTimeout(() => {
@@ -392,11 +392,11 @@ bulkDeleteMeetings: async (meetingIds: string[]) => {
 
   set({ isLoading: true, error: null });
   try {
-    //console.log('Starting bulk delete for meetings:', meetingIds);
+    console.log('Starting bulk delete for meetings:', meetingIds);
     
     // Call the bulk delete API endpoint with updated implementation
     const response = await bulkDeleteMeetings(meetingIds);
-    //console.log('Bulk delete response:', response);
+    console.log('Bulk delete response:', response);
 
     if (response.success) {
       // Update state first (for immediate feedback)

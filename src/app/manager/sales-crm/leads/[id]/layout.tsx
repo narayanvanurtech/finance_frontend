@@ -26,7 +26,7 @@ export default function LeadDetailLayout({
           collapsed={isSidebarCollapsed}
           toggleCollapse={toggleSidebar}
           onItemClick={(sectionId: string) => {
-            //console.log(`Section clicked: ${sectionId}`);
+            console.log(`Section clicked: ${sectionId}`);
           }}
         /> */}
 

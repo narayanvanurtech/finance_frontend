@@ -18,7 +18,7 @@ export default function InvoicePreviewPage() {
   const params = useParams();
   const router = useRouter();
   const invoiceId = params.id as string;
-  //console.log("Invoice ID:", invoiceId);
+  console.log("Invoice ID:", invoiceId);
   const [selectedTemplate, setSelectedTemplate] = useState("classic");
   const [invoiceData, setInvoiceData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

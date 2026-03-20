@@ -177,7 +177,7 @@ export default function CreateDebitNotePage() {
         payload.priority = values.priority;
       }
 
-      //console.log("📤 Sending payload to backend:", payload);
+      console.log("📤 Sending payload to backend:", payload);
 
       await createDebitNoteMutation.mutateAsync(payload);
       router.push("/user/finance/debit-notes");

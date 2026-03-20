@@ -65,7 +65,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await getAllLeads(companyId);
-      //console.log(response);
+      console.log(response);
       // Convert response data to Lead type
       const leads = response.data.response.map((item: any) => ({
         _id: item._id, // Use _id from response
@@ -167,7 +167,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await getUserLeads(userId, filters);
-      //console.log(response);
+      console.log(response);
       // Convert response data to Lead type
       const leads = response.data.data.map((item: any) => ({
         _id: item.id,
@@ -220,7 +220,7 @@ export const useLeadsStore = create<LeadsStore>((set, get) => ({
         totalPages: response.data.pages,
         filters: filters || {},
       });
-      //console.log(leads);
+      console.log(leads);
     } catch (error: any) {
       set({ error: error?.message || "Failed to fetch user leads" });
     } finally {

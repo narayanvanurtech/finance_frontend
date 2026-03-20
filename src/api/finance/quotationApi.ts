@@ -250,7 +250,7 @@ export interface QuotationQueryParams {
 
 // Helper function to clean and validate quotation ID
 const cleanQuotationId = (id: string | undefined | null): string => {
-  //console.log("cleanQuotationId called with:", id, "Type:", typeof id);
+  console.log("cleanQuotationId called with:", id, "Type:", typeof id);
   
   // Check for null, undefined, or empty - BEFORE any string conversion
   if (id === null || id === undefined) {
@@ -260,7 +260,7 @@ const cleanQuotationId = (id: string | undefined | null): string => {
   
   // Convert to string and trim
   const idString = String(id).trim();
-  //console.log("cleanQuotationId: After String() conversion:", idString);
+  console.log("cleanQuotationId: After String() conversion:", idString);
   
   // Check if it became "undefined" or "null" as strings (this happens when String(undefined) is called)
   if (idString === 'undefined' || idString === 'null' || idString === '' || idString === 'NaN') {
@@ -381,7 +381,7 @@ const quotationApi = {
   deleteQuotation: async (quotationId: string): Promise<DeleteResponse> => {
     try {
       const cleanId = cleanQuotationId(quotationId);
-      //console.log("Deleting quotation with ID:", cleanId, "Length:", cleanId.length);
+      console.log("Deleting quotation with ID:", cleanId, "Length:", cleanId.length);
       const response = await axiosInstance.delete<DeleteResponse>(
         `/api/v1/finance/sales/quotations/${cleanId}`
       );

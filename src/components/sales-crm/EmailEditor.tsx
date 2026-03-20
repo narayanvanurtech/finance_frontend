@@ -143,9 +143,9 @@ const EmailEditor: React.FC<EmailEditorProps> = ({
     const processed = replaceTokens(editorContent, tokens);
     onChange(processed);
 
-    //console.log("Tokens processed:", tokens);
-    //console.log("Original content:", editorContent);
-    //console.log("Processed content:", processed);
+    console.log("Tokens processed:", tokens);
+    console.log("Original content:", editorContent);
+    console.log("Processed content:", processed);
   }, [tokens, editorContent, onChange, replaceTokens, isInitialized]);
 
   // Show token dialog when tokens are detected

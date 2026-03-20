@@ -86,13 +86,13 @@ const MeetingsPage = () => {
   // Fetch meetings on component mount or when parameters change
   useEffect(() => {
     if (!user?.companyId) {
-      //console.log("No companyId available, skipping meeting fetch");
+      console.log("No companyId available, skipping meeting fetch");
       return;
     }
     
     if (selectedLeadId) {
       // Fetch meetings for a specific lead
-      //console.log(`Fetching meetings for leadId: ${selectedLeadId}, companyId: ${user.companyId}`);
+      console.log(`Fetching meetings for leadId: ${selectedLeadId}, companyId: ${user.companyId}`);
       useMeetingsStore.getState().fetchUserMeetings({
         page: currentPage,
         limit: itemsPerPage,
@@ -101,7 +101,7 @@ const MeetingsPage = () => {
       });
     } else {
       // Fetch all meetings
-      //console.log(`Fetching all meetings for companyId: ${user.companyId}, page: ${currentPage}, limit: ${itemsPerPage}`);
+      console.log(`Fetching all meetings for companyId: ${user.companyId}, page: ${currentPage}, limit: ${itemsPerPage}`);
       fetchMeetings({
         page: currentPage,
         limit: itemsPerPage,
@@ -112,7 +112,7 @@ const MeetingsPage = () => {
     // Debug log for data structure
     const debugInterval = setTimeout(() => {
       if (meetings?.length > 0) {
-        //console.log("Current meeting structure (first item):", meetings[0]);
+        console.log("Current meeting structure (first item):", meetings[0]);
       }
     }, 2000);
 
@@ -150,7 +150,7 @@ const MeetingsPage = () => {
       (index) => meetings![index]._id // Use _id which is always defined in the new API response
     );
 
-    // Removed //console.log to improve performance
+    // Removed console.log to improve performance
 
     if (validSelectedRows.length !== selectedRows.length) {
       setSelectedRows(validSelectedRows);
@@ -201,20 +201,20 @@ const MeetingsPage = () => {
     meetingId: string,
     meetingTitle: string
   ) => {
-    // Removed //console.log to improve performance
+    // Removed console.log to improve performance
 
     if (action === "Edit") {
       router.push(`/sales-crm/meetings/${meetingId}/edit`);
     } else if (action === "Delete") {
       // Open delete confirmation dialog
       const meeting = meetings[index];
-      // Removed //console.log to improve performance
+      // Removed console.log to improve performance
       setMeetingToDelete({ id: meetingId, title: meetingTitle });
       setShowDeleteModal(true);
     } else if (action === "Reschedule") {
       router.push(`/sales-crm/meetings/${meetingId}/edit?reschedule=true`);
     } else if (action === "Send Reminder") {
-      // Removed //console.log to improve performance
+      // Removed console.log to improve performance
     }
 
     handleMoreClose(index);
@@ -228,7 +228,7 @@ const MeetingsPage = () => {
   const handleDeleteConfirm = async () => {
     if (!meetingToDelete || isDeleting) return;
 
-    //console.log("Deleting meeting with ID:", meetingToDelete.id);
+    console.log("Deleting meeting with ID:", meetingToDelete.id);
 
     setIsDeleting(true);
     setDeleteError(null);

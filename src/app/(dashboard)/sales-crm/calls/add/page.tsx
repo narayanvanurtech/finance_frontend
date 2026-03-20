@@ -101,8 +101,8 @@ export default function AddCallPage() {
         throw new Error("Company ID is required");
       }
       
-      //console.log("Creating call for Lead ID:", selectedLead);
-      //console.log("Selected lead full object:", leads.find(l => (l.id || l._id) === selectedLead));
+      console.log("Creating call for Lead ID:", selectedLead);
+      console.log("Selected lead full object:", leads.find(l => (l.id || l._id) === selectedLead));
       
       await addCall(selectedLead, formData);
       router.push("/sales-crm/calls");
@@ -185,8 +185,8 @@ export default function AddCallPage() {
                     value={selectedLead}
                     onChange={(e) => {
                       const leadId = e.target.value.trim(); // Ensure no extra whitespace
-                      //console.log("Raw dropdown value:", e.target.value);
-                      //console.log("Cleaned lead ID:", leadId);
+                      console.log("Raw dropdown value:", e.target.value);
+                      console.log("Cleaned lead ID:", leadId);
                       setSelectedLead(leadId);
                     }}
                     disabled={isSubmitting || leadsLoading}

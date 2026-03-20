@@ -151,10 +151,10 @@ export default function PaymentsMadeForm({
   // Debug log (only run once when data changes)
   React.useEffect(() => {
     if (vendors.length > 0) {
-      //console.log("📊 Vendors with Purchase Orders:");
+      console.log("📊 Vendors with Purchase Orders:");
       vendors.forEach((v: any) => {
         const count = vendorPOCounts.get(v._id) || 0;
-        //console.log(`  - ${v.name} (${v._id}): ${count} PO(s)`);
+        console.log(`  - ${v.name} (${v._id}): ${count} PO(s)`);
       });
     }
   }, [vendors, vendorPOCounts]);
@@ -253,7 +253,7 @@ export default function PaymentsMadeForm({
   // Filter purchase orders for this vendor (memoized to prevent re-renders)
   const vendorPurchases = React.useMemo(() => {
     if (!vendorId || vendorId === "new") {
-      //console.log("❌ No vendor selected");
+      console.log("❌ No vendor selected");
       return [];
     }
 
@@ -263,7 +263,7 @@ export default function PaymentsMadeForm({
 
       // Console logs show vendorId is coming as a string in the object
       // Example from logs: {poVendorId: '694398e89abdf58be860aa7a', ...}
-      //console.log(`  PO ${po.purchaseOrderNumber}:`, {
+      console.log(`  PO ${po.purchaseOrderNumber}:`, {
         rawVendorId: po.vendorId,
         vendorIdType: typeof po.vendorId,
       });
@@ -294,7 +294,7 @@ export default function PaymentsMadeForm({
     });
 
     if (filtered.length > 0) {
-      //console.log(
+      console.log(
         "✅ Matched Purchase Orders:",
         filtered.map((po: any) => ({
           id: po._id,
@@ -308,7 +308,7 @@ export default function PaymentsMadeForm({
   // Handle purchase order selection and auto-fill amount (memoized callback)
   const handlePurchaseSelect = React.useCallback(
     (purchaseId: string) => {
-      //console.log("🔍 Purchase Order ID Selected:", purchaseId);
+      console.log("🔍 Purchase Order ID Selected:", purchaseId);
       setSelectedPurchase(purchaseId);
 
       if (purchaseId && purchaseId !== "none" && purchaseId !== "loading") {
@@ -316,12 +316,12 @@ export default function PaymentsMadeForm({
           (po: any) => po._id === purchaseId
         );
 
-        //console.log("🔍 Found Purchase:", purchase);
+        console.log("🔍 Found Purchase:", purchase);
 
         if (purchase) {
-          //console.log("🔍 Purchase Items:", purchase.items);
-          //console.log("🔍 Purchase Shipping:", purchase.shipping);
-          //console.log("🔍 Purchase Grand Total:", purchase.grandTotal);
+          console.log("🔍 Purchase Items:", purchase.items);
+          console.log("🔍 Purchase Shipping:", purchase.shipping);
+          console.log("🔍 Purchase Grand Total:", purchase.grandTotal);
 
           // Try to use grandTotal first, if not available calculate from items
           let total = 0;
@@ -335,10 +335,10 @@ export default function PaymentsMadeForm({
               ) + (Number(purchase.shipping) || 0);
           }
 
-          //console.log("💰 Calculated Total:", total);
+          console.log("💰 Calculated Total:", total);
           setAmountPaid(total.toString());
         } else {
-          //console.log("❌ Purchase not found in vendorPurchases");
+          console.log("❌ Purchase not found in vendorPurchases");
         }
       } else {
         setAmountPaid("");

@@ -251,7 +251,7 @@ const clientApi = {
 
   // Get all clients by user
   getAllClientsByUser: async (companyId: string): Promise<ClientsResponse> => {
-    //console.log("CompanyId user",companyId)
+    console.log("CompanyId user",companyId)
     try {
       const response = await axios.get<ClientsResponse>(
         `/api/v1/finance/sales/client/getAllClientsByUser/${companyId}`,
@@ -289,7 +289,7 @@ updateClientDetails: async (
       clientData,
     );
 
-    //console.log("Client Updated Successfully", response.data);
+    console.log("Client Updated Successfully", response.data);
 
     if (response.data?.message) {
       toast.success(response.data.message);

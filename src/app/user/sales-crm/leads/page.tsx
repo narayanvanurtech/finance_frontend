@@ -58,7 +58,7 @@ const LeadPage = () => {
   };
 
   useEffect(() => {
-    //console.log(user?._id);
+    console.log(user?._id);
     if (user?._id) {
       fetchUserLeads(user?._id, {
         page: currentPage,
@@ -166,7 +166,7 @@ const LeadPage = () => {
         break;
 
       default:
-        //console.log(`Action '${action}' on row ${index}`);
+        console.log(`Action '${action}' on row ${index}`);
     }
 
     handleMoreClose(index);

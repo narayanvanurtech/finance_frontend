@@ -186,7 +186,7 @@ export const useQuotationStore = create<QuotationStore>()((set, get) => ({
   previewQuotationNumber: async () => {
     try {
       const res = await quotationApi.previewQuotationNumber();
-      //console.log("Preview Quotation",res.data)
+      console.log("Preview Quotation",res.data)
       return res.data.quotationNumber;
     } catch (error: any) {
       // const msg = error?.response?.data?.message || "Failed to generate number";

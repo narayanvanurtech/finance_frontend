@@ -75,7 +75,7 @@ const CallsPage = () => {
     setSelectedRows(newSelectedRows);
 
     const selectedIds = newSelectedRows.map((index) => calls[index].callId);
-    //console.log("Selected call IDs:", selectedIds);
+    console.log("Selected call IDs:", selectedIds);
     setSelectedItems(selectedIds);
   };
 
@@ -87,7 +87,7 @@ const CallsPage = () => {
     setSelectedRows(newSelectedRows);
 
     const selectedIds = newSelectedRows.map((index) => calls[index].callId);
-    //console.log("Updated selected call IDs:", selectedIds);
+    console.log("Updated selected call IDs:", selectedIds);
     setSelectedItems(selectedIds);
   };
   const handleMoreClick = (
@@ -125,7 +125,7 @@ const CallsPage = () => {
 
   const handleOptionClick = async (action: string, index: number) => {
     const call = calls[index];
-    //console.log(`Action '${action}' on call ${call.callId}`); // Using callId
+    console.log(`Action '${action}' on call ${call.callId}`); // Using callId
 
     switch (action) {
       case "Edit":
@@ -142,23 +142,23 @@ const CallsPage = () => {
 
       case "Assign Owner":
         // Implement owner assignment if needed
-        //console.log(`Assign Owner action on ${call.callPurpose}`);
+        console.log(`Assign Owner action on ${call.callPurpose}`);
         break;
 
       case "Log Follow-Up":
         // Implement follow-up logging if needed
-        //console.log(`Log Follow-Up action on ${call.callPurpose}`);
+        console.log(`Log Follow-Up action on ${call.callPurpose}`);
         break;
 
       default:
-        //console.log(`Action '${action}' on row ${index}`);
+        console.log(`Action '${action}' on row ${index}`);
     }
 
     handleMoreClose(index);
   };
 
   const handleRowClick = (item: Call) => {
-    //console.log("Viewing call details:", item.callId); 
+    console.log("Viewing call details:", item.callId); 
     router.push(`/sales-crm/calls/${item.callId}`);
   };
 

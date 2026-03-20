@@ -134,7 +134,7 @@ const OpenActivities: React.FC<OpenActivitiesProps> = ({ leadId }) => {
         companyId: user.companyId
       });
       
-      //console.log("Meeting data from API:", response.result.meetings); // Debug log to check structure
+      console.log("Meeting data from API:", response.result.meetings); // Debug log to check structure
       
       if (response.success && Array.isArray(response.result.meetings)) {
         setMeetings(response.result.meetings);
@@ -303,7 +303,7 @@ const OpenActivities: React.FC<OpenActivitiesProps> = ({ leadId }) => {
       // Find meeting by either id or _id
       const meeting = meetings.find(m => m._id === itemId);
       if (meeting) {
-        //console.log("Found meeting:", meeting, "Using ID:", meeting._id);
+        console.log("Found meeting:", meeting, "Using ID:", meeting._id);
         setMeetingToDelete({
           id: meeting._id,
           title: meeting.title || meeting.meetingVenue || "this meeting"
@@ -316,7 +316,7 @@ const OpenActivities: React.FC<OpenActivitiesProps> = ({ leadId }) => {
       if (task) {
         // Use task id from the new API structure
         const idToUse = task.id;
-        //console.log("Found task:", task, "Using ID:", idToUse);
+        console.log("Found task:", task, "Using ID:", idToUse);
         setTaskToDelete({
           id: idToUse,
           subject: task.title || "this task"
@@ -333,7 +333,7 @@ const OpenActivities: React.FC<OpenActivitiesProps> = ({ leadId }) => {
 
     try {
       setIsDeletingMeeting(true);
-      //console.log("Deleting meeting with ID:", meetingToDelete.id);
+      console.log("Deleting meeting with ID:", meetingToDelete.id);
       
       // Use the meetingsApi deleteMeeting function
       const { deleteMeeting } = await import('@/api/meetingsApi');
@@ -355,7 +355,7 @@ const OpenActivities: React.FC<OpenActivitiesProps> = ({ leadId }) => {
 
     try {
       setIsDeletingTask(true);
-      //console.log("Deleting task with ID:", taskToDelete.id);
+      console.log("Deleting task with ID:", taskToDelete.id);
       await deleteTask(taskToDelete.id);
       setShowDeleteTaskModal(false);
       setTaskToDelete(null);

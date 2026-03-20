@@ -69,17 +69,17 @@ export default function MobileSidebar(props: MobileSidebarProps) {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const basePath = user?.role === "admin" ? "/sales-crm" : "/user/sales-crm";
-  //console.log("Base Path:", basePath);
-  //console.log("User Role:", user?.role);
+  console.log("Base Path:", basePath);
+  console.log("User Role:", user?.role);
 
   // here i want to print all the user data
-  //console.log("User Data:", user?.companyId);
+  console.log("User Data:", user?.companyId);
   
   // Store the company ID in localStorage for use throughout the app
   useEffect(() => {
     if (user?.companyId) {
       localStorage.setItem('currentCompanyId', user.companyId);
-      //console.log("Company ID stored in localStorage:", user.companyId);
+      console.log("Company ID stored in localStorage:", user.companyId);
     }
   }, [user?.companyId]);
 

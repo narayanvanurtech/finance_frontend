@@ -48,7 +48,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   },
 
   fetchClientsByUser: async (companyId: string) => {
-    //console.log("Company Id",companyId)
+    console.log("Company Id",companyId)
     try {
       set({ isLoading: true, error: null });
       const response = await clientApi.getAllClientsByUser(companyId);
@@ -102,7 +102,7 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   },
 
   updateClient: async (companyId: string, clientId: string, clientData: UpdateClientPayload) => {
-    //console.log("Buddle of data",companyId,clientId,clientData)
+    console.log("Buddle of data",companyId,clientId,clientData)
     try {
       set({ isLoading: true, error: null });
       const response = await clientApi.updateClientDetails(companyId, clientId, clientData);

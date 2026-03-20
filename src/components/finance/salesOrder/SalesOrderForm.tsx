@@ -87,9 +87,9 @@ const SalesOrderForm: React.FC<any> = ({
   const products = mockProducts || [];
   const clients = useClientStore((state) => state.clients);
 
-  //console.log("🎯 SalesOrderForm - Initial Values:", initialValues);
-  //console.log("🎯 Business Details:", initialValues.businessDetails);
-  //console.log("🎯 Round Off Initial:", initialValues.roundOff);
+  console.log("🎯 SalesOrderForm - Initial Values:", initialValues);
+  console.log("🎯 Business Details:", initialValues.businessDetails);
+  console.log("🎯 Round Off Initial:", initialValues.roundOff);
 
   const [orderTitle, setOrderTitle] = useState(initialValues.orderTitle);
   const [orderNumber] = useState(initialValues.orderNumber);
@@ -166,8 +166,8 @@ const SalesOrderForm: React.FC<any> = ({
   );
   const [type] = useState(initialValues.type);
 
-  //console.log("🔍 Round Off State:", roundOff);
-  //console.log("🔍 Business Details State:", businessDetails);
+  console.log("🔍 Round Off State:", roundOff);
+  console.log("🔍 Business Details State:", businessDetails);
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
@@ -282,10 +282,10 @@ const SalesOrderForm: React.FC<any> = ({
       const itemId = parsed.itemId;
   const token  = localStorage.getItem("token")
   
-      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    //console.log(companyId)
+    console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -293,10 +293,10 @@ const SalesOrderForm: React.FC<any> = ({
         withCredentials:true
       })
   
-      //console.log("res,res,res===>",res)
+      console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      //console.log("Scanned product:", product);
+      console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -326,7 +326,7 @@ const SalesOrderForm: React.FC<any> = ({
       toast.success("Item added successfully");
   
     } catch (err) {
-      //console.log(err);
+      console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -538,11 +538,11 @@ const SalesOrderForm: React.FC<any> = ({
       cessList,
     };
 
-    //console.log("📤 Form Submit Values:", formValues);
-    //console.log("🔍 Business Details:", businessDetails);
-    //console.log("🔍 Client Details:", clientDetails);
-    //console.log("🔍 Round Off:", roundOff);
-    //console.log("🔍 Tax Type:", taxType);
+    console.log("📤 Form Submit Values:", formValues);
+    console.log("🔍 Business Details:", businessDetails);
+    console.log("🔍 Client Details:", clientDetails);
+    console.log("🔍 Round Off:", roundOff);
+    console.log("🔍 Tax Type:", taxType);
 
     onSubmit(formValues);
     if (onSuccess) onSuccess();

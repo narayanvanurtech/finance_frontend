@@ -58,11 +58,11 @@ const items = itemsData?.result?.items || [];
 
   // Debug logging
   useEffect(() => {
-    //console.log("Purchase ID:", purchaseId);
-    //console.log("Purchase Data:", purchaseData);
-    //console.log("Is Loading:", isLoading);
-    //console.log("Is Error:", isError);
-    //console.log("Error:", error);
+    console.log("Purchase ID:", purchaseId);
+    console.log("Purchase Data:", purchaseData);
+    console.log("Is Loading:", isLoading);
+    console.log("Is Error:", isError);
+    console.log("Error:", error);
   }, [purchaseId, purchaseData, isLoading, isError, error]);
 
   // Early return if no purchase ID
@@ -192,11 +192,11 @@ const items = itemsData?.result?.items || [];
         taxType: purchase.taxType || "exclusive",
       };
 
-      //console.log("📦 Mapped Vendor Details:", vendorDetails);
-      //console.log("📦 Raw Items from API:", purchase.items);
-      //console.log("📦 Mapped Items:", formValues.items);
-      //console.log("📦 Mapped Phases:", mappedPhases);
-      //console.log("📦 Tax Type:", purchase.taxType);
+      console.log("📦 Mapped Vendor Details:", vendorDetails);
+      console.log("📦 Raw Items from API:", purchase.items);
+      console.log("📦 Mapped Items:", formValues.items);
+      console.log("📦 Mapped Phases:", mappedPhases);
+      console.log("📦 Tax Type:", purchase.taxType);
       setInitialValues(formValues);
     }
   }, [purchaseData]);
@@ -251,7 +251,7 @@ const items = itemsData?.result?.items || [];
       notes: values.notes || "",
     };
 
-    //console.log("📤 Update Payload:", payload);
+    console.log("📤 Update Payload:", payload);
 
     updatePurchase(
       { purchaseId, data: payload },
@@ -265,7 +265,7 @@ const items = itemsData?.result?.items || [];
                 { purchaseId, data: { file } },
                 {
                   onSuccess: () => {
-                    //console.log(
+                    console.log(
                       `Attachment ${file.name} uploaded successfully`
                     );
                   },

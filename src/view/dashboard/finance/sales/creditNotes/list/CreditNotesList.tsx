@@ -143,8 +143,8 @@ export default function CreditNotesList() {
   // Debug logging
   useEffect(() => {
     if (data) {
-      //console.log("Credit Notes Data:", data);
-      //console.log("Credit Notes Array:", creditNotes);
+      console.log("Credit Notes Data:", data);
+      console.log("Credit Notes Array:", creditNotes);
     }
     if (error) {
       console.error("Credit Notes Error:", error);

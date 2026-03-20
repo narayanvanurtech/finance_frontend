@@ -39,7 +39,7 @@ export default function EditDeliveryChallanPage() {
       try {
         setLoading(true);
         setError(null);
-        //console.log("Fetching challan with ID:", challanId);
+        console.log("Fetching challan with ID:", challanId);
         await fetchChallanById(challanId);
       } catch (err: any) {
         console.error("Error loading challan:", err);
@@ -53,11 +53,11 @@ export default function EditDeliveryChallanPage() {
   // Transform API data to form values when singleChallan changes
   useEffect(() => {
     if (!singleChallan) {
-      //console.log("No singleChallan data yet");
+      console.log("No singleChallan data yet");
       return;
     }
 
-    //console.log("Single Challan Data received:", singleChallan);
+    console.log("Single Challan Data received:", singleChallan);
 
     try {
       // Convert date from ISO format to YYYY-MM-DD
@@ -76,9 +76,9 @@ export default function EditDeliveryChallanPage() {
         (c) => c.id === clientIdToFind || c._id === clientIdToFind
       );
 
-      //console.log("Client ID to find:", clientIdToFind);
-      //console.log("Found client:", client);
-      //console.log("Available clients:", clients);
+      console.log("Client ID to find:", clientIdToFind);
+      console.log("Found client:", client);
+      console.log("Available clients:", clients);
 
       const formValues = {
         quotationTitle: singleChallan.title || "",
@@ -162,7 +162,7 @@ export default function EditDeliveryChallanPage() {
         status: singleChallan.status || "draft", // Add status field
       };
 
-      //console.log("Setting initial values:", formValues);
+      console.log("Setting initial values:", formValues);
       setInitialValues(formValues);
       setLoading(false);
     } catch (err: any) {
@@ -235,8 +235,8 @@ export default function EditDeliveryChallanPage() {
           taxConfiguration: values.taxConfiguration,
         };
 
-        //console.log("Updating challan with ID:", challanId);
-        //console.log("Updating challan with payload:", payload);
+        console.log("Updating challan with ID:", challanId);
+        console.log("Updating challan with payload:", payload);
         await updateChallan(challanId, payload);
         router.push("/finance/delivery-challans");
       }

@@ -222,7 +222,7 @@ const ClientDetailsPage = () => {
 
     try {
       await deleteClient(user.companyId, clientId);
-      //console.log("Client deleted, navigating to /finance/clients");
+      console.log("Client deleted, navigating to /finance/clients");
       router.push("/finance/clients");
     } catch (error) {
       console.error("Error deleting client:", error);
@@ -230,7 +230,7 @@ const ClientDetailsPage = () => {
   };
 
   const handleBack = () => {
-    //console.log("Navigating to /finance/clients");
+    console.log("Navigating to /finance/clients");
     router.push("/finance/clients");
   };
 
@@ -387,7 +387,7 @@ const ClientDetailsPage = () => {
 
 
 
-  //console.log("formData.logoUrl", formData.logoUrl);
+  console.log("formData.logoUrl", formData.logoUrl);
 
 
   return (

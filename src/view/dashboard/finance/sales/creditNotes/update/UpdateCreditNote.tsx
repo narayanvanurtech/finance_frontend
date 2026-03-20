@@ -54,12 +54,12 @@ export default function UpdateCreditNote() {
     error: fetchError,
   } = useGetCreditNoteById(creditNoteId);
   const creditNote = creditNoteResponse?.data;
- //console.log("object")
+ console.log("object")
   // Debug logging
   useEffect(() => {
     if (creditNoteResponse) {
-      //console.log("Credit Note Response:", creditNoteResponse);
-      //console.log("Credit Note Data:", creditNote);
+      console.log("Credit Note Response:", creditNoteResponse);
+      console.log("Credit Note Data:", creditNote);
     }
     if (fetchError) {
       console.error("Error fetching credit note:", fetchError);
@@ -357,7 +357,7 @@ export default function UpdateCreditNote() {
         notes: values.notes,
       };
      const res =  await updateMutation.mutateAsync(updatePayload);
-     //console.log("res.data credit updated ",res)
+     console.log("res.data credit updated ",res)
 if(res?.success){
   toast.success(res?.message)
   router.push("/finance/credit-notes");

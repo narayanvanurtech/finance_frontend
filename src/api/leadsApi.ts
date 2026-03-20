@@ -688,9 +688,9 @@ const leadsApi = {
     taskData: Partial<CreateTaskPayload>
   ) => {
     try {
-      //console.log("Updating task with leadId:", leadId);
-      //console.log("Updating task with taskId:", taskId);
-      //console.log("Task data being sent:", taskData);
+      console.log("Updating task with leadId:", leadId);
+      console.log("Updating task with taskId:", taskId);
+      console.log("Task data being sent:", taskData);
 
       const response = await axiosInstance.put(
         `/api/v1/lead/editTask/${leadId}/${taskId}`,

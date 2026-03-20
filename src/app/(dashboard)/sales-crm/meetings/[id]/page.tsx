@@ -20,7 +20,7 @@ const MeetingDetailsPage = () => {
 
   useEffect(() => {
     if (meetingId) {
-      //console.log('Fetching meeting details for ID:', meetingId);
+      console.log('Fetching meeting details for ID:', meetingId);
       fetchMeetingById(meetingId);
     }
   }, [meetingId, fetchMeetingById]);

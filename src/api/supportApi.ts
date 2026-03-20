@@ -84,12 +84,12 @@ export interface GetSupportTicketByIdResponse {
 export const createSupportTicket = async (
   data: CreateSupportTicketRequest
 ): Promise<CreateSupportTicketResponse> => {
-  //console.log(data)
+  console.log(data)
   const response = await axiosInstance.post<CreateSupportTicketResponse>(
     "/api/v1/support/createSupport",
     data
   );
-  //console.log(response.data)
+  console.log(response.data)
   return response.data;
 };
 
@@ -101,7 +101,7 @@ export const createSupportTicket = async (
 export const getAllSupportTicketsByCompany = async (
   companyId: string
 ): Promise<GetAllSupportTicketsByCompanyResponse> => {
-  //console.log(companyId)
+  console.log(companyId)
   const response =
     await axiosInstance.get<GetAllSupportTicketsByCompanyResponse>(
       `/api/v1/support/getSupportsByCompany/${companyId}`

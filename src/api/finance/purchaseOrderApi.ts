@@ -170,14 +170,14 @@ export const createPurchaseOrder = async (
 export const getAllPurchaseOrders = async (
   params?: any
 ): Promise<PurchaseOrdersResponse> => {
-  //console.log("🔍 getAllPurchaseOrders called with params:", params);
-  //console.log("🔍 Search parameter:", params?.search);
+  console.log("🔍 getAllPurchaseOrders called with params:", params);
+  console.log("🔍 Search parameter:", params?.search);
   const res = await axiosInstance.get(
     "/api/v1/finance/purchases/purchase-orders/getAllPurchaseOrders",
     { params }
   );
-  //console.log("✅ getAllPurchaseOrders response:", res.data);
-  //console.log("✅ Total results:", res.data?.result?.purchaseOrders?.length);
+  console.log("✅ getAllPurchaseOrders response:", res.data);
+  console.log("✅ Total results:", res.data?.result?.purchaseOrders?.length);
   return res.data;
 };
 

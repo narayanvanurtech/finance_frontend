@@ -46,9 +46,9 @@ export const useGetPayoutReceipts = (filters?: GetPayoutReceiptsFilters) => {
     queryKey: paymentMadeKeys.list(filters),
     queryFn: async () => {
       try {
-        //console.log("🔍 Fetching payments with filters:", filters);
+        console.log("🔍 Fetching payments with filters:", filters);
         const response = await paymentMadeApi.getAllPayoutReceipts(filters);
-        //console.log("✅ Payments fetched:", response);
+        console.log("✅ Payments fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching payout receipts:", error);

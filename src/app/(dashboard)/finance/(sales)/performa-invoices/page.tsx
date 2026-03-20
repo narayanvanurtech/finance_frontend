@@ -227,7 +227,7 @@ export default function PerformaInvoicesPage() {
     setStatsLoading(true);
     try {
       const statsData = await getPerformaInvoiceStats("30");
-      //console.log("📊 Performa Invoice Stats Data received:", statsData);
+      console.log("📊 Performa Invoice Stats Data received:", statsData);
 
       // Get actual count from store if stats API returns 0
       const actualCount = allPerformaInvoices?.length || 0;
@@ -258,7 +258,7 @@ export default function PerformaInvoicesPage() {
             : 0,
         period: statsData?.period || "30 days",
       };
-      //console.log("✅ Safe Stats being set:", safeStats);
+      console.log("✅ Safe Stats being set:", safeStats);
       setStats(safeStats);
     } catch (error) {
       console.error("Failed to load stats:", error);
@@ -279,7 +279,7 @@ export default function PerformaInvoicesPage() {
 
   // Log when store data changes
   useEffect(() => {
-    //console.log("📊 Invoices in store updated:", allPerformaInvoices.length);
+    console.log("📊 Invoices in store updated:", allPerformaInvoices.length);
   }, [allPerformaInvoices]);
 
   // Handle search and filters

@@ -24,7 +24,7 @@ const CallDetailsPage = () => {
 
   useEffect(() => {
     if (callId) {
-      //console.log('Fetching call details for ID:', callId);
+      console.log('Fetching call details for ID:', callId);
       fetchCallById(callId);
     }
   }, [callId, fetchCallById]);

@@ -35,8 +35,8 @@ const items = itemsData?.result?.items || [];
         setLoading(true);
         if (invoiceId) {
           const invoice = await fetchPerformaInvoiceById(invoiceId);
-          //console.log("Fetched Performa Invoice:", invoice);
-          //console.log(
+          console.log("Fetched Performa Invoice:", invoice);
+          console.log(
             "📊 Business Details from fetch:",
             invoice?.businessDetails
           );

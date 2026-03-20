@@ -169,7 +169,7 @@ const PerformaInvoiceForm: React.FC<any> = ({
   );
 
   // Debug log
-  //console.log("📊 PerformaInvoiceForm businessDetails:", businessDetails);
+  console.log("📊 PerformaInvoiceForm businessDetails:", businessDetails);
 
   // Enrich clientDetails from clients store if missing fields
   useEffect(() => {
@@ -192,7 +192,7 @@ const PerformaInvoiceForm: React.FC<any> = ({
       return;
     }
     
-    //console.log("🔍 Looking for client in store. clientId:", clientIdString, "clients count:", clients.length);
+    console.log("🔍 Looking for client in store. clientId:", clientIdString, "clients count:", clients.length);
 
     // Find client in store
     const foundClient = clients.find(
@@ -227,7 +227,7 @@ const PerformaInvoiceForm: React.FC<any> = ({
             email: hasValue(prev?.email) ? prev.email : (foundClient.email || ""),
             state: hasValue(prev?.state) ? prev.state : (foundClient.address?.state || ""),
           };
-          //console.log("📝 Updating clientDetails:", { prev, foundClient, updated });
+          console.log("📝 Updating clientDetails:", { prev, foundClient, updated });
           return updated;
         });
     }
@@ -271,13 +271,13 @@ const [showScanner, setShowScanner] = useState(false);
   const router =  useRouter()
 
   const handleItemChange = (idx: number, field: string, value: any) => {
-    //console.log(
+    console.log(
       `handleItemChange called: idx=${idx}, field=${field}, value=${value}`
     );
     setItems((prev: any) => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
-      //console.log(`Item after update:`, updated[idx]);
+      console.log(`Item after update:`, updated[idx]);
       // Recalculate amount
       const item = updated[idx];
       const baseAmount = (Number(item.qty) || 0) * (Number(item.rate) || 0);
@@ -285,7 +285,7 @@ const [showScanner, setShowScanner] = useState(false);
       // Calculate discount based on type
       let discountAmount = 0;
       const discountType = item.discountType || "flat";
-      //console.log(
+      console.log(
         `Discount calculation: discountType=${discountType}, discount=${item.discount}`
       );
       if (discountType === "flat") {
@@ -323,10 +323,10 @@ if (typeof window !== "undefined") {
       const parsed = JSON.parse(decodedText);
       const itemId = parsed.itemId;
   
-      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    //console.log(companyId)
+    console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -334,10 +334,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      //console.log("res,res,res===>",res)
+      console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      //console.log("Scanned product:", product);
+      console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -367,7 +367,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      //console.log(err);
+      console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -495,7 +495,7 @@ if (typeof window !== "undefined") {
   };
 
   const handleFormSubmit = () => {
-    //console.log("handleFormSubmit called");
+    console.log("handleFormSubmit called");
 
     // Validation with comprehensive error messages
     const newErrors: { [key: string]: string } = {};
@@ -539,9 +539,9 @@ if (typeof window !== "undefined") {
 
     setErrors(newErrors);
 
-    //console.log("Validation errors:", newErrors);
+    console.log("Validation errors:", newErrors);
     if (Object.keys(newErrors).length > 0) {
-      //console.log("Validation failed, not proceeding");
+      console.log("Validation failed, not proceeding");
       return;
     }
 
@@ -574,20 +574,20 @@ if (typeof window !== "undefined") {
       phases,
     };
 
-    //console.log("✅ Form validation passed!");
-    //console.log("Form data prepared:", formData);
-    //console.log("Items count:", items.length);
-    //console.log("Business Details:", businessDetails);
-    //console.log("Calling onSubmit with form data");
+    console.log("✅ Form validation passed!");
+    console.log("Form data prepared:", formData);
+    console.log("Items count:", items.length);
+    console.log("Business Details:", businessDetails);
+    console.log("Calling onSubmit with form data");
 
     onSubmit(formData);
 
     if (onSuccess) onSuccess();
   };
 
-      //console.log("📤 Sending Signature:", signature);
-//console.log("📤 Signature Length:", signature?.length);
-//console.log("📤 Show Signature:", showSignature);
+      console.log("📤 Sending Signature:", signature);
+console.log("📤 Signature Length:", signature?.length);
+console.log("📤 Show Signature:", showSignature);
  const {id} = useParams()
  
 const submitEmail =()=>{

@@ -142,12 +142,12 @@ const CreateMeetingPage = () => {
         companyId: user.companyId,
       };
       
-      //console.log("Creating meeting with data:", meetingDataToSubmit);
-      //console.log("Selected lead:", selectedLead);
-      //console.log("Company ID:", user.companyId);
+      console.log("Creating meeting with data:", meetingDataToSubmit);
+      console.log("Selected lead:", selectedLead);
+      console.log("Company ID:", user.companyId);
       
       await addMeeting(meetingDataToSubmit);
-      //console.log("Meeting created successfully");
+      console.log("Meeting created successfully");
       pushToRolePath('/sales-crm/meetings');
     } catch (error: any) {
       setError(error?.message || 'Failed to create meeting. Please try again.');

@@ -63,12 +63,12 @@ const MeetingsSidebar = ({ collapsed }: { collapsed: boolean }) => {
   const { meetings, fetchMeetings, fetchUserMeetings, isLoading, error } =
     useMeetingsStore();
   const { user } = useAuthStore();
-  //console.log("MeetingsSidebar - User:", user?.role);
+  console.log("MeetingsSidebar - User:", user?.role);
 
   useEffect(() => {
     // Only proceed if user object is available
     if (!user) {
-      //console.log("User not available yet, waiting...");
+      console.log("User not available yet, waiting...");
       return;
     }
 
@@ -80,7 +80,7 @@ const MeetingsSidebar = ({ collapsed }: { collapsed: boolean }) => {
     }
 
     // Fetch meetings based on user type - always use fetchMeetings with companyId
-    //console.log("Fetching meetings with companyId:", companyId);
+    console.log("Fetching meetings with companyId:", companyId);
     fetchMeetings({ companyId });
 
     // Note: If in the future you need to fetch meetings for a specific lead,
@@ -90,7 +90,7 @@ const MeetingsSidebar = ({ collapsed }: { collapsed: boolean }) => {
   // Helper function to get the meeting ID from different possible field names
   const getMeetingId = (meeting: any): string => {
     // Log meeting structure to help debug
-    //console.log("Meeting structure:", {
+    console.log("Meeting structure:", {
       _id: meeting._id,
       id: meeting.id,
       meetingId: meeting.meetingId,
@@ -103,7 +103,7 @@ const MeetingsSidebar = ({ collapsed }: { collapsed: boolean }) => {
   const handleMeetingClick = (meeting: any) => {
     const meetingId = getMeetingId(meeting);
     if (meetingId) {
-      //console.log(`Navigating to meeting: ${meetingId}`);
+      console.log(`Navigating to meeting: ${meetingId}`);
       // Use the correct path structure for the meeting detail page
       router.push(`/sales-crm/meetings/${meetingId}`);
     } else {

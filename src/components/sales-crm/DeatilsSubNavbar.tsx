@@ -43,7 +43,7 @@ const DetailsSubNavbar = ({
   const { currentLead, isLoading, error } = useLeadsStore();
   const { user } = useAuthStore();
 
-  //console.log("Current Lead Subnav:", currentLead);
+  console.log("Current Lead Subnav:", currentLead);
 
   // Remove the useEffect that was fetching data since the parent page handles this
   // The DetailsSubNavbar will now only display data that's already in the store

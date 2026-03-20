@@ -162,7 +162,7 @@ const LeadPage = () => {
         break;
 
       default:
-        //console.log(`Action '${action}' on row ${index}`);
+        console.log(`Action '${action}' on row ${index}`);
     }
 
     handleMoreClose(index);
@@ -171,8 +171,8 @@ const LeadPage = () => {
   const handleRowClick = (item: Lead) => {
     // Use leadId if available, otherwise fallback to _id
     const leadId = item.leadId || item._id;
-    //console.log("Navigating to lead details:", leadId);
-    //console.log("Lead data:", {
+    console.log("Navigating to lead details:", leadId);
+    console.log("Lead data:", {
       id: item._id,
       leadId: item.leadId,
       fullName: item.fullName,

@@ -72,7 +72,7 @@ const dealApi = {
       const url = queryString
         ? `/api/v1/deal/getAllDeals?${queryString}`
         : "/api/v1/deal/getAllDeals";
-      //console.log("API URL:", url);
+      console.log("API URL:", url);
       const response = await axios.get<DealsResponse>(url);
       return response.data;
     } catch (error) {
@@ -94,7 +94,7 @@ const dealApi = {
       const url = queryString
         ? `/api/v1/deal/getDeals?${queryString}`
         : "/api/v1/deal/getDeals";
-      //console.log("API URL:", url);
+      console.log("API URL:", url);
       const response = await axios.get<DealsResponse>(url);
       return response.data;
     } catch (error) {

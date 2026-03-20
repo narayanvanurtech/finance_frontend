@@ -74,19 +74,19 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
           return;
         }
 
-        //console.log("🏪 Store searchPayments called with:", filters);
+        console.log("🏪 Store searchPayments called with:", filters);
 
         try {
           set({ loading: true });
 
           // Try API search first
           try {
-            //console.log("📡 Calling API searchPayments...");
+            console.log("📡 Calling API searchPayments...");
             const res = await paymentReceivedApi.searchPayments(
               companyId,
               filters
             );
-            //console.log("✅ API Response:", res);
+            console.log("✅ API Response:", res);
             
             // Check if response has data
             if (res && res.data && Array.isArray(res.data)) {
@@ -152,7 +152,7 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
                   );
                 }
 
-                //console.log(`🔧 Applied client-side filters: ${filtered.length} payments`);
+                console.log(`🔧 Applied client-side filters: ${filtered.length} payments`);
                 set({ payments: filtered, loading: false });
               } else {
                 // Only search filter, trust API response
@@ -163,7 +163,7 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
             }
           } catch (apiError: any) {
             // If API doesn't support filtering, do client-side filtering
-            //console.log(
+            console.log(
               "⚠️ API filtering not available, using client-side filtering",
               apiError?.message || apiError
             );
@@ -241,7 +241,7 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
               );
             }
 
-            //console.log(
+            console.log(
               `🔧 Client-side filtered: ${filtered.length} payments (from ${allPayments.data.length} total)`
             );
             set({ payments: filtered, loading: false });
@@ -263,9 +263,9 @@ export const usePaymentReceivedStore = create<PaymentStore>()(
         }
 
         try {
-          //console.log("Loading payment stats for company:", companyId);
+          console.log("Loading payment stats for company:", companyId);
           const stats = await paymentReceivedApi.getPaymentStats(companyId);
-          //console.log("Stats received:", stats);
+          console.log("Stats received:", stats);
           set({ stats });
         } catch (error) {
           console.error("Failed to load stats:", error);

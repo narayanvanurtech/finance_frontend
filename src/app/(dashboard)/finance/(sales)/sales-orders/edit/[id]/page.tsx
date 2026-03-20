@@ -39,7 +39,7 @@ const items = itemsData?.result?.items || [];
   const orderId = Array.isArray(params.id) ? params.id[0] : params.id;
 
 
-  //console.log("Company Id Mcnn39874637",user?.companyId)
+  console.log("Company Id Mcnn39874637",user?.companyId)
 
   // Fetch sales order data
   useEffect(() => {
@@ -48,7 +48,7 @@ const items = itemsData?.result?.items || [];
         try {
           const order = await fetchSalesOrderById(orderId, user.companyId);
 
-          //console.log("🔍 Raw API Response:", order);
+          console.log("🔍 Raw API Response:", order);
 
           if (order) {
             // Track the order status
@@ -186,7 +186,7 @@ const items = itemsData?.result?.items || [];
               signature:order.signature
             });
 
-            //console.log("✅ Initial Values Set");
+            console.log("✅ Initial Values Set");
           }
         } catch (error) {
           console.error("❌ Fetch Error:", error);

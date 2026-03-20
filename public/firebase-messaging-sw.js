@@ -18,7 +18,7 @@ try {
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function (payload) {
-  //console.log("[firebase-messaging-sw.js] Received background message:", payload);
+  console.log("[firebase-messaging-sw.js] Received background message:", payload);
   const { title, body } = payload.notification;
 
   self.registration.showNotification(title, {

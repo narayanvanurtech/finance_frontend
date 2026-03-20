@@ -78,7 +78,7 @@ const createPO = async () => {
         }
       ]
     });
-    //console.log('Created PO:', response.result);
+    console.log('Created PO:', response.result);
   } catch (error) {
     console.error('Error creating PO:', error);
   }
@@ -93,7 +93,7 @@ const fetchPOs = async () => {
       sortBy: 'createdAt',
       sortOrder: 'desc'
     });
-    //console.log('Purchase Orders:', response.result.purchaseOrders);
+    console.log('Purchase Orders:', response.result.purchaseOrders);
   } catch (error) {
     console.error('Error fetching POs:', error);
   }
@@ -128,7 +128,7 @@ const MyComponent = () => {
     });
     
     if (result) {
-      //console.log('PO created successfully');
+      console.log('PO created successfully');
     }
   };
 
@@ -164,9 +164,9 @@ const MyComponent = () => {
   }, [fetchPurchaseOrders]);
 
   // Access state directly
-  //console.log('POs:', apiPurchaseOrders);
-  //console.log('Loading:', loading);
-  //console.log('Error:', error);
+  console.log('POs:', apiPurchaseOrders);
+  console.log('Loading:', loading);
+  console.log('Error:', error);
 };
 ```
 
@@ -301,9 +301,9 @@ Get purchase order statistics:
 
 ```typescript
 const stats = await getPurchaseOrderStats('2025-01-01', '2025-12-31');
-//console.log('Total POs:', stats.totalPOs);
-//console.log('Total Value:', stats.totalValue);
-//console.log('Average Order Value:', stats.avgOrderValue);
+console.log('Total POs:', stats.totalPOs);
+console.log('Total Value:', stats.totalValue);
+console.log('Average Order Value:', stats.avgOrderValue);
 ```
 
 ## Migration from Local Store

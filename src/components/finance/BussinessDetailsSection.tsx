@@ -61,7 +61,7 @@ const [addOpen, setAddOpen] = useState(false);
 
   
 
-    //console.log("businessStoreDetails:::_=>",businessStoreDetails)
+    console.log("businessStoreDetails:::_=>",businessStoreDetails)
 
   return (
     <>

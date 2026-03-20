@@ -59,7 +59,7 @@ export default function CreateSalesOrderPage() {
   }, [items]);
 
 
-  //console.log("mapperProducts....98767890",mappedProducts)
+  console.log("mapperProducts....98767890",mappedProducts)
 
   /**
    * Fetch order number
@@ -183,7 +183,7 @@ export default function CreateSalesOrderPage() {
         return;
       }
 
-      //console.log(".....nbgfrijcdhbgydsc........dcnhbdcgdgc....",values.items)
+      console.log(".....nbgfrijcdhbgydsc........dcnhbdcgdgc....",values.items)
 
 
       const sanitizedItems = values.items.map((item: any) => ({
@@ -198,7 +198,7 @@ export default function CreateSalesOrderPage() {
         unit: item.unit || "pcs",
       }));
 
-      //console.log("SanitizedItems",sanitizedItems)
+      console.log("SanitizedItems",sanitizedItems)
 
       const payload: CreateSalesOrderPayload = {
         clientId: values.clientId,
@@ -233,7 +233,7 @@ export default function CreateSalesOrderPage() {
 
 
 
-  //console.log("Sales Order",items)
+  console.log("Sales Order",items)
   return (
     <SalesOrderForm
       initialValues={defaultInitialValues}

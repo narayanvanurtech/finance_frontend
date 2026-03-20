@@ -131,11 +131,11 @@ export default function CreateItemPage() {
     [categoriesData]
   );
 
-  //console.log("categories:", categories);
+  console.log("categories:", categories);
 
   // Debug logging
   React.useEffect(() => {
-    //console.log("🔍 Category Debug:", {
+    console.log("🔍 Category Debug:", {
       companyId,
       categoriesCount: categories.length,
       categories,
@@ -295,7 +295,7 @@ export default function CreateItemPage() {
         }
 
 
-        //console.log("Items Data =====>>>>>>>",itemData)
+        console.log("Items Data =====>>>>>>>",itemData)
 
         const response = await createItem(itemData);
 

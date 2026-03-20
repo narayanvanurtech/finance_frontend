@@ -119,8 +119,8 @@ export default function PaymentsMadeListPage() {
   const stats = statsData?.result || {};
   const pagination = paymentsData?.result?.pagination;
 
-  //console.log("Stats result",statsData)
-  //console.log("Stats",  stats)
+  console.log("Stats result",statsData)
+  console.log("Stats",  stats)
 
 
   /** Mount + Load **/
@@ -189,7 +189,7 @@ export default function PaymentsMadeListPage() {
 
   /** Handle Filters **/
   const handleSearch = useCallback((filters: SearchFilters) => {
-    //console.log("🔍 handleSearch called with filters:", filters);
+    console.log("🔍 handleSearch called with filters:", filters);
     setCurrentFilters(filters);
     setCurrentPage(1); // React Query will auto-refetch when filters change
   }, []);

@@ -63,7 +63,7 @@ export const useRecycleBinStore = create<RecycleBinStore>((set) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await getAllDeleteLeads();
-      //console.log("API Response:", response); // Debug log
+      console.log("API Response:", response); // Debug log
 
       // Handle both response structures
       if (response && response.data) {
