@@ -308,21 +308,10 @@ const salesOrderApi = {
       // Build URL with companyId as query parameter (not path parameter)
       const baseUrl = `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice`;
       const url = companyId ? `${baseUrl}?companyId=${companyId}` : baseUrl;
-
-      console.log(
-        "salesOrderApi.convertToInvoice -> POST",
-        url,
-        "payload:",
-        data || {}
-      );
       const response = await axiosInstance.post<SalesOrderResponse>(
         url,
         data || {}
-      );
-      console.log(
-        "salesOrderApi.convertToInvoice <- response:",
-        response?.data
-      );
+      )
       return response.data;
     } catch (error) {
       throw error;

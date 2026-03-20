@@ -261,7 +261,7 @@ export default function PaymentsMadeForm({
       // Handle different vendorId structures
       let poVendorId = null;
 
-      // Console logs show vendorId is coming as a string in the object
+      console logs show vendorId is coming as a string in the object
       // Example from logs: {poVendorId: '694398e89abdf58be860aa7a', ...}
       console.log(`  PO ${po.purchaseOrderNumber}:`, {
         rawVendorId: po.vendorId,
