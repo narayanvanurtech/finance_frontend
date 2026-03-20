@@ -205,7 +205,7 @@ const ClosedActivities: React.FC<ClosedActivitiesProps> = ({ leadId }) => {
                     className="font-medium text-gray-900 mb-2 hover:text-blue-600 cursor-pointer transition-colors"
                     onClick={() => {
                       const taskId = task.taskId ;
-                      console.log("Task ID:", taskId);
+                      //console.log("Task ID:", taskId);
                       if (taskId) handleTaskClick(taskId);
                     }}
                   >

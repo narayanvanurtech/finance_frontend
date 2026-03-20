@@ -389,7 +389,7 @@ export default function ReportsPage() {
       router.push(report.link);
     } else {
       // Handle default report view or show coming soon message
-      console.log(`Opening report: ${report.name}`);
+      //console.log(`Opening report: ${report.name}`);
     }
   };
 

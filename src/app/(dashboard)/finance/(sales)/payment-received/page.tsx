@@ -182,7 +182,7 @@ export default function PaymentReceivedListPage() {
   /** Handle Filters **/
   const handleSearch = useCallback(
     async (filters: SearchFilters) => {
-      console.log("🔍 handleSearch called with filters:", filters);
+      //console.log("🔍 handleSearch called with filters:", filters);
       setCurrentFilters(filters);
       setCurrentPage(1);
       setLoading(true);
@@ -218,18 +218,18 @@ export default function PaymentReceivedListPage() {
         apiFilters.dateTo = filters.dateTo;
       }
 
-      console.log("📤 API Filters being sent:", apiFilters);
+      //console.log("📤 API Filters being sent:", apiFilters);
 
       try {
         // If no filters, fetch all payments
         if (Object.keys(apiFilters).length === 0) {
-          console.log("ℹ️ No filters applied, fetching all payments");
+          //console.log("ℹ️ No filters applied, fetching all payments");
           await fetchPayments();
         } else {
-          console.log("🔎 Applying filters:", apiFilters);
+          //console.log("🔎 Applying filters:", apiFilters);
           await searchPayments(apiFilters);
         }
-        console.log("✅ Search completed successfully");
+        //console.log("✅ Search completed successfully");
       } catch (error) {
         console.error("❌ Search failed:", error);
         toast.error("Filter search failed");
@@ -308,7 +308,7 @@ export default function PaymentReceivedListPage() {
   const isEmpty = !payments || payments.length === 0;
 
 
-  console.log("paginated",paginated)
+  //console.log("paginated",paginated)
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">

@@ -139,7 +139,7 @@ export default function DebitNotesPage() {
 
   // Handle filters
   const handleSearch = useCallback((filters: DebitNoteSearchFilters) => {
-    console.log("🔍 handleSearch called with filters:", filters);
+    //console.log("🔍 handleSearch called with filters:", filters);
     setCurrentFilters(filters);
     setPage(1); // React Query will auto-refetch when filters change
   }, []);

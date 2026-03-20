@@ -34,14 +34,14 @@ export default function EditPerformaInvoicePage() {
 
         // If not found in store, fetch from API
         if (!foundInvoice) {
-          console.log(
+          //console.log(
             "Performa Invoice not found in store, fetching from API..."
           );
           const result = await fetchPerformaInvoiceById(invoiceNumber);
           if (result) foundInvoice = result;
         }
 
-        console.log("Loaded performa invoice:", foundInvoice);
+        //console.log("Loaded performa invoice:", foundInvoice);
         setPerformaInvoice(foundInvoice);
       } catch (error) {
         console.error("Error loading performa invoice:", error);
@@ -143,7 +143,7 @@ export default function EditPerformaInvoicePage() {
     validUntil: performaInvoice.validUntil,
   };
 
-  console.log("Performa Invoice initialValues:", initialValues);
+  //console.log("Performa Invoice initialValues:", initialValues);
 
   const handleUpdate = async (values: PerformaInvoiceFormValues) => {
     setLoading(true);

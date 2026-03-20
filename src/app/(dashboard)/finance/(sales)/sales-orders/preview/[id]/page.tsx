@@ -20,7 +20,7 @@ export default function SalesOrderPreviewPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-  console.log("Sales Order ID from params:", orderId);
+  //console.log("Sales Order ID from params:", orderId);
 
   const [selectedTemplate, setSelectedTemplate] = useState("elite");
   const [orderData, setOrderData] = useState<any>(null);
@@ -53,7 +53,7 @@ export default function SalesOrderPreviewPage() {
         if (response.success && response.data) {
           const order = response.data;
 
-          console.log("API Response:", order); // Debug log
+          //console.log("API Response:", order); // Debug log
 
           // Helper function to format address
           const formatAddress = (address: any): string => {
@@ -147,7 +147,7 @@ export default function SalesOrderPreviewPage() {
             phases: [],
           };
 
-          console.log("Transformed Data:", transformedData); // Debug log
+          //console.log("Transformed Data:", transformedData); // Debug log
 
           setOrderData(transformedData);
         } else {

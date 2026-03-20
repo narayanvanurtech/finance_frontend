@@ -146,7 +146,7 @@ const DealPipeline = () => {
 
   // Convert store data to local deals format whenever dealStages changes
   useEffect(() => {
-    console.log("dealStages changed:", dealStages);
+    //console.log("dealStages changed:", dealStages);
     const allDeals: Deal[] = [];
     dealStages.forEach((stageData) => {
       stageData.deals.forEach((apiDeal) => {
@@ -177,7 +177,7 @@ const DealPipeline = () => {
         });
       });
     });
-    console.log("Setting local deals:", allDeals);
+    //console.log("Setting local deals:", allDeals);
     setDeals(allDeals);
   }, [dealStages]);
 

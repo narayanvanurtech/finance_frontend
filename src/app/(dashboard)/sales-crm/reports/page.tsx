@@ -135,7 +135,7 @@ const ReportsPage = () => {
   };
 
   const handleOptionClick = (action: string, index: number) => {
-    console.log(`Action '${action}' on row ${index}`);
+    //console.log(`Action '${action}' on row ${index}`);
     handleMoreClose(index);
   };
 

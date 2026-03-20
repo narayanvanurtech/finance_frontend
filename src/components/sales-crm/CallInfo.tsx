@@ -36,7 +36,7 @@ const CallInfo: React.FC<CallInfoProps> = ({ call }) => {
 
   const handleSave = async () => {
     try {
-      console.log("Saving call data:", formData);
+      //console.log("Saving call data:", formData);
       await updateCall(call.callId, formData);
       await fetchCallById(call._id);
       setIsEditing(false);

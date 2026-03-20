@@ -97,7 +97,7 @@ const InquiryForm = () => {
       return;
     }
 
-    console.log(formData)
+    //console.log(formData)
 
     setIsLoading(true);
     try {

@@ -240,11 +240,11 @@ const paymentMadeApi = {
         params.append("paymentMethod", filters.paymentMethod);
 
       const url = `/api/v1/finance/purchases/payout-receipts?${params.toString()}`;
-      console.log("🌐 API Request URL:", url);
-      console.log("🔍 Filters applied:", filters);
+      //console.log("🌐 API Request URL:", url);
+      //console.log("🔍 Filters applied:", filters);
 
       const response = await axiosInstance.get(url);
-      console.log("✅ API Response:", response.data);
+      //console.log("✅ API Response:", response.data);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

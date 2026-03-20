@@ -207,7 +207,7 @@ const [showScanner, setShowScanner] = useState(false);
     }
   );
 
-  // console.log("Signature....",signature)
+  // //console.log("Signature....",signature)
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
     if (initialValues) {
@@ -357,10 +357,10 @@ const handleQrScan = async (decodedText: string) => {
     const parsed = JSON.parse(decodedText);
     const itemId = parsed.itemId;
 
-    console.log("Item id (scanner) ::----->>>>>>>", itemId);
+    //console.log("Item id (scanner) ::----->>>>>>>", itemId);
 
     const companyId = localStorage.getItem("currentCompanyId");
-  console.log(companyId)
+  //console.log(companyId)
     const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
       headers:{
         "Authorization":`Bearer ${token}`
@@ -368,10 +368,10 @@ const handleQrScan = async (decodedText: string) => {
       withCredentials:true
     })
 
-    console.log("res,res,res===>",res)
+    //console.log("res,res,res===>",res)
     const product = res?.data?.result || res?.data;
 
-    console.log("Scanned product:", product);
+    //console.log("Scanned product:", product);
 
     if (!product) {
       toast.error("Item not found");
@@ -401,7 +401,7 @@ const handleQrScan = async (decodedText: string) => {
     toast.success("Item added successfully");
 
   } catch (err) {
-    console.log(err);
+    //console.log(err);
     toast.error("Invalid QR Code");
   }
 
@@ -409,7 +409,7 @@ const handleQrScan = async (decodedText: string) => {
 };
 
 
-console.log("Items Details ====>>>>>",items)
+//console.log("Items Details ====>>>>>",items)
 
   const handleAddItem = () => {
     setItems((prev) => [
@@ -612,7 +612,7 @@ console.log("Items Details ====>>>>>",items)
 
   // On submit, gather all state and call onSubmit
   const handleFormSubmit = () => {
-    console.log("handleFormSubmit called");
+    //console.log("handleFormSubmit called");
 
     // Validation
     const newErrors: { [key: string]: string } = {};
@@ -654,9 +654,9 @@ console.log("Items Details ====>>>>>",items)
 
     setErrors(newErrors);
 
-    console.log("Validation errors:", newErrors);
+    //console.log("Validation errors:", newErrors);
     if (Object.keys(newErrors).length > 0) {
-      console.log("Validation failed, not proceeding");
+      //console.log("Validation failed, not proceeding");
       return;
     }
 
@@ -700,13 +700,13 @@ console.log("Items Details ====>>>>>",items)
       phases: convertPhasesToApiFormat(phases),
     };
 
-    console.log("Signature inside the form submit",signature)
+    //console.log("Signature inside the form submit",signature)
 
-    console.log("✅ Form validation passed!");
-    console.log("Form data prepared:", formData);
-    console.log("Items count:", items.length);
-    console.log("Business Details:", businessDetails);
-    console.log("Calling onSubmit with form data");
+    //console.log("✅ Form validation passed!");
+    //console.log("Form data prepared:", formData);
+    //console.log("Items count:", items.length);
+    //console.log("Business Details:", businessDetails);
+    //console.log("Calling onSubmit with form data");
     onSubmit(formData);
     if (onSuccess) onSuccess();
   };

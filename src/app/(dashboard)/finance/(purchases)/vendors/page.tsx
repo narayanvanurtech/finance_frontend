@@ -284,21 +284,21 @@ export default function VendorsPage() {
     {
       label: "Export Selected",
       action: (selectedIds: string[]) => {
-        console.log("Exporting vendors:", selectedIds);
+        //console.log("Exporting vendors:", selectedIds);
         // Implement export functionality
       },
     },
     {
       label: "Archive Selected",
       action: (selectedIds: string[]) => {
-        console.log("Archiving vendors:", selectedIds);
+        //console.log("Archiving vendors:", selectedIds);
         // Implement archive functionality
       },
     },
     {
       label: "Send Email",
       action: (selectedIds: string[]) => {
-        console.log("Sending email to vendors:", selectedIds);
+        //console.log("Sending email to vendors:", selectedIds);
         // Implement email functionality
       },
     },

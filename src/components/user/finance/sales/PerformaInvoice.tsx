@@ -41,8 +41,8 @@ export default function CreatePerformaInvoicePage() {
         setInvoiceNumber(number);
       } catch (error: any) {
         console.error("❌ API ERROR:", error);
-        console.log("❌ API RESPONSE:", error.response?.data);
-        console.log("❌ API STATUS:", error.response?.status);
+        //console.log("❌ API RESPONSE:", error.response?.data);
+        //console.log("❌ API STATUS:", error.response?.status);
         // Fallback to manual generation
         setInvoiceNumber(generateInvoiceNumber());
       }
@@ -54,7 +54,7 @@ export default function CreatePerformaInvoicePage() {
   // Fetch clients on mount
   useEffect(() => {
     if (user?.companyId) {
-      console.log("Fetching clients for company:", user.companyId);
+      //console.log("Fetching clients for company:", user.companyId);
       fetchClients(user.companyId);
     }
   }, [user?.companyId, fetchClients]);
@@ -116,7 +116,7 @@ export default function CreatePerformaInvoicePage() {
   };
 
   const handleCreate = async (values: PerformaInvoiceFormValues) => {
-    console.log("Performa Invoice Data:", values);
+    //console.log("Performa Invoice Data:", values);
     setLoading(true);
     try {
       // Validate clientId is provided

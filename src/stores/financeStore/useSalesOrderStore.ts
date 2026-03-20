@@ -115,7 +115,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
 
         set({ loading: true, error: null });
         try {
-          console.log(
+          //console.log(
             "🔵 Fetching sales orders for companyId:",
             state.companyId
           );
@@ -140,7 +140,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
             loading: false,
           });
 
-          console.log(
+          //console.log(
             "✅ Store Updated - Sales Orders Count:",
             res.data?.length
           );
@@ -179,13 +179,13 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
       createSalesOrder: async (data, companyId) => {
         set({ loading: true, error: null });
         try {
-          console.log("🔵 Creating sales order with companyId:", companyId);
-          console.log("🔵 Payload:", data);
+          //console.log("🔵 Creating sales order with companyId:", companyId);
+          //console.log("🔵 Payload:", data);
 
           const res = await salesOrderApi.createSalesOrder(data, companyId);
 
-          console.log("✅ API Response:", res);
-          console.log("✅ Created Order:", res.data);
+          //console.log("✅ API Response:", res);
+          //console.log("✅ Created Order:", res.data);
 
           // Add new sales order to store list
           set((state) => ({
@@ -433,7 +433,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
 
         set({ loading: true, error: null });
         try {
-          console.log("store.convertToInvoice ->", {
+          //console.log("store.convertToInvoice ->", {
             orderId,
             companyId,
             data,
@@ -443,7 +443,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
             companyId,
             data
           );
-          console.log("store.convertToInvoice <- res:", res);
+          //console.log("store.convertToInvoice <- res:", res);
 
           // Update the local state to reflect the conversion
           set((state) => ({
@@ -467,7 +467,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
             const invoiceStore = useInvoiceStore.getState();
             // Fetch latest invoices (page 1 with default limit)
             await invoiceStore.fetchInvoices();
-            console.log("🔄 Invoices refreshed after conversion");
+            //console.log("🔄 Invoices refreshed after conversion");
           } catch (err) {
             console.error(
               "Failed to refresh invoice store after conversion:",
@@ -498,7 +498,7 @@ export const useSalesOrderStore = create<SalesOrderStore>()(
         set({ loading: true, error: null });
         try {
           // Debug log to verify selections sent to backend
-          console.log("Bulk action invoked", {
+          //console.log("Bulk action invoked", {
             action,
             orderIds,
             companyId: state.companyId,

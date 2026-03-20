@@ -108,7 +108,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
       }
     });
 
-    console.log("🧹 Cleaned filters being sent:", cleanedFilters);
+    //console.log("🧹 Cleaned filters being sent:", cleanedFilters);
     onSearch(cleanedFilters);
   }, [filters, onSearch]);
 

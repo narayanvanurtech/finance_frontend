@@ -137,7 +137,7 @@ export default function EditItemPage() {
     isLoading: itemLoading,
     error: itemError,
   } = useItemById(companyId, itemId);
-  console.log("itemData", itemData);
+  //console.log("itemData", itemData);
   const currentItem = itemData?.result;
 
   const {
@@ -270,7 +270,7 @@ export default function EditItemPage() {
 
       // Set image preview if exists
       if (currentItem.imageUrl) {
-        console.log(
+        //console.log(
           "sdfdsfdsfsdfdsfdsfdsfs",
           getImageUrl(currentItem.imageUrl)
         );

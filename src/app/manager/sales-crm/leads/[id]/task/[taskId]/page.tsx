@@ -58,8 +58,8 @@ const TaskDetailsPage = ({
       try {
         setLoading(true);
         const response = await leadsApi.getTask(params.id, params.taskId, activityType);
-        console.log('API Response data:', response.data);
-        console.log('Task ID from API response:', response.data.taskId);
+        //console.log('API Response data:', response.data);
+        //console.log('Task ID from API response:', response.data.taskId);
         
         setTask(response.data);
         setEditedTask({
@@ -102,15 +102,15 @@ const TaskDetailsPage = ({
       // Make sure taskId exists, fall back to params.taskId if it doesn't
       const taskId = task.taskId || params.taskId;
       
-      console.log('Lead ID from params:', params.id);
-      console.log('Task ID from URL params:', params.taskId);
-      console.log('Task ID from task object:', task.taskId);
-      console.log('Final Task ID being used:', taskId);
-      console.log('Edited task data being sent:', editedTask);
+      //console.log('Lead ID from params:', params.id);
+      //console.log('Task ID from URL params:', params.taskId);
+      //console.log('Task ID from task object:', task.taskId);
+      //console.log('Final Task ID being used:', taskId);
+      //console.log('Edited task data being sent:', editedTask);
       
       // Using the determined taskId
       await leadsApi.updateLeadsTask(params.id, taskId, editedTask);
-      console.log('Task updated successfully');
+      //console.log('Task updated successfully');
       
       // Also use the same taskId here for consistency
       const response = await leadsApi.getTask(params.id, taskId, activityType);

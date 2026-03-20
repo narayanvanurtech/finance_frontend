@@ -417,7 +417,7 @@ const TasksPipeline = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const isSelected = selectedTasks.includes(task.id);
-    console.log(
+    //console.log(
       "Selected:",
       isSelected,
       "TaskId:",

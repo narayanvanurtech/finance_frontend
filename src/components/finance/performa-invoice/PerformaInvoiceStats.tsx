@@ -34,8 +34,8 @@ const PerformaInvoiceStats: React.FC<PerformaInvoiceStatsProps> = ({
   stats,
   loading,
 }) => {
-  console.log("🎨 PerformaInvoiceStats Component - Received stats:", stats);
-  console.log("🎨 totalInvoices value:", stats?.totalInvoices);
+  //console.log("🎨 PerformaInvoiceStats Component - Received stats:", stats);
+  //console.log("🎨 totalInvoices value:", stats?.totalInvoices);
 
   if (loading) {
     return (

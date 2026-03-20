@@ -311,7 +311,7 @@ const performaInvoiceApi = {
     invoiceData: UpdatePerformaInvoicePayload,
     companyId?: string
   ): Promise<PerformaInvoiceResponse> => {
-    console.log("Updated Invoice Data ....",invoiceData)
+    //console.log("Updated Invoice Data ....",invoiceData)
     try {
       const response = await axiosInstance.put<PerformaInvoiceResponse>(
         `/api/v1/finance/sales/performa-invoices/update/${invoiceId}?companyId=${companyId}`,

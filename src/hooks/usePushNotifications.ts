@@ -10,13 +10,13 @@ const usePushNotifications = () => {
     try {
       const messaging = await getFirebaseMessaging();
       if (!messaging) {
-        console.log("Firebase Messaging is not supported.");
+        //console.log("Firebase Messaging is not supported.");
         return null;
       }
 
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        console.log("Notification permission not granted.");
+        //console.log("Notification permission not granted.");
         return null;
       }
 
@@ -30,7 +30,7 @@ const usePushNotifications = () => {
 
         // Set up message listener for foreground messages
         onMessage(messaging, (payload) => {
-          console.log("Foreground message received:", payload);
+          //console.log("Foreground message received:", payload);
         });
 
         return token;

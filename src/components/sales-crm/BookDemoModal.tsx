@@ -71,7 +71,7 @@ const BookingModal = ({ isOpen, onClose }: BookingModalProps) => {
       setIsSubmitted(true);
     }, 1000);
   };
-  console.log(formData);
+  //console.log(formData);
 
   const closeModal = () => {
     onClose();

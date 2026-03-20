@@ -59,9 +59,9 @@ const SelectVendorSection: React.FC<SelectVendorSectionProps> = ({
   });
   // Debug logs to help diagnose empty PO issue
   React.useEffect(() => {
-    console.log("SelectVendorSection: mockVendors count:", mockVendors.length);
-    console.log("SelectVendorSection: filteredVendors count:", filteredVendors.length);
-    if (mockVendors.length > 0) console.log("First vendor id:", String(mockVendors[0]._id));
+    //console.log("SelectVendorSection: mockVendors count:", mockVendors.length);
+    //console.log("SelectVendorSection: filteredVendors count:", filteredVendors.length);
+    if (mockVendors.length > 0) //console.log("First vendor id:", String(mockVendors[0]._id));
   }, [mockVendors, filteredVendors]);
   return (
     <Card className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 h-full flex flex-col">

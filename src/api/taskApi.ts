@@ -130,9 +130,9 @@ const taskApi = {
 
   deleteTask: async (taskId: string) => {
     try {
-      console.log('Deleting task with ID:', taskId);
+      //console.log('Deleting task with ID:', taskId);
       const response = await axios.delete(`/api/v1/task/deleteTask/${taskId}`);
-      console.log('Delete task response:', response.data);
+      //console.log('Delete task response:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('Delete task error:', error);

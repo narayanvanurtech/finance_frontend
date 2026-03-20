@@ -100,8 +100,8 @@ const EmailDialog: React.FC<EmailDialogProps> = ({
 
     setIsSending(true);
     try {
-      console.log("Sending email with subject:", subject);
-      console.log("Sending email with message:", message);
+      //console.log("Sending email with subject:", subject);
+      //console.log("Sending email with message:", message);
       const filledSubject = fillTemplate(subject, lead);
       const filledMessage = fillTemplate(message, lead);
       await onSend(filledSubject, filledMessage);

@@ -20,7 +20,7 @@ export default function QuotationPreviewPage() {
   const params = useParams();
   const router = useRouter();
   const quotationId = params.id as string;
-  console.log("Quotation ID from params:", quotationId);
+  //console.log("Quotation ID from params:", quotationId);
 
   const [selectedTemplate, setSelectedTemplate] = useState("elite");
   const [quotationData, setQuotationData] = useState<any>(null);
@@ -42,8 +42,8 @@ export default function QuotationPreviewPage() {
 
         if (response.success && response.data) {
           const quote = response.data;
-          console.log("quote ..mvnkncnkjvnjkc",quote)
-          console.log("API Response:", quote); // Debug log
+          //console.log("quote ..mvnkncnkjvnjkc",quote)
+          //console.log("API Response:", quote); // Debug log
 
           // Helper function to format address
           const formatAddress = (address: any): string => {
@@ -143,7 +143,7 @@ export default function QuotationPreviewPage() {
             })),
           };
 
-          console.log("Transformed Data:", transformedData); // Debug log
+          //console.log("Transformed Data:", transformedData); // Debug log
 
           setQuotationData(transformedData);
         } else {

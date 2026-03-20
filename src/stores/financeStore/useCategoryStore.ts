@@ -79,8 +79,8 @@ export const useCategoryStore = create<CategoryState>()(
             companyId,
           });
 
-          console.log("Category API Response:", response);
-          console.log("Categories Data:", response?.data);
+          //console.log("Category API Response:", response);
+          //console.log("Categories Data:", response?.data);
 
           set({
             categories: response?.data || [],
@@ -122,7 +122,7 @@ export const useCategoryStore = create<CategoryState>()(
             companyId,
           });
 
-          console.log("Create Category Response:", response);
+          //console.log("Create Category Response:", response);
           const newCategory = response?.result;
 
           if (!newCategory) {
@@ -177,7 +177,7 @@ export const useCategoryStore = create<CategoryState>()(
           const response = await categoryApi.updateCategory(id, data);
           const updatedCategory = response?.result;
 
-          console.log("Update Category Response:", response);
+          //console.log("Update Category Response:", response);
 
           if (!updatedCategory) {
             console.error("Invalid response structure:", response);
@@ -203,7 +203,7 @@ export const useCategoryStore = create<CategoryState>()(
           }));
         } catch (error) {
           let errorMessage = "Failed to update category";
-          console.log("error", error);
+          //console.log("error", error);
 
           if (axios.isAxiosError(error) && error.response?.data.message) {
             errorMessage = error.response.data.message;

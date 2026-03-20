@@ -204,7 +204,7 @@ const InvoiceForm: React.FC<any> = ({
   // Update form state when initialValues change (for edit mode)
   useEffect(() => {
     if (mode === "edit" && initialValues) {
-      console.log("🔄 InvoiceForm useEffect - Updating form with initialValues:", {
+      //console.log("🔄 InvoiceForm useEffect - Updating form with initialValues:", {
         terms: initialValues.terms,
         notes: initialValues.notes,
         phases: initialValues.phases,
@@ -239,7 +239,7 @@ const InvoiceForm: React.FC<any> = ({
         ? initialValues.phases
         : [];
 
-      console.log("📝 Setting form values:", {
+      //console.log("📝 Setting form values:", {
         termsValue,
         notesValue,
         termsValueType: typeof termsValue,
@@ -345,10 +345,10 @@ if (typeof window !== "undefined") {
 }
 
   
-      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -356,10 +356,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -389,7 +389,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -562,7 +562,7 @@ if (typeof window !== "undefined") {
   };
 
   const handleFormSubmit = () => {
-    console.log("handleFormSubmit called");
+    //console.log("handleFormSubmit called");
 
     // Validation with comprehensive error messages
     const newErrors: { [key: string]: string } = {};
@@ -608,15 +608,15 @@ if (typeof window !== "undefined") {
 
     setErrors(newErrors);
 
-    console.log("Validation errors:", newErrors);
+    //console.log("Validation errors:", newErrors);
     if (Object.keys(newErrors).length > 0) {
-      console.log("Validation failed, not proceeding");
+      //console.log("Validation failed, not proceeding");
       return;
     }
 
-    console.log("✅ Form validation passed!");
-    console.log("Items count:", items.length);
-    console.log("Business Details:", businessDetails);
+    //console.log("✅ Form validation passed!");
+    //console.log("Items count:", items.length);
+    //console.log("Business Details:", businessDetails);
 
     onSubmit({
       type,
@@ -656,7 +656,7 @@ const handleCloseScanner=()=>{
   setShowScanner(false)
 }
 
-  console.log("Invoice ProductS",products)
+  //console.log("Invoice ProductS",products)
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">
       <InvoiceHeaderBar

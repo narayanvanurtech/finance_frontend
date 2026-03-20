@@ -198,11 +198,11 @@ export const createDebitNote = async (
 export const getAllDebitNotes = async (
   params?: any
 ): Promise<DebitNotesResponse> => {
-  console.log("🔍 getAllDebitNotes called with params:", params);
+  //console.log("🔍 getAllDebitNotes called with params:", params);
   const res = await axiosInstance.get("/api/v1/finance/purchases/debit-notes", {
     params,
   });
-  console.log("✅ getAllDebitNotes response:", res.data);
+  //console.log("✅ getAllDebitNotes response:", res.data);
   return res.data;
 };
 

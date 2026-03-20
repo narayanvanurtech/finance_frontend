@@ -294,15 +294,15 @@ export default function QuotationListPage() {
     // Extract ID immediately to ensure we have it
     const quotationId = quotation?._id || quotation?.id;
 
-    console.log("Delete clicked for quotation:", quotation);
-    console.log(
+    //console.log("Delete clicked for quotation:", quotation);
+    //console.log(
       "Quotation _id:",
       quotation?._id,
       "Type:",
       typeof quotation?._id,
     );
-    console.log("Quotation id:", quotation?.id, "Type:", typeof quotation?.id);
-    console.log("Extracted quotationId:", quotationId);
+    //console.log("Quotation id:", quotation?.id, "Type:", typeof quotation?.id);
+    //console.log("Extracted quotationId:", quotationId);
 
     if (!quotationId) {
       console.error("Cannot delete: Quotation ID is missing", quotation);
@@ -354,7 +354,7 @@ export default function QuotationListPage() {
       return;
     }
 
-    console.log("Deleting quotation with ID:", cleanId);
+    //console.log("Deleting quotation with ID:", cleanId);
 
     setDeleteDialog((prev) => ({ ...prev, loading: true }));
     try {
@@ -647,7 +647,7 @@ export default function QuotationListPage() {
 
   const isEmpty = quotations.length === 0;
 
-  console.log("quotation njhbjkchjb", quotations);
+  //console.log("quotation njhbjkchjb", quotations);
 
   if (isLoading) {
     return (

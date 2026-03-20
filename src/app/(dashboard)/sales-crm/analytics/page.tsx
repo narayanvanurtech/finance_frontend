@@ -30,7 +30,7 @@ const AnalyticsPage = () => {
     return <div className="p-8">No analytics data available</div>;
   }
 
-  console.log(analytics)
+  //console.log(analytics)
 
   // Map analytics data to Overview props
  const overviewData = {

@@ -50,7 +50,7 @@ const totalPages = Math.ceil(invoicesData.length / itemsPerPage);
         `/api/v1/finance/sales/invoices/invoiceDet/${clientId}`
       );
 
-      console.log("Invoice Details BY client", res.data);
+      //console.log("Invoice Details BY client", res.data);
 
       setInvoicesData(res.data?.data || []);
     } catch (err) {

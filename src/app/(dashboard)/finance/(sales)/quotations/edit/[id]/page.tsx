@@ -320,13 +320,13 @@ export default function EditQuotationPage() {
         cessList: values.cessList as any,
       };
 
-      console.log("📤 Update payload:", updatePayload);
+      //console.log("📤 Update payload:", updatePayload);
 
       const result = await useQuotationStore
         .getState()
         .updateQuotation(quotationIdentifier, updatePayload);
 
-      console.log("✅ Update successful! Result:", result);
+      //console.log("✅ Update successful! Result:", result);
 
       // Wait a moment for the update to be processed
       setTimeout(() => {

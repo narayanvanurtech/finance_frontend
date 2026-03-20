@@ -41,9 +41,9 @@ export const useGetPurchases = (filters: GetPurchasesFilters = {}) => {
     queryKey: purchaseExpenseKeys.list(filters),
     queryFn: async () => {
       try {
-        console.log("🔄 Fetching purchases with filters:", filters);
+        //console.log("🔄 Fetching purchases with filters:", filters);
         const response = await purchaseExpenseApi.getAllPurchases(filters);
-        console.log("✅ Purchases fetched successfully:", response);
+        //console.log("✅ Purchases fetched successfully:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching purchases:", error);
@@ -76,9 +76,9 @@ export const useSearchPurchases = (filters: GetPurchasesFilters = {}) => {
     queryKey: purchaseExpenseKeys.search(filters),
     queryFn: async () => {
       try {
-        console.log("🔍 Searching purchases with filters:", filters);
+        //console.log("🔍 Searching purchases with filters:", filters);
         const response = await purchaseExpenseApi.searchPurchases(filters);
-        console.log("✅ Purchases found:", response);
+        //console.log("✅ Purchases found:", response);
         return response;
       } catch (error) {
         console.error("❌ Error searching purchases:", error);
@@ -99,9 +99,9 @@ export const useGetPurchaseStats = () => {
     queryKey: purchaseExpenseKeys.stats(),
     queryFn: async () => {
       try {
-        console.log("📊 Fetching purchase statistics");
+        //console.log("📊 Fetching purchase statistics");
         const response = await purchaseExpenseApi.getPurchaseStats();
-        console.log("✅ Statistics fetched:", response);
+        //console.log("✅ Statistics fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching statistics:", error);
@@ -122,9 +122,9 @@ export const useGetPendingPurchases = () => {
     queryKey: purchaseExpenseKeys.pending(),
     queryFn: async () => {
       try {
-        console.log("⏳ Fetching pending purchases");
+        //console.log("⏳ Fetching pending purchases");
         const response = await purchaseExpenseApi.getPendingPurchases();
-        console.log("✅ Pending purchases fetched:", response);
+        //console.log("✅ Pending purchases fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching pending purchases:", error);
@@ -149,7 +149,7 @@ export const useGetPurchasesSummary = (
     queryKey: purchaseExpenseKeys.summary(startDate, endDate),
     queryFn: async () => {
       try {
-        console.log("📈 Fetching purchases summary for", {
+        //console.log("📈 Fetching purchases summary for", {
           startDate,
           endDate,
         });
@@ -157,7 +157,7 @@ export const useGetPurchasesSummary = (
           startDate,
           endDate
         );
-        console.log("✅ Summary fetched:", response);
+        //console.log("✅ Summary fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching summary:", error);
@@ -183,12 +183,12 @@ export const useGetPurchasesByVendor = (
     queryKey: purchaseExpenseKeys.byVendor(vendorId, filters),
     queryFn: async () => {
       try {
-        console.log("👥 Fetching purchases for vendor:", vendorId);
+        //console.log("👥 Fetching purchases for vendor:", vendorId);
         const response = await purchaseExpenseApi.getPurchasesByVendor(
           vendorId,
           filters
         );
-        console.log("✅ Vendor purchases fetched:", response);
+        //console.log("✅ Vendor purchases fetched:", response);
         return response;
       } catch (error) {
         console.error("❌ Error fetching vendor purchases:", error);

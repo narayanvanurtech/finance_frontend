@@ -56,9 +56,9 @@ const MeetingDetailsPage: React.FC<PageProps> = ({ params }) => {
     const fetchMeetingDetails = async () => {
       try {
         setLoading(true);
-        console.log(`Fetching meeting with leadId: ${id}, meetingId: ${meetingId}`);
+        //console.log(`Fetching meeting with leadId: ${id}, meetingId: ${meetingId}`);
         const response = await leadsApi.getMeeting(id, meetingId, activityType);
-        console.log('Meeting data received:', response.data);
+        //console.log('Meeting data received:', response.data);
         
         // Handle different API response structures
         let meetingData: Meeting;
@@ -127,13 +127,13 @@ const MeetingDetailsPage: React.FC<PageProps> = ({ params }) => {
     try {
       // Use the meetingId from the meeting data instead of the URL parameter
       if (meeting && meeting.meetingId) {
-        console.log(`Updating meeting with ID: ${meeting.meetingId}`);
-        console.log('Meeting data being sent:', editedMeeting);
+        //console.log(`Updating meeting with ID: ${meeting.meetingId}`);
+        //console.log('Meeting data being sent:', editedMeeting);
         await leadsApi.updateMeeting(id, meeting.meetingId, editedMeeting);
       } else {
         // Fall back to URL parameter if meeting data is not available
-        console.log(`Updating meeting with URL parameter ID: ${meetingId}`);
-        console.log('Meeting data being sent:', editedMeeting);
+        //console.log(`Updating meeting with URL parameter ID: ${meetingId}`);
+        //console.log('Meeting data being sent:', editedMeeting);
         await leadsApi.updateMeeting(id, meetingId, editedMeeting);
       }
       router.back();

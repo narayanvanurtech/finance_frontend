@@ -191,7 +191,7 @@ const handleCreateClick = () => {
 };
 
   useEffect(() => {
-    console.log(pathname)
+    //console.log(pathname)
     setIsFilterActive(false);
   }, [pathname])
   
@@ -702,7 +702,7 @@ const handleCreateClick = () => {
         setShowImportDialog(true);
         break;
       default:
-        console.log(`Action '${action}' not implemented`);
+        //console.log(`Action '${action}' not implemented`);
     }
   };
 

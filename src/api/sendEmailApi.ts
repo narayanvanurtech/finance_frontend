@@ -2,7 +2,7 @@ import axiosInstance from "@/utils/axios";
 import { toast } from "sonner";
 
  export const handleSendEmail = async (id: string,baseurl:string,subject:string,message:string,cc:string,email:string) => {
-    console.log(id)
+    //console.log(id)
 
     try {
       const res = await axiosInstance.post(
@@ -10,7 +10,7 @@ import { toast } from "sonner";
         { id ,subject,message,cc,email},
       );
 
-      console.log("Quotation Email====>",res)
+      //console.log("Quotation Email====>",res)
      
           if(res.data.success){
             toast.success(res.data.message)

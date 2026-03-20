@@ -242,10 +242,10 @@ if (typeof window !== "undefined") {
   token = localStorage.getItem("token")
 }
   
-      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -253,10 +253,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -286,7 +286,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -336,8 +336,8 @@ if (typeof window !== "undefined") {
     ].filter(Boolean);
 
     const formatted = parts.join(", ");
-    console.log("Address parts:", parts);
-    console.log("Formatted result:", formatted);
+    //console.log("Address parts:", parts);
+    //console.log("Formatted result:", formatted);
     return formatted;
   };
 
@@ -347,13 +347,13 @@ if (typeof window !== "undefined") {
     if (value === "new") return;
     const found = mockVendors.find((v: any) => String(v._id || v.id) === value);
     if (!found) {
-      console.log("Vendor not found for value:", value);
+      //console.log("Vendor not found for value:", value);
       return;
     }
 
-    console.log("Found vendor:", found);
-    console.log("Vendor address:", found.address);
-    console.log("Formatted address:", formatAddress(found.address));
+    //console.log("Found vendor:", found);
+    //console.log("Vendor address:", found.address);
+    //console.log("Formatted address:", formatAddress(found.address));
 
     const vendorState =
       (found.address as any)?.state || (found as any).state || "";
@@ -368,7 +368,7 @@ if (typeof window !== "undefined") {
       email: found.email || "",
     });
 
-    console.log("Vendor details set:", {
+    //console.log("Vendor details set:", {
       name: found.name || "",
       gstin: found.gstin || "",
       address: formatAddress(found.address),

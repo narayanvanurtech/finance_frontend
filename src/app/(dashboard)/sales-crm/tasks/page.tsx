@@ -374,7 +374,7 @@ const TasksPipeline = () => {
   };
 
   const handleTaskDelete = (task: Task) => {
-    console.log('Attempting to delete task:', task.id, task.title);
+    //console.log('Attempting to delete task:', task.id, task.title);
     setTaskToDelete({ taskId: task.id, subject: task.title });
     setShowDeleteModal(true);
   };
@@ -397,7 +397,7 @@ const TasksPipeline = () => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const isSelected = selectedTasks.includes(task.id);
-    console.log(
+    //console.log(
       "Selected:",
       isSelected,
       "TaskId:",

@@ -316,10 +316,10 @@ const DeliveryChallanForm: React.FC<DeliveryChallanFormProps> = ({
 if (typeof window !== "undefined") {
   token = localStorage.getItem("token")
 }
-      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -327,10 +327,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -360,7 +360,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -375,8 +375,8 @@ if (typeof window !== "undefined") {
     if (value === "new") return;
     const found = clients.find((c: any) => String(c.id) === value);
     if (found) {
-      console.log("🔍 Selected Client:", found);
-      console.log("🏦 Bank Details:", {
+      //console.log("🔍 Selected Client:", found);
+      //console.log("🏦 Bank Details:", {
         bankName: found.bankName,
         accountNumber: found.bankAccountNumber,
         ifscCode: found.ifscCode,

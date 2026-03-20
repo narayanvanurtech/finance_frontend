@@ -181,7 +181,7 @@ export default function SubNav({
   };
 
   useEffect(() => {
-    console.log(pathname);
+    //console.log(pathname);
     setIsFilterActive(false);
   }, [pathname]);
 
@@ -631,7 +631,7 @@ export default function SubNav({
         setShowSuccessDialog(true);
         break;
       default:
-        console.log(`Action '${action}' not implemented`);
+        //console.log(`Action '${action}' not implemented`);
     }
   };
 

@@ -57,8 +57,8 @@ const CallEditPage = () => {
       setLoading(true);
       setError(null);
       const response = await leadsApi.getCall(leadId, callId, type || undefined);
-      console.log("Call data received:", response.data);
-      console.log("Using callId from response:", response.data.callId);
+      //console.log("Call data received:", response.data);
+      //console.log("Using callId from response:", response.data.callId);
       setCall(response.data);
       setFormData({
         callType: response.data.callType as "inbound" | "outbound",

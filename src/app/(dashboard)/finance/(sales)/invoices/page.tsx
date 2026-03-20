@@ -170,7 +170,7 @@ export default function InvoicesPage() {
             .reduce((sum: number, item: any) => sum + (item.totalPaid || 0), 0)
         : 0;
 
-      console.log("paidAmount", paidAmount);
+      //console.log("paidAmount", paidAmount);
 
       // Calculate pendingAmount from paymentBreakdown where _id is "unpaid", "partial", or "overdue"
       const pendingAmount = Array.isArray(statsData?.paymentBreakdown)

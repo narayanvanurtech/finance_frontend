@@ -26,7 +26,7 @@ export default function PremiumCRMPricing() {
   const currentPlanId = user?.subscription?.plan?._id || "";
   const currentPlan = currentPlanId ? plans.find((plan) => plan._id === currentPlanId)?.name || "" : "";
   const isSubscribed = Boolean(currentPlanId);
-  console.log(user);
+  //console.log(user);
 
   useEffect(() => {
     // Fetch plans from Zustand store
@@ -60,13 +60,13 @@ export default function PremiumCRMPricing() {
     // This function is called from the modal when upgrade is successful
     // The actual upgrade logic is handled in the PricingModal component
     // We just close the modal here as the subscription update is handled in useEffect
-    console.log('Plan upgraded successfully to:', plan);
+    //console.log('Plan upgraded successfully to:', plan);
     setModalOpen(false);
   };
 
   const handleDowngrade = (plan: Plan) => {
     // Handle downgrade logic here
-    console.log('Downgrading to:', plan);
+    //console.log('Downgrading to:', plan);
     // You can add your downgrade API call here
     setModalOpen(false);
   };

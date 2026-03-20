@@ -144,7 +144,7 @@ export default function PurchaseOrdersPage() {
 
   const stats = statsData?.result;
 
-  console.log("////llkl,nhbgvgbh", purchaseOrders);
+  //console.log("////llkl,nhbgvgbh", purchaseOrders);
 
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
@@ -246,7 +246,7 @@ export default function PurchaseOrdersPage() {
 
   /** Handle Filters **/
   const handleSearch = useCallback((filters: SearchFilters) => {
-    console.log("🔍 handleSearch called with filters:", filters);
+    //console.log("🔍 handleSearch called with filters:", filters);
     setCurrentFilters(filters);
     setCurrentPage(1); // React Query will auto-refetch when filters change
   }, []);

@@ -282,7 +282,7 @@ const CreaditNotesForm: React.FC<CreditNotesFormProps> = ({
   const [showScanner, setShowScanner] = useState(false);
 
   
-  console.log("Signature=====>>..mn ch ",signature)
+  //console.log("Signature=====>>..mn ch ",signature)
 
   const [showAddItemModal, setShowAddItemModal] = useState(false);
   const [showAddItemBulkModal, setShowAddItemBulkModal] = useState(false);
@@ -398,7 +398,7 @@ if (typeof window !== "undefined") {
 }
   
       const companyId = localStorage.getItem("currentCompanyId");
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -406,10 +406,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -439,7 +439,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -563,15 +563,15 @@ if (typeof window !== "undefined") {
     setLinkedInvoice(value);
     const foundInvoice = invoices.find((inv) => inv.id === value);
     
-    console.log("Selected invoice:", value);
-    console.log("Found invoice:", foundInvoice);
+    //console.log("Selected invoice:", value);
+    //console.log("Found invoice:", foundInvoice);
     
     if (foundInvoice) {
       // Auto-fill invoice number and date
       setOriginalInvoiceNo(foundInvoice.invoiceNo || "");
       setOriginalInvoiceDate(foundInvoice.invoiceDate || "");
       
-      console.log("Setting invoice date:", foundInvoice.invoiceDate);
+      //console.log("Setting invoice date:", foundInvoice.invoiceDate);
 
       // Auto-fill client details if available
       if (foundInvoice.clientId) {
@@ -762,7 +762,7 @@ if (typeof window !== "undefined") {
   };
 
 
-  console.log("Credit Signature",signature)
+  //console.log("Credit Signature",signature)
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">

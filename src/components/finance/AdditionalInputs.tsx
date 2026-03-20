@@ -61,7 +61,7 @@ const AdditionalInputs: React.FC<AdditionalInputsProps> = ({
   const [signatureError, setSignatureError] = useState<string>("");
 
   React.useEffect(() => {
-    console.log("🔍 AdditionalInputs - Received props:", {
+    //console.log("🔍 AdditionalInputs - Received props:", {
       mode,
       terms,
       notes,
@@ -127,7 +127,7 @@ const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 }, [signature]);
 
-  // console.log("signaturePadData,,,mnjbhub", signaturePadData);
+  // //console.log("signaturePadData,,,mnjbhub", signaturePadData);
 
   return (
     <Card className="bg-white rounded-xl p-6 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">

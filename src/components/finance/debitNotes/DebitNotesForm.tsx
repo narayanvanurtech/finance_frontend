@@ -89,11 +89,11 @@ const DebitNotesForm: React.FC<DebitNotesFormProps> = ({
 
   // Debug: Log vendors and purchase orders
   React.useEffect(() => {
-    console.log("👥 Vendors loaded:", vendors.length);
+    //console.log("👥 Vendors loaded:", vendors.length);
     if (vendors.length > 0) {
-      console.log("📝 First vendor:", vendors[0]);
+      //console.log("📝 First vendor:", vendors[0]);
     }
-    console.log("📦 Purchase Orders available:", purchaseOrders.length);
+    //console.log("📦 Purchase Orders available:", purchaseOrders.length);
   }, [vendors, purchaseOrders]);
 
   // Header state
@@ -217,10 +217,10 @@ if (typeof window !== "undefined") {
 }
 
   
-      console.log("Item id (scanner) ::----->>>>>>>", itemId);
+      //console.log("Item id (scanner) ::----->>>>>>>", itemId);
   
       const companyId = localStorage.getItem("currentCompanyId");
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -228,10 +228,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -261,7 +261,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -295,7 +295,7 @@ if (typeof window !== "undefined") {
   const openBulkModal = () => setShowAddItemBulkModal(true);
   const handleAddVendor = () => setShowAddVendor(true);
   const handleVendorSelect = (value: string) => {
-    console.log("🎯 Vendor selected:", value);
+    //console.log("🎯 Vendor selected:", value);
     setVendorId(value);
     if (value === "new") return;
 
@@ -304,7 +304,7 @@ if (typeof window !== "undefined") {
     setOriginalBillNumber("");
 
     const found = vendors.find((v: any) => String(v._id || v.id) === value);
-    console.log("🔍 Found vendor:", found);
+    //console.log("🔍 Found vendor:", found);
 
     if (found) {
       setVendorDetails({
@@ -318,7 +318,7 @@ if (typeof window !== "undefined") {
 
       // Trigger purchase order fetch for this vendor
       if (onVendorChange) {
-        console.log("📞 Calling onVendorChange with:", value);
+        //console.log("📞 Calling onVendorChange with:", value);
         onVendorChange(value);
       }
     } else {

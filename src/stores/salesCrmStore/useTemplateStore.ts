@@ -56,12 +56,12 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       );
       
       if (existingTemplate) {
-        console.log('Found template in store:', existingTemplate);
+        //console.log('Found template in store:', existingTemplate);
         return existingTemplate;
       }
       
       // If not found in store, fetch from API
-      console.log(`Fetching template with ID ${templateId} from API`);
+      //console.log(`Fetching template with ID ${templateId} from API`);
       const response = await apiGetTemplateById(templateId);
       const template = response.result;
       

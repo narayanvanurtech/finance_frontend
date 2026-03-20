@@ -82,8 +82,8 @@ export default function PaymentsMadeEditPage() {
   const payment = paymentData.result;
 
   // Debug: Log payment data
-  console.log("📋 Payment Data:", payment);
-  console.log("📋 Allocations:", payment.allocations);
+  //console.log("📋 Payment Data:", payment);
+  //console.log("📋 Allocations:", payment.allocations);
 
   // Convert payment data to form values format
   const getVendorId = () => {
@@ -96,18 +96,18 @@ export default function PaymentsMadeEditPage() {
   // Get the first purchase order ID from allocations
   const getPurchaseOrderId = () => {
     const allocation = payment.allocations?.find((a) => a.purchaseId);
-    console.log("🔍 Found Allocation:", allocation);
+    //console.log("🔍 Found Allocation:", allocation);
 
     if (!allocation) return "";
 
     // Handle if purchaseId is an object or string
     if (typeof allocation.purchaseId === "string") {
-      console.log("✅ Purchase ID (string):", allocation.purchaseId);
+      //console.log("✅ Purchase ID (string):", allocation.purchaseId);
       return allocation.purchaseId;
     }
 
     const poId = (allocation.purchaseId as any)?._id || "";
-    console.log("✅ Purchase ID (object):", poId);
+    //console.log("✅ Purchase ID (object):", poId);
     return poId;
   };
 

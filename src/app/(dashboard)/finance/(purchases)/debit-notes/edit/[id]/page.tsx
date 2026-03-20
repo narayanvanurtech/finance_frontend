@@ -35,7 +35,7 @@ export default function EditDebitNotePage() {
   } = useGetDebitNoteById(debitNoteId);
   const updateDebitNoteMutation = useUpdateDebitNote();
 
-  console.log("sdfdsfsdfsdfdsfdsfdsfsd", debitNoteData);
+  //console.log("sdfdsfsdfsdfdsfdsfdsfsd", debitNoteData);
 
   // Extract data from React Query responses
   const vendors = vendorsData?.result?.vendors || [];

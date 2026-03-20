@@ -186,7 +186,7 @@ export default function DeliveryChallanListPage() {
     try {
       if (getChallanStats) {
         const response = await getChallanStats(user.companyId, "30");
-        console.log("📊 Stats Response:", response);
+        //console.log("📊 Stats Response:", response);
 
         // Parse backend response structure
         const statsData = response?.data || response;
@@ -221,7 +221,7 @@ export default function DeliveryChallanListPage() {
 
   useEffect(() => {
     if (user?.companyId && mounted) {
-      console.log("🔄 Setting companyId and fetching...");
+      //console.log("🔄 Setting companyId and fetching...");
       if (setCompanyId) {
         setCompanyId(user.companyId);
       }
@@ -284,8 +284,8 @@ export default function DeliveryChallanListPage() {
   // Debug
   useEffect(() => {
     if (challans.length > 0) {
-      console.log("📦 Delivery Challans Data:", challans);
-      console.log("📋 First Challan Structure:", challans[0]);
+      //console.log("📦 Delivery Challans Data:", challans);
+      //console.log("📋 First Challan Structure:", challans[0]);
     }
   }, [challans]);
 

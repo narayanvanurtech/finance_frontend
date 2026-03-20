@@ -182,7 +182,7 @@ export const getAllMeetings = async (filters?: MeetingFilters): Promise<GetAllMe
     const response = await axiosInstance.get<GetAllMeetingsResponse>(url);
     
     // Add debugging to see the actual response structure
-    console.log("API Response:", response.data);
+    //console.log("API Response:", response.data);
     
     // Format checking to ensure we have valid data
     if (!response.data) {
@@ -202,7 +202,7 @@ export const getAllMeetings = async (filters?: MeetingFilters): Promise<GetAllMe
 
 export const getMeetingById = async (id: string): Promise<GetMeetingResponse> => {
   try {
-    console.log(`Fetching meeting with ID: ${id}`);
+    //console.log(`Fetching meeting with ID: ${id}`);
     const response = await axiosInstance.get<GetMeetingResponse>(`/api/v1/meeting/getMeetingById/${id}`);
     
     if (!response.data) {
@@ -210,7 +210,7 @@ export const getMeetingById = async (id: string): Promise<GetMeetingResponse> =>
       throw new Error("Failed to fetch meeting details");
     }
     
-    console.log("Meeting details fetched successfully:", response.data.message);
+    //console.log("Meeting details fetched successfully:", response.data.message);
     return response.data;
   } catch (error: any) {
     console.error(`Error fetching meeting with ID ${id}:`, 
@@ -223,13 +223,13 @@ export const getMeetingById = async (id: string): Promise<GetMeetingResponse> =>
 
 export const updateMeeting = async (id: string, data: CreateMeetingRequest): Promise<GetMeetingResponse> => {
   try {
-    console.log(`Updating meeting with ID: ${id}, company ID: ${data.companyId}`);
+    //console.log(`Updating meeting with ID: ${id}, company ID: ${data.companyId}`);
     if (!data.companyId) {
       console.warn('Warning: No companyId provided for meeting update');
     }
     
     const response = await axiosInstance.put<GetMeetingResponse>(`/api/v1/meeting/updateMeeting/${id}`, data);
-    console.log("Meeting updated successfully:", response.data.message);
+    //console.log("Meeting updated successfully:", response.data.message);
     return response.data;
   } catch (error: any) {
     console.error(`Error updating meeting with ID ${id}:`,
@@ -247,9 +247,9 @@ export const deleteMeeting = async (meetingId: string): Promise<BaseResponse> =>
 
 export const deleteAllMeetings = async (): Promise<BaseResponse> => {
   try {
-    console.log('Sending request to delete all meetings...');
+    //console.log('Sending request to delete all meetings...');
     const response = await axiosInstance.delete<BaseResponse>('/api/v1/meeting/deleteAllMeetings');
-    console.log('Delete all meetings API response:', response.data);
+    //console.log('Delete all meetings API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error in deleteAllMeetings API call:', error);
@@ -259,11 +259,11 @@ export const deleteAllMeetings = async (): Promise<BaseResponse> => {
 
 export const bulkDeleteMeetings = async (meetingIds: string[]): Promise<BaseResponse> => {
   try {
-    console.log('Sending request to bulk delete meetings:', meetingIds);
+    //console.log('Sending request to bulk delete meetings:', meetingIds);
     const response = await axiosInstance.delete<BaseResponse>('/api/v1/meeting/bulkDeleteMeetings', {
       data: { meetingIds }
     });
-    console.log('Bulk delete meetings API response:', response.data);
+    //console.log('Bulk delete meetings API response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error in bulkDeleteMeetings API call:', error);
@@ -296,7 +296,7 @@ export const getUserMeetings = async (filters?: MeetingFilters): Promise<GetAllM
     const response = await axiosInstance.get<GetAllMeetingsResponse>(url);
     
     // Add debugging to see the actual response structure
-    console.log("API Response:", response.data);
+    //console.log("API Response:", response.data);
     
     // Format checking to ensure we have valid data
     if (!response.data) {

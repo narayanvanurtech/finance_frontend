@@ -91,14 +91,14 @@ const ClientSection: React.FC<ClientSectionProps> = ({
     onClientSelect(value);
     const selectedClient = clients.find((client) => client._id === value);
 
-    console.log("🔍 Selected Client Full Data:", selectedClient);
-    console.log("🏦 Bank Details Check:", {
+    //console.log("🔍 Selected Client Full Data:", selectedClient);
+    //console.log("🏦 Bank Details Check:", {
       bankName: selectedClient?.bankName,
       bankAccountNumber: selectedClient?.bankAccountNumber,
       ifscCode: selectedClient?.ifscCode,
       branchName: selectedClient?.branchName,
     });
-    console.log("🗺️ Address State Check:", selectedClient?.address);
+    //console.log("🗺️ Address State Check:", selectedClient?.address);
 
     if (selectedClient) {
       const stateValue = selectedClient.address?.state || "";
@@ -118,7 +118,7 @@ const ClientSection: React.FC<ClientSectionProps> = ({
         branch: selectedClient.branchName,
       };
 
-      console.log("📋 Setting Client Details:", detailsToSet);
+      //console.log("📋 Setting Client Details:", detailsToSet);
 
       setClientDetails(detailsToSet as any);
     }

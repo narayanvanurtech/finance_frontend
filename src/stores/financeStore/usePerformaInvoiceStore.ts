@@ -48,7 +48,7 @@ const extractClientDetails = (clientId: any, existingClientDetails?: any) => {
     const extractedEmail = clientId.email || "";
     const extractedState = clientId.address?.state || "";
 
-    console.log("🔧 extractClientDetails - clientId data:", {
+    //console.log("🔧 extractClientDetails - clientId data:", {
       businessName: clientId.businessName,
       name: clientId.name,
       extractedName,
@@ -77,7 +77,7 @@ const extractClientDetails = (clientId: any, existingClientDetails?: any) => {
         : extractedState,
     };
 
-    console.log("✅ extractClientDetails result:", result);
+    //console.log("✅ extractClientDetails result:", result);
     return result;
   }
 
@@ -317,9 +317,9 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
           const PerformaInvoiceToUpdate = get().performaInvoices.find(
             (inv) => inv.performaInvoiceNumber === invoiceNumber,
           );
-          console.log("🔍 Finding invoice with number:", invoiceNumber);
-          console.log("📋 Available invoices:", get().performaInvoices);
-          console.log("✅ Found invoice:", PerformaInvoiceToUpdate);
+          //console.log("🔍 Finding invoice with number:", invoiceNumber);
+          //console.log("📋 Available invoices:", get().performaInvoices);
+          //console.log("✅ Found invoice:", PerformaInvoiceToUpdate);
 
           if (!PerformaInvoiceToUpdate) {
             throw new Error("Performa-Invoice not found in store");
@@ -415,7 +415,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             }));
           }
 
-          console.log("📤 Sending to API:", {
+          //console.log("📤 Sending to API:", {
             id: performaInvoiceId,
             companyId: companyId,
             payload: apiPayload,
@@ -436,7 +436,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
                 : inv,
             ),
           }));
-          console.log(
+          //console.log(
             "� updatePerformaInvoice CALLED. Updated invoices:",
             get().performaInvoices,
           );
@@ -480,7 +480,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
         status: string,
       ) => {
         try {
-          console.log(
+          //console.log(
             "🔄 Updating performa invoice status...",
             invoiceId,
             status,
@@ -558,7 +558,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               ) as any,
             }));
 
-            console.log("✅ Status updated:", status);
+            //console.log("✅ Status updated:", status);
             toast.success("Status updated");
           } else {
             throw new Error(response.message || "Failed to update status");
@@ -574,7 +574,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
 
       deletePerformaInvoice: async (invoiceId) => {
         try {
-          console.log("🔍 Deleting performa invoice...", invoiceId);
+          //console.log("🔍 Deleting performa invoice...", invoiceId);
 
           const user = useAuthStore.getState().user;
           const companyId = user?.companyId;
@@ -589,14 +589,14 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             invoiceId,
             companyId,
           );
-          console.log("📦 Delete API Response:", response);
+          //console.log("📦 Delete API Response:", response);
 
           if (response.success) {
-            console.log("✅ Performa Invoice deleted");
+            //console.log("✅ Performa Invoice deleted");
 
             // If this was converted from a quotation, refresh quotations
             if (quotationId) {
-              console.log(
+              //console.log(
                 "🔄 Refreshing quotations to update conversion status...",
               );
               try {
@@ -607,7 +607,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
                 // Refresh quotations to get updated data from backend
                 await quotationStore.fetchQuotations();
 
-                console.log("✅ Quotations refreshed successfully");
+                //console.log("✅ Quotations refreshed successfully");
               } catch (err) {
                 console.error("⚠️ Failed to refresh quotations:", err);
                 // Don't throw error, performa invoice is already deleted
@@ -620,7 +620,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
                 (inv: any) => inv._id !== invoiceId,
               ),
             }));
-            console.log(
+            //console.log(
               "🟢 deletePerformaInvoice CALLED. Updated invoices:",
               get().performaInvoices,
             );
@@ -629,7 +629,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
 
             // Refresh from backend after a small delay to avoid race conditions
             setTimeout(() => {
-              console.log("🔄 Refreshing performa invoices after delete...");
+              //console.log("🔄 Refreshing performa invoices after delete...");
               get()
                 .fetchPerformaInvoices()
                 .catch((err) => {
@@ -667,7 +667,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             );
           }
 
-          console.log("🔍 Fetching performa invoices from API...", {
+          //console.log("🔍 Fetching performa invoices from API...", {
             page,
             limit,
             companyId,
@@ -677,11 +677,11 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             limit,
             companyId,
           });
-          console.log("📦 API Response:", response);
+          //console.log("📦 API Response:", response);
 
           if (response.success && response.data) {
-            console.log("✅ Data received:", response.data);
-            console.log("📄 Pagination:", response.pagination);
+            //console.log("✅ Data received:", response.data);
+            //console.log("📄 Pagination:", response.pagination);
 
             // Map API data to form values structure
             const mappedData = response.data.map((invoice: any) => ({
@@ -753,7 +753,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               performaInvoices: mappedData,
               pagination: paginationData,
             });
-            console.log(
+            //console.log(
               "🟢 fetchPerformaInvoices CALLED. Performa Invoices fetched:",
               mappedData,
             );
@@ -770,7 +770,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
       },
       searchPerformaInvoices: async (params: PerformaInvoiceQueryParams) => {
         try {
-          console.log("🔍 Searching performa invoices with params...", params);
+          //console.log("🔍 Searching performa invoices with params...", params);
 
           const user = useAuthStore.getState().user;
           const companyId = user?.companyId;
@@ -786,11 +786,11 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
 
           const response =
             await performaInvoiceApi.searchPerformaInvoices(searchParams);
-          console.log("📦 Search API Response:", response);
+          //console.log("📦 Search API Response:", response);
 
           if (response.success && response.data) {
-            console.log("✅ Search results received:", response.data);
-            console.log("📄 Pagination:", response.pagination);
+            //console.log("✅ Search results received:", response.data);
+            //console.log("📄 Pagination:", response.pagination);
 
             // Map API data to form values structure (same as fetchPerformaInvoices)
             const mappedData = response.data.map((invoice: any) => ({
@@ -859,7 +859,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
               performaInvoices: mappedData,
               pagination: paginationData,
             });
-            console.log(
+            //console.log(
               "🟢 searchPerformaInvoices CALLED. Search results:",
               mappedData,
             );
@@ -876,7 +876,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
       },
       fetchPerformaInvoiceById: async (invoiceId) => {
         try {
-          console.log("🔍 Fetching performa invoice by ID...", invoiceId);
+          //console.log("🔍 Fetching performa invoice by ID...", invoiceId);
           const user = useAuthStore.getState().user;
           const companyId = user?.companyId;
 
@@ -884,10 +884,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             invoiceId,
             companyId,
           );
-          console.log("📦 API Response:", response);
+          //console.log("📦 API Response:", response);
 
           if (response.success && response.data) {
-            console.log("✅ Performa Invoice received:", response.data);
+            //console.log("✅ Performa Invoice received:", response.data);
             const invoiceData = response.data as any;
 
             // Extract clientId properly - handle both string and object formats
@@ -963,7 +963,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             };
 
             set({ currentPerformaInvoice: mappedData });
-            console.log(
+            //console.log(
               "🟢 fetchPerformaInvoiceById CALLED. Mapped invoice:",
               mappedData,
             );
@@ -992,7 +992,7 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             throw new Error("Company ID not found");
           }
 
-          console.log("🔍 Fetching performa invoice stats...", {
+          //console.log("🔍 Fetching performa invoice stats...", {
             companyId,
             period,
           });
@@ -1000,10 +1000,10 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
             companyId,
             period,
           );
-          console.log("📦 Stats API Response:", response);
+          //console.log("📦 Stats API Response:", response);
 
           if (response.success && response.data) {
-            console.log("✅ Stats received:", response.data);
+            //console.log("✅ Stats received:", response.data);
             return response.data;
           } else {
             console.warn("⚠️ API returned success=false or no data:", response);
@@ -1121,16 +1121,16 @@ export const usePerformaInvoiceStore = create<PerformaInvoiceStore>()(
       // ===========================
       bulkAction: async (action: string, invoiceIds: string[], data?: any) => {
         try {
-          console.log("🔍 Performing bulk action...", action, invoiceIds);
+          //console.log("🔍 Performing bulk action...", action, invoiceIds);
           const response = await performaInvoiceApi.bulkAction(
             action,
             invoiceIds,
             data,
           );
-          console.log("📦 Bulk Action API Response:", response);
+          //console.log("📦 Bulk Action API Response:", response);
 
           if (response.success) {
-            console.log("✅ Bulk action completed");
+            //console.log("✅ Bulk action completed");
             // Refresh the list after bulk action
             await get().fetchPerformaInvoices();
             toast.success(`Bulk ${action} completed successfully`);

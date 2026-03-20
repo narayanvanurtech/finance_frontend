@@ -309,7 +309,7 @@ const salesOrderApi = {
       const baseUrl = `/api/v1/finance/sales/sales-orders/${orderId}/convert-to-invoice`;
       const url = companyId ? `${baseUrl}?companyId=${companyId}` : baseUrl;
 
-      console.log(
+      //console.log(
         "salesOrderApi.convertToInvoice -> POST",
         url,
         "payload:",
@@ -319,7 +319,7 @@ const salesOrderApi = {
         url,
         data || {}
       );
-      console.log(
+      //console.log(
         "salesOrderApi.convertToInvoice <- response:",
         response?.data
       );

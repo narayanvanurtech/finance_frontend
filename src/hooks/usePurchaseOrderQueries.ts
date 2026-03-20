@@ -29,7 +29,7 @@ export const useGetPurchaseOrders = (filters?: any) => {
   return useQuery({
     queryKey: purchaseOrderKeys.list(filters),
     queryFn: () => {
-      console.log("🔥 Query function called with filters:", filters);
+      //console.log("🔥 Query function called with filters:", filters);
       return purchaseOrderApi.getAllPurchaseOrders(filters);
     },
     staleTime: 0,

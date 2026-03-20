@@ -107,7 +107,7 @@ const MeetingsPage = () => {
       (index) => meetings![index].meetingId
     );
 
-    // Removed console.log to improve performance
+    // Removed //console.log to improve performance
 
     if (validSelectedRows.length !== selectedRows.length) {
       setSelectedRows(validSelectedRows);
@@ -160,34 +160,34 @@ const MeetingsPage = () => {
     meetingId: string,
     meetingTitle: string
   ) => {
-    // Removed console.log to improve performance
+    // Removed //console.log to improve performance
 
     if (action === "Edit") {
       router.push(`/meetings/${meetingId}/edit`);
     } else if (action === "Delete") {
       // Open delete confirmation dialog
       const meeting = meetings[index];
-      // Removed console.log to improve performance
+      // Removed //console.log to improve performance
       setMeetingToDelete({ id: meetingId, title: meetingTitle });
       setShowDeleteModal(true);
     } else if (action === "Reschedule") {
       router.push(`/meetings/${meetingId}/edit?reschedule=true`);
     } else if (action === "Send Reminder") {
-      // Removed console.log to improve performance
+      // Removed //console.log to improve performance
     }
 
     handleMoreClose(index);
   };
 
   const handleRowClick = (item: Meeting) => {
-    // Removed console.log to improve performance
+    // Removed //console.log to improve performance
     router.push(`/meetings/${item.id}`);
   };
 
   const handleDeleteConfirm = async () => {
     if (!meetingToDelete || isDeleting) return;
 
-    // Removed console.log to improve performance
+    // Removed //console.log to improve performance
 
     setIsDeleting(true);
     setDeleteError(null);

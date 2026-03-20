@@ -26,7 +26,7 @@ export default function CreatePurchaseOrderPage() {
   const { data: itemsData } = useGetItems();
   const { details } = useBussinessStore();
 
-  console.log("sfsdfsdfdsfewredsdfsd");
+  //console.log("sfsdfsdfdsfewredsdfsd");
 
   const { mutate: createPurchaseOrder, isPending } = useCreatePurchaseOrder();
   const router = useRouter();

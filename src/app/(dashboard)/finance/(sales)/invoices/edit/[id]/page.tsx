@@ -146,7 +146,7 @@ export default function EditInvoicePage() {
                   clientIdObj.name ||
                   "";
 
-                console.log("🔍 Client Details Extraction:", {
+                //console.log("🔍 Client Details Extraction:", {
                   clientIdObj: {
                     _id: clientIdObj._id,
                     id: clientIdObj.id,

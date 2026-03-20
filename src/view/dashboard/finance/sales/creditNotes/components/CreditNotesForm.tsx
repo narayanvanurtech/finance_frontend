@@ -386,7 +386,7 @@ const [showScanner, setShowScanner] = useState(false);
 if (typeof window !== "undefined") {
   token = localStorage.getItem("token")
 }
-    console.log(companyId)
+    //console.log(companyId)
       const res = await axiosInstance.get( `/api/v1/finance/inventory/item/itemDetails/${companyId}/${itemId}`,{
         headers:{
           "Authorization":`Bearer ${token}`
@@ -394,10 +394,10 @@ if (typeof window !== "undefined") {
         withCredentials:true
       })
   
-      console.log("res,res,res===>",res)
+      //console.log("res,res,res===>",res)
       const product = res?.data?.result || res?.data;
   
-      console.log("Scanned product:", product);
+      //console.log("Scanned product:", product);
   
       if (!product) {
         toast.error("Item not found");
@@ -427,7 +427,7 @@ if (typeof window !== "undefined") {
       toast.success("Item added successfully");
   
     } catch (err) {
-      console.log(err);
+      //console.log(err);
       toast.error("Invalid QR Code");
     }
   
@@ -548,15 +548,15 @@ if (typeof window !== "undefined") {
     setLinkedInvoice(value);
     const foundInvoice = invoices.find((inv) => inv.id === value);
 
-    console.log("Selected invoice:", value);
-    console.log("Found invoice:", foundInvoice);
+    //console.log("Selected invoice:", value);
+    //console.log("Found invoice:", foundInvoice);
 
     if (foundInvoice) {
       // Auto-fill invoice number and date
       setOriginalInvoiceNo(foundInvoice.invoiceNo || "");
       setOriginalInvoiceDate(foundInvoice.invoiceDate || "");
 
-      console.log("Setting invoice date:", foundInvoice.invoiceDate);
+      //console.log("Setting invoice date:", foundInvoice.invoiceDate);
 
       // Auto-fill placeOfSupply and stateCode
       if (foundInvoice.placeOfSupply) {
@@ -789,7 +789,7 @@ if (typeof window !== "undefined") {
   setShowScanner(false)
 } 
 
-  console.log("Invoice kncjdjijcijbdcnjdbhc:- ",invoices)
+  //console.log("Invoice kncjdjijcijbdcnjdbhc:- ",invoices)
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-2 md:px-8 bg-gradient-to-br from-gray-50 to-white min-h-screen">

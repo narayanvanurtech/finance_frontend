@@ -30,12 +30,12 @@ export default function EditInvoicePage() {
 
         // If not found in store, fetch from API
         if (!foundInvoice) {
-          console.log("Invoice not found in store, fetching from API...");
+          //console.log("Invoice not found in store, fetching from API...");
           const result = await fetchInvoiceById(invoiceId);
           if (result) foundInvoice = result;
         }
 
-        console.log("Loaded invoice:", foundInvoice);
+        //console.log("Loaded invoice:", foundInvoice);
         setInvoice(foundInvoice);
       } catch (error) {
         console.error("Error loading invoice:", error);
@@ -122,11 +122,11 @@ export default function EditInvoicePage() {
     _id: invoice._id,
   };
 
-  console.log("📝 Invoice Edit - Initial Values:", initialValues);
-  console.log("📎 Attachments:", initialValues.attachments);
-  console.log("✍️ Signature:", initialValues.showSignature);
-  console.log("👤 Client Details:", initialValues.clientDetails);
-  console.log("🏢 Business Details:", initialValues.businessDetails);
+  //console.log("📝 Invoice Edit - Initial Values:", initialValues);
+  //console.log("📎 Attachments:", initialValues.attachments);
+  //console.log("✍️ Signature:", initialValues.showSignature);
+  //console.log("👤 Client Details:", initialValues.clientDetails);
+  //console.log("🏢 Business Details:", initialValues.businessDetails);
 
   const handleUpdate = async (values: InvoiceFormValues) => {
     setLoading(true);

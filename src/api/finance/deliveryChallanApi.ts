@@ -60,7 +60,7 @@ export const deliveryChallanApi = {
 
   // 🔥 BULK ACTIONS
   bulkAction: async (body: any, companyId: string) => {
-    console.log("Bulk action body:", body);
+    //console.log("Bulk action body:", body);
     const payload = {
       action: body.action,
       deliveryChallanIds: body.ids,

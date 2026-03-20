@@ -114,7 +114,7 @@ const ItemTable: React.FC<ItemTableProps> = ({
     }
   }, [businessState, clientState, taxType, setTaxConfiguration]);
 
-  // console.log("Items .......",items)
+  // //console.log("Items .......",items)
 
   const UNIT_OPTIONS = [
     { value: "nos", label: "Nos (Numbers)" },

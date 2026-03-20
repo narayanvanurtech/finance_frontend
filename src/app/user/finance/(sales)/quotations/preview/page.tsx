@@ -27,18 +27,18 @@ export default function QuotationPreviewPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState("classic");
 
-  console.log("Quotation 987654356789 :====>",quotation)
+  //console.log("Quotation 987654356789 :====>",quotation)
 
   useEffect(() => {
     const fetchQuotationById = async () => {
       try {
         const res = await quotationApi.getQuotationById(quotationId);
 
-        console.log("API RESPONSE:", res.data);
+        //console.log("API RESPONSE:", res.data);
 
         // ✅ Adjust this if your API structure is different
         const quotationData = res.data;
-          console.log("quotation Data ..... ",quotationData)
+          //console.log("quotation Data ..... ",quotationData)
         setQuotation(quotationData);
       } catch (error) {
         console.error("Error fetching quotation:", error);
@@ -91,8 +91,8 @@ export default function QuotationPreviewPage() {
     showSignature: quotation.showSignature,
   };
 
-  console.log("MAPPED QUOTATION:", mappedQuotation);
-  console.log("SIGNATURE VALUE:", mappedQuotation.signature);
+  //console.log("MAPPED QUOTATION:", mappedQuotation);
+  //console.log("SIGNATURE VALUE:", mappedQuotation.signature);
 
   const getDoc = () =>
     selectedTemplate === "premium" ? (

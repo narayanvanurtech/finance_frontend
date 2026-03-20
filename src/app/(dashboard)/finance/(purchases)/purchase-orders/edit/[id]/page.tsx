@@ -126,7 +126,7 @@ export default function EditPurchaseOrderPage() {
 
   const handleUpdate = async (values: PurchaseOrderFormValues) => {
     try {
-      console.log("📝 Form values received:", values);
+      //console.log("📝 Form values received:", values);
 
       // Validate form data
       const validation = validatePurchaseOrderForm(values);
@@ -138,7 +138,7 @@ export default function EditPurchaseOrderPage() {
 
       // Transform form values to API payload
       const apiPayload = transformFormToUpdatePayload(values);
-      console.log("📤 API payload to send:", apiPayload);
+      //console.log("📤 API payload to send:", apiPayload);
 
       // Call API to update purchase order
       updatePurchaseOrder(

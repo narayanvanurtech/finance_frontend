@@ -45,7 +45,7 @@ const TaskFormComponent: React.FC<TaskFormComponentProps> = ({ onSubmit }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-    console.log("Form submitted:", formData);
+    //console.log("Form submitted:", formData);
   };
 
   return (
