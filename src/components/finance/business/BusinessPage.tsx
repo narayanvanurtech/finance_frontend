@@ -55,7 +55,7 @@ if (typeof window !== "undefined") {
     //     "Authorization":`Bearer ${token}`,
     //   },
     // })
-    console.log("Business Details kjnbvgbhkjn=====>>>>>",res.data)
+   // console.log("Business Details kjnbvgbhkjn=====>>>>>",res.data)
     //    }
     //    fetchBusinessDetails()
     // },[])
